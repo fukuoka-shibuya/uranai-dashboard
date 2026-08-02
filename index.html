@@ -54,6 +54,10 @@
     font:inherit;font-weight:600;
   }
   #owner-comment button:active{background:#2a2a1e;}
+  #owner-comment button.mini{
+    display:inline-block;width:auto;margin:0 0 0 6px;padding:1px 10px;
+    font-size:12px;font-weight:400;color:var(--sub);border-color:var(--line);
+  }
 </style>
 </head>
 <body>
@@ -70,9 +74,13 @@
     <p class="sub">ここに書いて送信すると、次のサイクルでAIが自動で読み取り、タスクに反映します。
        送信内容は公開リポジトリのIssueとして<b>誰でも見られる場所</b>に保存されます。個人情報(氏名・住所・連絡先など)は書かないでください。</p>
     <textarea id="comment-text" placeholder="例:総合占いは別画面にしてほしい/起動アニメはもう少し短く など"></textarea>
-    <button id="comment-send" type="button">GitHubの投稿画面を開いて送信する</button>
-    <p class="sub">ボタンを押すとGitHubの投稿画面が開きます(初回はログインが必要)。内容を確かめて緑色の「Submit new issue」を押した時点で送信完了です。
+    <button id="comment-send" type="button">送信する(仕上げはGitHubで緑のボタンを1回)</button>
+    <p class="sub">文章はこのページ内で書けます。ボタンを押すと、書いた内容が<b>入力済み</b>のGitHub投稿画面が開くので、
+       緑色の「Submit new issue」を1回押すだけで送信完了です(GitHubにログインしていない場合は先にログイン画面が表示されます。書いた内容は引き継がれます)。
+       <span id="draft-promise">書きかけの内容はこの端末内に自動保存され、ページを閉じても消えません。</span>
        <a href="https://github.com/fukuoka-shibuya/uranai-dashboard/issues" rel="noopener">過去のコメント一覧を見る</a></p>
+    <p class="sub">※ページ内だけで送信まで完結する方式は、無料の静的ページでは投稿用の鍵を誰でも見える場所に置く必要があり、
+       第三者に悪用されるため採用していません。現在の方式が無料で安全に実現できる最短の手順です。</p>
     <p class="sub" id="comment-note"></p>
   </section>
 </div>
@@ -81,9 +89,51 @@
 (function () {
   'use strict';
   var REPO = 'https://github.com/fukuoka-shibuya/uranai-dashboard';
+  var DRAFT_KEY = 'uranai.dashboard.commentDraft.v1';
+  var ta = document.getElementById('comment-text');
+  var note = document.getElementById('comment-note');
+
+  /* 書きかけの下書きはこの端末内(localStorage)にだけ保存する。外部送信はしない。
+     プライベートモード等で保存できない環境では、下書き機能なしで動き続ける。 */
+  var storageOk = false;
+  try {
+    localStorage.setItem(DRAFT_KEY + '.probe', '1');
+    localStorage.removeItem(DRAFT_KEY + '.probe');
+    storageOk = true;
+  } catch (e) {}
+
+  if (!storageOk) {
+    var promise = document.getElementById('draft-promise');
+    if (promise) {
+      promise.textContent = 'この環境では下書きの自動保存は使えません(送信前にページを閉じると内容が消えます)。';
+    }
+  }
+
+  try {
+    var draft = localStorage.getItem(DRAFT_KEY);
+    if (draft) {
+      ta.value = draft;
+      note.textContent = '前回の書きかけを復元しました(送信済みでしたら消してください)。';
+      var clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.id = 'comment-draft-clear';
+      clearBtn.className = 'mini';
+      clearBtn.textContent = '下書きを消す';
+      clearBtn.addEventListener('click', function () {
+        ta.value = '';
+        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+        note.textContent = '下書きを消しました。';
+      });
+      note.appendChild(clearBtn);
+    }
+  } catch (e) {}
+
+  ta.addEventListener('input', function () {
+    try { localStorage.setItem(DRAFT_KEY, ta.value); } catch (e) {}
+  });
+
   document.getElementById('comment-send').addEventListener('click', function () {
-    var text = document.getElementById('comment-text').value.trim();
-    var note = document.getElementById('comment-note');
+    var text = ta.value.trim();
     if (!text) {
       note.textContent = 'コメントが空です。内容を書いてから送信してください。';
       return;
@@ -91,10 +141,40 @@
     var d = window.DASHBOARD_DATA;
     var title = 'コメント: ' + text.split('\n')[0].slice(0, 50);
     var body = text + (d && d.cycle_id ? '\n\n(閲覧していた報告書: ' + d.cycle_id + ')' : '');
+
+    /* GitHub が受け付けるURL長(約8KB)に収まるよう、エンコード後の長さで切り詰める。
+       切り詰めても全文はこの欄と下書きに残る。 */
+    var MAX_ENCODED = 6000;
+    var truncated = false;
+    while (body && encodeURIComponent(body).length > MAX_ENCODED) {
+      body = body.slice(0, -200);
+      truncated = true;
+    }
+    if (truncated) {
+      body += '\n\n(文字数の上限により末尾を省略しています。続きは次のコメントで送ってください)';
+    }
+
     var url = REPO + '/issues/new?title=' + encodeURIComponent(title) +
-      '&body=' + encodeURIComponent(body.slice(0, 4000));
-    note.textContent = 'GitHubの投稿画面を開きました。「Submit new issue」を押すと送信完了です。';
-    window.open(url, '_blank', 'noopener');
+      '&body=' + encodeURIComponent(body);
+
+    /* 第3引数に 'noopener' を渡すと成功時も null が返りブロックと区別できないため、
+       開いた後に opener を切って同等の安全性を保つ。下書きは送信成立を検知できないので消さない。 */
+    var opened = window.open(url, '_blank');
+    if (opened) {
+      try { opened.opener = null; } catch (e) {}
+      note.textContent = '投稿画面を開きました(内容は入力済みです)。緑色の「Submit new issue」を1回押すと送信完了です。'
+        + (truncated ? ' 長文のため末尾を省略して引き継ぎました。' : '');
+    } else {
+      /* ポップアップブロック時は「開きました」と偽らず、代替リンクを出す。 */
+      note.textContent = 'ポップアップがブロックされたため開けませんでした。こちらからどうぞ: ';
+      var a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.id = 'comment-fallback-link';
+      a.textContent = '投稿画面を開く(内容は入力済み)';
+      note.appendChild(a);
+    }
   });
 })();
 </script>
