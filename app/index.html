@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五つの読み解き — 試作</title>
+<style>
+  :root{
+    --yoake:#141a2e;        /* 夜明け前の藍色(基調) */
+    --yoake-2:#1d2542;
+    --sumi:#0e1224;
+    --ko:#e8e9f3;           /* 文字 */
+    --ko-sub:#a8afc9;
+    --ai-murasaki:#7b8ec9;  /* 個別占い */
+    --kin:#d8b45f;          /* 総合占い */
+    --line:#2b3559;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;max-width:100%;overflow-x:hidden;}
+  body{
+    background:var(--yoake);
+    color:var(--ko);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    font-size:15px;
+    line-height:1.8;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{width:100%;max-width:412px;margin:0 auto;padding:16px 14px 40px;}
+  h1{font-size:19px;margin:0 0 4px;font-weight:600;letter-spacing:.04em;}
+  h2{font-size:16px;margin:0 0 10px;font-weight:600;}
+  p{margin:0 0 10px;}
+  .lead{color:var(--ko-sub);font-size:13px;margin:0 0 18px;}
+
+  /* ---- 起動イラスト(CSS図形のみ・輪と点中心)---- */
+  #splash{
+    position:fixed;inset:0;z-index:50;
+    background:var(--sumi);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    transition:opacity .6s ease;
+  }
+  #splash.hide{opacity:0;pointer-events:none;}
+  .mark{position:relative;width:132px;height:132px;}
+  .mark .ring{
+    position:absolute;inset:0;border-radius:50%;
+    border:1px solid var(--ai-murasaki);
+    opacity:.85;
+    animation:ring-in 1.6s ease-out both;
+  }
+  .mark .ring.inner{inset:26px;border-color:var(--kin);opacity:.55;animation-delay:.15s;}
+  .mark .dot{
+    position:absolute;left:50%;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;
+    border-radius:50%;background:var(--kin);
+    animation:dot-in 1.4s ease-out both;
+  }
+  .splash-note{position:absolute;left:0;right:0;bottom:36px;text-align:center;color:var(--ko-sub);font-size:12px;}
+  @keyframes ring-in{from{transform:scale(.86);opacity:0;}to{transform:scale(1);opacity:.85;}}
+  @keyframes dot-in{from{opacity:0;}to{opacity:1;}}
+  @media (prefers-reduced-motion:reduce){
+    .mark .ring,.mark .dot{animation:none;}
+    #splash{transition:none;}
+  }
+
+  /* ---- 入力 ---- */
+  section{
+    background:var(--yoake-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin:0 0 16px;
+  }
+  label{display:block;font-size:13px;color:var(--ko-sub);margin:0 0 4px;}
+  .field{margin:0 0 12px;}
+  input[type=text],input[type=date],select{
+    width:100%;max-width:100%;
+    padding:9px 10px;
+    background:var(--sumi);
+    color:var(--ko);
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:15px;
+    font-family:inherit;
+  }
+  .check{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--ko-sub);}
+  .check input{margin-top:4px;flex:none;}
+  .hint{font-size:12px;color:var(--ko-sub);margin:4px 0 0;}
+
+  /* ---- 保存したプロフィール ---- */
+  .plist{list-style:none;margin:0 0 10px;padding:0;}
+  .plist li{
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;margin:0 0 8px;
+    background:var(--sumi);
+  }
+  .plist .pname{
+    flex:1 1 auto;min-width:0;
+    font-size:13px;
+    word-break:break-word;overflow-wrap:anywhere;
+  }
+  .plist .pdate{display:block;font-size:12px;color:var(--ko-sub);}
+  .plist button{flex:none;width:auto;padding:5px 10px;font-size:12px;font-weight:400;}
+  .row-2{display:flex;gap:8px;}
+  .row-2 button{flex:1 1 0;min-width:0;}
+  .empty{font-size:13px;color:var(--ko-sub);margin:0 0 10px;}
+  /* 1件削除の直後だけ現れる「元に戻す」の行 */
+  .undo-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0 0 10px;}
+  .undo-row .undo-text{flex:1 1 auto;min-width:0;font-size:12px;color:var(--ko-sub);margin:0;word-break:break-word;overflow-wrap:anywhere;}
+  .undo-row button{flex:none;width:auto;padding:5px 10px;font-size:12px;font-weight:400;}
+
+  button{
+    width:100%;max-width:100%;
+    padding:11px 12px;
+    border-radius:8px;
+    border:1px solid var(--ai-murasaki);
+    background:var(--ai-murasaki);
+    color:#101427;
+    font-size:15px;font-weight:600;font-family:inherit;
+    cursor:pointer;
+  }
+  button.ghost{background:transparent;color:var(--ai-murasaki);}
+  button.kin{border-color:var(--kin);background:var(--kin);color:#221a06;}
+  button[disabled]{opacity:.45;cursor:not-allowed;}
+
+  /* ---- 個別占い ---- */
+  #individual-section{border-color:var(--ai-murasaki);}
+  #individual-section h2{color:var(--ai-murasaki);}
+
+  /* ---- 総合占い(プルダウンに入れない上位機能)---- */
+  #overall-section{border-color:var(--kin);}
+  #overall-section h2{color:var(--kin);}
+  .badge{
+    display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--kin);color:var(--kin);margin:0 0 8px;
+  }
+  .locked{color:var(--ko-sub);font-size:13px;}
+
+  .result{
+    border-top:1px solid var(--line);
+    margin-top:12px;padding-top:12px;
+    white-space:normal;word-break:break-word;overflow-wrap:anywhere;
+  }
+  .result h3{font-size:14px;margin:0 0 6px;}
+  /* ---- 占術の読み解き項目 ---- */
+  .items{margin:0 0 10px;padding:0;}
+  .items dt{
+    font-size:12px;color:var(--ko-sub);
+    margin:8px 0 0;
+    word-break:break-word;overflow-wrap:anywhere;
+  }
+  .items dd{
+    margin:0;
+    word-break:break-word;overflow-wrap:anywhere;
+  }
+  .items dd b{display:block;font-size:15px;color:var(--ai-murasaki);font-weight:600;}
+  .items dd span{display:block;font-size:13px;}
+  #overall-result .items dd b{color:var(--kin);}
+  #overall-result h4{font-size:13px;margin:12px 0 4px;color:var(--kin);}
+  .provisional{
+    margin-top:12px;font-size:12px;color:var(--ko-sub);
+    border:1px dashed var(--line);border-radius:8px;padding:8px 10px;
+  }
+  /* ---- 仮広告(画面内の擬似表示のみ。本物の広告SDKは使わない) ---- */
+  #pseudo-ad{
+    position:fixed;inset:0;z-index:40;
+    background:rgba(10,13,26,.82);
+    display:flex;align-items:center;justify-content:center;
+    padding:16px;
+  }
+  #pseudo-ad.hidden{display:none;}
+  .ad-card{
+    width:100%;max-width:320px;
+    background:var(--yoake-2);
+    border:1px solid var(--kin);
+    border-radius:12px;
+    padding:16px 14px;
+  }
+  .ad-card h2{font-size:15px;margin:0 0 8px;}
+  .ad-card p{font-size:13px;color:var(--ko-sub);}
+  .ad-tag{
+    display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;
+    border:1px solid var(--ko-sub);color:var(--ko-sub);margin:0 0 8px;
+  }
+
+  footer{color:var(--ko-sub);font-size:12px;text-align:center;margin-top:8px;}
+  .hidden{display:none;}
+  /* 仮広告の表示中だけ背後のスクロールを止める */
+  body.no-scroll{overflow:hidden;}
+</style>
+</head>
+<body>
+
+<!-- 起動イラスト:CSS図形(輪と点中心)のみ。1.6秒で自動的に消え、タップでスキップ可 -->
+<div id="splash" role="button" tabindex="0" aria-label="起動画面をスキップ">
+  <div class="mark">
+    <span class="ring"></span>
+    <span class="ring inner"></span>
+    <span class="dot"></span>
+  </div>
+  <p class="splash-note">画面をタップすると進みます</p>
+</div>
+
+<div class="wrap">
+  <h1>五つの読み解き</h1>
+  <p class="lead">算命学を中心に、五つの見方から静かに読み解く試作品です。13歳以上の方を対象としています。</p>
+
+  <!-- 1. 入力 -->
+  <section id="input-section" aria-labelledby="input-h">
+    <h2 id="input-h">あなたのこと</h2>
+
+    <div class="field">
+      <label for="nickname">ニックネーム</label>
+      <input type="text" id="nickname" name="nickname" autocomplete="off" maxlength="20" placeholder="呼ばれたい名前">
+    </div>
+
+    <div class="field">
+      <label for="birthdate">生年月日</label>
+      <input type="date" id="birthdate" name="birthdate" min="1900-01-01">
+    </div>
+
+    <div class="field">
+      <label for="gender">性別(任意)</label>
+      <select id="gender" name="gender">
+        <option value="">選ばない</option>
+        <option value="female">女性</option>
+        <option value="male">男性</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="check" for="save-consent">
+        <input type="checkbox" id="save-consent" name="save-consent">
+        <span>この端末にだけ保存する(保存しない場合、入力内容は端末に残りません)</span>
+      </label>
+      <p class="hint">入力内容が端末の外へ送られることはありません。</p>
+    </div>
+
+    <div class="field">
+      <button id="save-profile" type="button" class="ghost">この内容を保存する</button>
+      <p id="save-message" class="hint" aria-live="polite"></p>
+    </div>
+
+    <div class="field" id="profile-area">
+      <p class="lead" style="margin:0 0 6px">保存したプロフィール(最大5件)</p>
+      <ul id="profile-list" class="plist"></ul>
+      <p id="profile-empty" class="empty">まだ保存されていません。</p>
+      <div id="undo-delete" class="undo-row hidden">
+        <!-- 読み上げは #save-message(aria-live)に一本化。ここは見た目の文脈表示専用 -->
+        <span id="undo-delete-text" class="undo-text"></span>
+        <button id="undo-delete-button" type="button" class="ghost">元に戻す</button>
+      </div>
+      <button id="delete-all" type="button" class="ghost hidden">すべて削除</button>
+      <div id="delete-all-confirm" class="hidden">
+        <p class="hint" style="margin:0 0 8px">保存したプロフィールをすべて消します。よろしいですか。</p>
+        <div class="row-2">
+          <button id="delete-all-yes" type="button" class="ghost">すべて消す</button>
+          <button id="delete-all-no" type="button" class="ghost">やめる</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 個別占い -->
+  <section id="individual-section" aria-labelledby="individual-h">
+    <h2 id="individual-h">個別の占い</h2>
+    <div class="field">
+      <label for="divination-select">占術を選ぶ</label>
+      <select id="divination-select" name="divination">
+        <option value="sanmei">算命学</option>
+        <option value="kyusei">九星気学</option>
+        <option value="suuhi">数秘術</option>
+        <option value="seiyou">西洋占星術</option>
+        <option value="sukuyo">宿曜</option>
+      </select>
+    </div>
+    <button id="read-individual" type="button">この占術で読む</button>
+    <div id="individual-result" class="result hidden" aria-live="polite"></div>
+  </section>
+
+  <!-- 3. 総合占い:プルダウンに含めず、別領域・上位機能として分離 -->
+  <section id="overall-section" aria-labelledby="overall-h">
+    <span class="badge">上位の読み物</span>
+    <h2 id="overall-h">総合占い</h2>
+    <p id="overall-lock" class="locked">個別の占いを2つ読み終えると、こちらが開きます。(現在 <span id="read-count">0</span> / 2)</p>
+    <p id="overall-open" class="locked hidden">総合占いが開きました。五つの見方を並べて読み解きます。</p>
+    <button id="read-overall" type="button" class="kin" disabled>総合占いを読む</button>
+    <div id="overall-result" class="result hidden" aria-live="polite"></div>
+  </section>
+
+  <footer>データは端末内にのみ保存されます。</footer>
+</div>
+
+<!-- 仮広告:本物の広告SDK・外部スクリプトは使わず、画面内の擬似表示のみ。
+     個別2件読了後に1回だけ表示し、閉じると総合占いが解放される。解放後は再表示しない。 -->
+<div id="pseudo-ad" class="hidden" role="dialog" aria-modal="true" aria-labelledby="pseudo-ad-h">
+  <div class="ad-card">
+    <span class="ad-tag">広告(仮)</span>
+    <h2 id="pseudo-ad-h">ここに広告が入る予定です</h2>
+    <p>試作版のため、実際の広告は表示されません。この表示を閉じると、総合占いを読めるようになります。以後、広告をお願いすることはありません。</p>
+    <button id="pseudo-ad-close" type="button" class="kin">閉じて総合占いへ</button>
+  </div>
+</div>
+
+<!-- 占術エンジン。仮計算と正式計算はファイルを分け、切替は engine/index.js の1か所だけで行う -->
+<script src="engine/provisional.js"></script>
+<script src="engine/official.js"></script>
+<script src="engine/index.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 起動イラスト ---------- */
+  var splash = document.getElementById('splash');
+  var closed = false;
+  function closeSplash() {
+    if (closed) { return; }
+    closed = true;
+    splash.classList.add('hide');
+    window.setTimeout(function () { splash.style.display = 'none'; }, 600);
+  }
+  splash.addEventListener('click', closeSplash);
+  splash.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { closeSplash(); }
+  });
+  window.setTimeout(closeSplash, 1600); /* 1〜2秒 */
+
+  /* ---------- 占術エンジンの呼び出し ----------
+     計算そのものは app/engine/ に置いてある。画面側はどちらの計算(仮/正式)が
+     動いているかを知らず、UranaiEngine の入口だけを使う。 */
+  var engine = window.UranaiEngine;
+  var NOTE_TEXT = '現在は試作用の仮データです。';
+
+  function clear(node) {
+    while (node.firstChild) { node.removeChild(node.firstChild); }
+  }
+
+  function para(text, className) {
+    var p = document.createElement('p');
+    if (className) { p.className = className; }
+    p.textContent = text;
+    return p;
+  }
+
+  /** 占術の結果オブジェクトを項目リストとして描く */
+  function renderResult(box, result) {
+    clear(box);
+
+    box.appendChild(document.createElement('h3')).textContent = result.name + 'から見ると';
+    box.appendChild(para(result.view + 'として読み解いています。'));
+    if (result.summary) { box.appendChild(para(result.summary)); }
+
+    var dl = document.createElement('dl');
+    dl.className = 'items';
+    for (var i = 0; i < result.items.length; i++) {
+      var item = result.items[i];
+      var dt = document.createElement('dt');
+      dt.textContent = item.label;
+      var dd = document.createElement('dd');
+      var value = document.createElement('b');
+      value.textContent = item.value;
+      var note = document.createElement('span');
+      note.textContent = item.note;
+      dd.appendChild(value);
+      dd.appendChild(note);
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    }
+    box.appendChild(dl);
+
+    /* 結びの文は占術ごとに書き分ける(同じ文の使い回しを2占術以上にまたがらせない)。
+       共通文へ黙って戻らないよう、無い場合は段落ごと出さない */
+    if (result.closing) { box.appendChild(para(result.closing)); }
+    if (result.provisional) { box.appendChild(para(NOTE_TEXT, 'provisional')); }
+    box.classList.remove('hidden');
+  }
+
+  function renderMessage(box, text) {
+    clear(box);
+    box.appendChild(para(text, 'locked'));
+    box.classList.remove('hidden');
+  }
+
+  var readSet = Object.create(null);
+  var readCount = 0;
+
+  document.getElementById('read-individual').addEventListener('click', function () {
+    var key = document.getElementById('divination-select').value;
+    var input = { birthdate: document.getElementById('birthdate').value };
+    var box = document.getElementById('individual-result');
+
+    var check = engine.validate(input);
+    if (!check.ok) {
+      renderMessage(box, check.message);
+      return;
+    }
+
+    var result = engine.computeOne(key, input);
+    if (!result) {
+      renderMessage(box, 'この占術はまだ読み解けませんでした。');
+      return;
+    }
+    renderResult(box, result);
+
+    /* 読了は占術ごとに1回だけ数える */
+    if (!readSet[key]) {
+      readSet[key] = true;
+      readCount++;
+      document.getElementById('read-count').textContent = String(readCount);
+      if (readCount >= 2 && !unlocked && !adVisible) { showAd(); }
+    }
+  });
+
+  /* 読了の案内は文言を差し替えるのではなく段落ごと入れ替える。
+     #read-count を消してしまうと、以後の読了数の更新ができなくなるため。 */
+  function unlockOverall() {
+    document.getElementById('read-overall').disabled = false;
+    document.getElementById('overall-lock').classList.add('hidden');
+    document.getElementById('overall-open').classList.remove('hidden');
+  }
+
+  /* ---------- 総合占いの解放フロー(C5) ----------
+     個別2件読了 → 仮広告を1回表示 → 閉じると解放。解放後は二度と広告を出さない。
+     解放状態として端末に残すのは個人情報を含まない印(値 "1")だけで、
+     ニックネーム・生年月日は含めない。プロフィール保存の同意(save-consent)とは
+     別扱いとする。localStorage が使えない環境では、この画面を開いている間だけ
+     解放を保つ(リロード後は再び2件読了と広告が必要になる)。 */
+  var UNLOCK_KEY = 'uranai.unlock.v1';
+
+  function readUnlocked() {
+    try { return window.localStorage.getItem(UNLOCK_KEY) === '1'; }
+    catch (e) { return false; }
+  }
+  function persistUnlocked() {
+    try { window.localStorage.setItem(UNLOCK_KEY, '1'); }
+    catch (e) { /* 端末に残せない環境。unlocked 変数で画面表示の間だけ保つ */ }
+  }
+
+  var unlocked = readUnlocked();
+  var adVisible = false;
+  var elAd = document.getElementById('pseudo-ad');
+  var elAdClose = document.getElementById('pseudo-ad-close');
+
+  function showAd() {
+    /* 別のタブで解放済みになっていたら、広告は出さずそのまま開く(再要求しない) */
+    if (readUnlocked()) {
+      unlocked = true;
+      unlockOverall();
+      return;
+    }
+    adVisible = true;
+    elAd.classList.remove('hidden');
+    document.body.classList.add('no-scroll');
+    elAdClose.focus();
+  }
+
+  function closeAd() {
+    adVisible = false;
+    elAd.classList.add('hidden');
+    document.body.classList.remove('no-scroll');
+    unlocked = true;
+    persistUnlocked();
+    unlockOverall();
+    /* 「閉じて総合占いへ」の言葉どおり、総合占いのボタンへ移る */
+    document.getElementById('read-overall').focus();
+  }
+
+  elAdClose.addEventListener('click', closeAd);
+
+  /* 仮広告表示中のキーボード操作:Escでも同じ閉処理。ダイアログ内の操作対象は
+     閉じるボタンだけなので、Tabはそこへ留める(aria-modal の宣言と実態を揃える) */
+  document.addEventListener('keydown', function (e) {
+    if (!adVisible) { return; }
+    if (e.key === 'Escape') { closeAd(); return; }
+    if (e.key === 'Tab') { e.preventDefault(); elAdClose.focus(); }
+  });
+
+  /* 解放済みの端末では、起動直後から総合占いを開いた状態にする(広告は出さない) */
+  if (unlocked) { unlockOverall(); }
+
+  /* ---------- 総合占いの本文(C6) ----------
+     一致点・相違点の読み物はエンジン側(computeOverall)が組み立てる。
+     画面側は受け取った構造(summary / sections / items / closing)を描くだけで、
+     文章そのものをここに書かない(文言検査をエンジン側に集めるため)。 */
+  function renderOverall(box, overall) {
+    clear(box);
+    box.appendChild(document.createElement('h3')).textContent = overall.heading;
+    box.appendChild(para(overall.summary));
+
+    for (var s = 0; s < overall.sections.length; s++) {
+      var sec = overall.sections[s];
+      box.appendChild(document.createElement('h4')).textContent = sec.heading;
+      for (var p = 0; p < sec.body.length; p++) {
+        box.appendChild(para(sec.body[p]));
+      }
+    }
+
+    var dl = document.createElement('dl');
+    dl.className = 'items';
+    for (var i = 0; i < overall.items.length; i++) {
+      var t = overall.items[i];
+      var dt = document.createElement('dt');
+      dt.textContent = t.label;
+      var dd = document.createElement('dd');
+      var value = document.createElement('b');
+      value.textContent = t.value;
+      var note = document.createElement('span');
+      note.textContent = t.note;
+      dd.appendChild(value);
+      dd.appendChild(note);
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    }
+    box.appendChild(dl);
+
+    box.appendChild(para(overall.closing));
+    if (overall.provisional) { box.appendChild(para(NOTE_TEXT, 'provisional')); }
+    box.classList.remove('hidden');
+  }
+
+  document.getElementById('read-overall').addEventListener('click', function () {
+    var box = document.getElementById('overall-result');
+    var input = { birthdate: document.getElementById('birthdate').value };
+
+    var check = engine.validate(input);
+    if (!check.ok) {
+      renderMessage(box, check.message);
+      return;
+    }
+
+    var overall = engine.computeOverall(input);
+    if (!overall) {
+      renderMessage(box, '総合占いはまだ読み解けませんでした。');
+      return;
+    }
+    renderOverall(box, overall);
+  });
+
+  /* ---------- プロフィールの保存と管理(端末内のみ・localStorage) ----------
+     ・保存するのは利用者が「この端末にだけ保存する」を選んだ時だけ
+     ・保存先は端末内の localStorage のみ。外部への送信は一切行わない
+     ・最大5件。6件目は保存せず、上限を案内する */
+  var STORE_KEY = 'uranai.profiles.v1';
+  var MAX_PROFILES = 5;
+
+  var elNickname = document.getElementById('nickname');
+  var elBirthdate = document.getElementById('birthdate');
+  var elGender = document.getElementById('gender');
+  var elConsent = document.getElementById('save-consent');
+  var elMessage = document.getElementById('save-message');
+  var elList = document.getElementById('profile-list');
+  var elEmpty = document.getElementById('profile-empty');
+  var elDeleteAll = document.getElementById('delete-all');
+  var elDeleteAllConfirm = document.getElementById('delete-all-confirm');
+
+  var GENDER_LABEL = { '': '選ばない', female: '女性', male: '男性', other: 'その他' };
+
+  /* 端末の日付(YYYY-MM-DD)。これからの日付を生年月日として受け取らないために使う */
+  function todayText() {
+    var d = new Date();
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate());
+  }
+  elBirthdate.max = todayText();
+
+  var GENDERS = { female: 1, male: 1, other: 1 };
+  var idCounter = 0;
+
+  /* 削除・上書きの対象を位置ではなく id で指すための識別子(端末内でのみ使う) */
+  function makeId() {
+    idCounter++;
+    return 'p' + Date.now().toString(36) + '-' + idCounter + '-' +
+           Math.floor(Math.random() * 1679616).toString(36);
+  }
+
+  /* 保存データが壊れていても画面が止まらないよう、読み込み時に形を整える。
+     壊れた要素は捨て、上限5件に収める。 */
+  function sanitize(list) {
+    var out = [];
+    for (var i = 0; i < list.length && out.length < MAX_PROFILES; i++) {
+      var p = list[i];
+      if (!p || typeof p !== 'object') { continue; }
+      if (typeof p.nickname !== 'string' || typeof p.birthdate !== 'string') { continue; }
+      if (!p.nickname || !p.birthdate) { continue; }
+      out.push({
+        id: (typeof p.id === 'string' && p.id) ? p.id : makeId(),
+        nickname: p.nickname,
+        birthdate: p.birthdate,
+        gender: GENDERS[p.gender] ? p.gender : ''
+      });
+    }
+    return out;
+  }
+
+  /* localStorage が使えない環境(プライベートモード等)でも画面が壊れないようにする */
+  function readStore() {
+    try {
+      var raw = window.localStorage.getItem(STORE_KEY);
+      if (!raw) { return []; }
+      var parsed = JSON.parse(raw);
+      return Object.prototype.toString.call(parsed) === '[object Array]' ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeStore(list) {
+    try {
+      /* 空になったらキー自体を残さない */
+      if (list.length === 0) { window.localStorage.removeItem(STORE_KEY); }
+      else { window.localStorage.setItem(STORE_KEY, JSON.stringify(list)); }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /* 常に最新の保存内容を読み直す(別のタブでの変更を上書きしないため) */
+  function loadProfiles(repair) {
+    var raw = readStore();
+    var clean = sanitize(raw);
+    if (repair !== false && JSON.stringify(raw) !== JSON.stringify(clean)) {
+      writeStore(clean);
+    }
+    return clean;
+  }
+
+  var profiles = loadProfiles();
+  var confirmingDeleteAll = false;
+
+  function say(text) { elMessage.textContent = text; }
+
+  function updateDeleteAllVisibility() {
+    elDeleteAll.classList.toggle('hidden', profiles.length === 0 || confirmingDeleteAll);
+    elDeleteAllConfirm.classList.toggle('hidden', !confirmingDeleteAll || profiles.length === 0);
+  }
+
+  function hideDeleteAllConfirm() {
+    confirmingDeleteAll = false;
+    updateDeleteAllVisibility();
+  }
+
+  /* ---- 1件削除の取り消し(元に戻す)----
+     取り消しは端末のメモリ上だけで覚える(localStorage には書かない=リロードで消える)。
+     時間経過では消さず、一覧の内容を変える次の操作(保存の成立・別の削除・
+     「すべて削除」の開始/実行・別タブの変更)で無効にする。決定論的に扱うため。
+     「使う」は一覧を変えないので取り消しを残す。 */
+  var elUndoRow = document.getElementById('undo-delete');
+  var elUndoText = document.getElementById('undo-delete-text');
+  var elUndoButton = document.getElementById('undo-delete-button');
+  var undoState = null; /* { profile: 削除した内容, index: 削除前の位置 } */
+
+  function clearUndo() {
+    undoState = null;
+    elUndoText.textContent = '';
+    elUndoRow.classList.add('hidden');
+  }
+
+  function offerUndo(state) {
+    undoState = state;
+    elUndoText.textContent = state.profile.nickname + ' さんを削除しました。';
+    elUndoRow.classList.remove('hidden');
+  }
+
+  function removeById(id) {
+    var latest = loadProfiles();
+    var kept = [];
+    var removed = null;
+    var removedIndex = -1;
+    for (var i = 0; i < latest.length; i++) {
+      if (latest[i].id === id) { removed = latest[i]; removedIndex = i; }
+      else { kept.push(latest[i]); }
+    }
+    profiles = kept;
+    writeStore(profiles);
+    render();
+    return removed ? { profile: removed, index: removedIndex } : null;
+  }
+
+  function renderList() {
+    for (var i = 0; i < profiles.length; i++) {
+      (function (p) {
+        var li = document.createElement('li');
+
+        var name = document.createElement('span');
+        name.className = 'pname';
+        /* 利用者の入力は textContent で入れる(HTMLとして解釈させない) */
+        name.textContent = p.nickname;
+        var sub = document.createElement('span');
+        sub.className = 'pdate';
+        sub.textContent = p.birthdate + '・' + (GENDER_LABEL[p.gender] || '選ばない');
+        name.appendChild(sub);
+
+        var use = document.createElement('button');
+        use.type = 'button';
+        use.className = 'ghost profile-use';
+        use.textContent = '使う';
+        use.setAttribute('aria-label', p.nickname + ' の内容を入力欄に戻す');
+        use.addEventListener('click', function () {
+          elNickname.value = p.nickname;
+          elBirthdate.value = p.birthdate;
+          elGender.value = p.gender || '';
+          hideDeleteAllConfirm();
+          say(p.nickname + ' さんの内容を入力欄に戻しました。');
+        });
+
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'ghost profile-delete';
+        del.textContent = '削除';
+        del.setAttribute('aria-label', p.nickname + ' を削除');
+        del.addEventListener('click', function () {
+          hideDeleteAllConfirm();
+          var removed = removeById(p.id);
+          if (removed) {
+            /* 非表示中の要素への書き込みは読み上げられないため、通知は say 側で行う */
+            say(removed.profile.nickname + ' さんを削除しました。');
+            offerUndo(removed);
+          } else {
+            /* 別タブで先に消えていた場合など。無かったものは取り消せない */
+            clearUndo();
+            say('この内容は既に削除されていました。');
+          }
+        });
+
+        li.appendChild(name);
+        li.appendChild(use);
+        li.appendChild(del);
+        elList.appendChild(li);
+      })(profiles[i]);
+    }
+  }
+
+  function render() {
+    while (elList.firstChild) { elList.removeChild(elList.firstChild); }
+
+    try {
+      renderList();
+    } catch (e) {
+      /* 一覧を描けない事態でも、利用者が自分のデータを消せる状態は必ず残す */
+      while (elList.firstChild) { elList.removeChild(elList.firstChild); }
+      say('保存した内容をうまく読み込めませんでした。「すべて削除」で消すことができます。');
+      elEmpty.classList.add('hidden');
+      elDeleteAll.classList.remove('hidden');
+      return;
+    }
+
+    elEmpty.classList.toggle('hidden', profiles.length > 0);
+    if (profiles.length === 0) { confirmingDeleteAll = false; }
+    updateDeleteAllVisibility();
+  }
+
+  document.getElementById('save-profile').addEventListener('click', function () {
+    var nickname = elNickname.value.trim();
+    var birthdate = elBirthdate.value;
+
+    hideDeleteAllConfirm();
+
+    if (!elConsent.checked) {
+      say('「この端末にだけ保存する」を選んでいただくと保存できます。');
+      return;
+    }
+    if (!nickname || !birthdate) {
+      say('ニックネームと生年月日を入れていただくと保存できます。');
+      return;
+    }
+    if (birthdate > todayText()) {
+      say('生年月日をご確認ください。これからの日付は保存できません。');
+      return;
+    }
+
+    /* 別のタブでの変更を消さないよう、書き込む直前に最新を読み直す */
+    profiles = loadProfiles();
+
+    /* 同じニックネーム+生年月日は上書きし、件数を増やさない */
+    var existing = -1;
+    for (var i = 0; i < profiles.length; i++) {
+      if (profiles[i].nickname === nickname && profiles[i].birthdate === birthdate) { existing = i; break; }
+    }
+
+    if (existing < 0 && profiles.length >= MAX_PROFILES) {
+      say('保存できるのは' + MAX_PROFILES + '件までです。不要なものを削除してからお試しください。');
+      render();
+      return;
+    }
+
+    var entry = {
+      id: existing >= 0 ? profiles[existing].id : makeId(),
+      nickname: nickname,
+      birthdate: birthdate,
+      gender: GENDERS[elGender.value] ? elGender.value : ''
+    };
+    if (existing >= 0) { profiles[existing] = entry; } else { profiles.push(entry); }
+
+    if (!writeStore(profiles)) {
+      profiles = loadProfiles();
+      render();
+      say('この端末では保存機能を使えないようです。');
+      return;
+    }
+    render();
+    clearUndo();
+    say(existing >= 0 ? '保存済みの内容を更新しました。' : '端末内に保存しました。');
+  });
+
+  elDeleteAll.addEventListener('click', function () {
+    clearUndo();
+    confirmingDeleteAll = true;
+    updateDeleteAllVisibility();
+  });
+  document.getElementById('delete-all-no').addEventListener('click', function () {
+    hideDeleteAllConfirm();
+    say('削除をやめました。');
+  });
+  document.getElementById('delete-all-yes').addEventListener('click', function () {
+    clearUndo();
+    profiles = [];
+    confirmingDeleteAll = false;
+    writeStore(profiles);
+    render();
+    say('すべて削除しました。');
+  });
+
+  /* 「元に戻す」ボタンは押すと消えるため、フォーカスの行き場を一覧側へ移す
+     (キーボード利用者が位置を見失わないように) */
+  function focusListItem(pos) {
+    var buttons = elList.querySelectorAll('.profile-use');
+    if (buttons.length > 0) {
+      buttons[Math.min(Math.max(pos, 0), buttons.length - 1)].focus();
+    } else {
+      document.getElementById('save-profile').focus();
+    }
+  }
+
+  /* 復元は、利用者が過去に「この端末にだけ保存する」を選んで保存した内容を
+     明示的なタップで書き戻す操作のため、保存可否チェックの現在値は確認しない */
+  elUndoButton.addEventListener('click', function () {
+    if (!undoState) { clearUndo(); return; }
+    var target = undoState.profile;
+    var index = undoState.index;
+    clearUndo();
+
+    /* 書き込む直前に最新を読み直す(別タブの変更を上書きしないため) */
+    var latest = loadProfiles();
+
+    /* 取り消し表示中に一覧は変わらない設計だが、万一変わっていた場合は壊さず断る */
+    for (var i = 0; i < latest.length; i++) {
+      if (latest[i].nickname === target.nickname && latest[i].birthdate === target.birthdate) {
+        profiles = latest;
+        render();
+        say('同じ内容が既に保存されているため、元に戻す操作は行いませんでした。');
+        focusListItem(i);
+        return;
+      }
+    }
+    if (latest.length >= MAX_PROFILES) {
+      profiles = latest;
+      render();
+      say('保存できるのは' + MAX_PROFILES + '件までのため、元に戻せませんでした。');
+      focusListItem(0);
+      return;
+    }
+
+    /* 削除前と同じ位置へ戻す(取り消し表示中は一覧が変わらないため位置が保てる) */
+    var pos = Math.min(Math.max(index, 0), latest.length);
+    latest.splice(pos, 0, target);
+    profiles = latest;
+    var ok = writeStore(profiles);
+    render();
+    say(ok ? target.nickname + ' さんを元に戻しました。'
+           : target.nickname + ' さんを画面に戻しましたが、この端末では保存機能を使えないようです。');
+    focusListItem(pos);
+  });
+
+  /* 保存済みの内容があるときは、保存する設定であることを画面にも表す */
+  if (profiles.length > 0) { elConsent.checked = true; }
+  elConsent.addEventListener('change', function () {
+    if (!elConsent.checked && profiles.length > 0) {
+      say('これから先を保存しない設定にしました。保存済みの内容は「削除」または「すべて削除」で消せます。');
+    }
+  });
+
+  /* 別のタブで保存内容が変わったら、この画面にも反映する */
+  window.addEventListener('storage', function (e) {
+    if (e.key !== null && e.key !== STORE_KEY) { return; }
+    /* 別タブの変更後は把握している内容と食い違うため、取り消しは無効にする */
+    clearUndo();
+    profiles = loadProfiles(false);
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
