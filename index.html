@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>占いアプリ常設AIループ — サイクル報告</title>
+<style>
+  :root{
+    --bg:#12172a; --panel:#1b2240; --line:#2c3660;
+    --fg:#e9ebf5; --sub:#a5adc8;
+    --ai:#7b8ec9; --kin:#d8b45f; --ok:#6fbf8b; --ng:#d97a7a;
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--fg);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;
+    font-size:14px;line-height:1.75;
+  }
+  .page{max-width:1000px;margin:0 auto;padding:24px 18px 64px;}
+  header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px;}
+  h1{font-size:21px;margin:0 0 6px;}
+  .meta{color:var(--sub);font-size:13px;}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--ai);color:var(--ai);margin-left:8px;}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px;}
+  h2{font-size:15px;margin:0 0 10px;color:var(--ai);display:flex;gap:8px;align-items:baseline;}
+  h2 .no{color:var(--kin);font-size:12px;font-variant-numeric:tabular-nums;flex:none;}
+  ul{margin:0;padding-left:1.2em;}
+  li{margin:0 0 4px;}
+  p{margin:0 0 8px;}
+  .sub{color:var(--sub);font-size:13px;}
+  .tblwrap{overflow-x:auto;}
+  table{border-collapse:collapse;width:100%;min-width:420px;font-size:13px;}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#232c52;color:var(--sub);font-weight:600;}
+  .ok{color:var(--ok);} .ng{color:var(--ng);} .kin{color:var(--kin);}
+  a{color:var(--ai);}
+  .card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:0 0 10px;background:#161d38;}
+  .card h3{font-size:14px;margin:0 0 6px;}
+  .grid{display:flex;flex-wrap:wrap;gap:10px;}
+  .grid .card{flex:1 1 260px;margin:0;}
+  .tag{font-size:11px;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--sub);}
+  .tag.adopted{border-color:var(--kin);color:var(--kin);}
+  .mono{font-family:Consolas,"Courier New",monospace;font-size:12px;background:#0e1327;border:1px solid var(--line);border-radius:6px;padding:2px 6px;}
+  .err{color:var(--ng);}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></h1>
+    <div class="meta" id="hdr-meta">読み込み中…</div>
+  </header>
+  <div id="body"></div>
+  <p class="sub" id="fallback"></p>
+</div>
+
+<script src="data/cycle.js"></script>
+<script>
+(function () {
+  'use strict';
+  var d = window.DASHBOARD_DATA;
+  if (!d) {
+    document.getElementById('fallback').innerHTML =
+      '<span class="err">data/cycle.js を読み込めませんでした。' +
+      '<span class="mono">node dashboard/build.js</span> を実行してください。</span>';
+    return;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function list(items, fn) {
+    if (!items || !items.length) { return '<p class="sub">該当なし</p>'; }
+    return '<ul>' + items.map(fn || function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  }
+  function table(headers, rows) {
+    return '<div class="tblwrap"><table><thead><tr>' +
+      headers.map(function (h) { return '<th>' + esc(h) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  document.getElementById('hdr-status').textContent = d.status || '—';
+  document.getElementById('hdr-meta').textContent =
+    d.cycle_id + ' / ' + d.cycle_label + ' — 生成 ' + d.generated_at;
+
+  var sections = [];
+  function add(title, html) { sections.push({ title: title, html: html }); }
+
+  /* 1 */ add('全体状況', '<p>' + esc(d.overall.phase) + '</p><p class="sub">' + esc(d.overall.progress_note) + '</p>' +
+    table(['開発順序の進捗', '試作品の起動', '無人運転(質問ゼロ)'],
+      [[esc(d.overall.cycles_done) + ' / ' + esc(d.overall.cycles_total) + ' サイクル完了',
+        d.overall.app_runs ? '<span class="ok">起動する(実測)</span>' : '<span class="ng">未確認</span>',
+        d.overall.unattended_ok ? '<span class="ok">確認画面ゼロ</span>' : '<span class="ng">停止あり</span>']]));
+
+  /* 2 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+
+  /* 3 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
+    d.acceptance.map(function (a) {
+      return [esc(a.text),
+        a.verified ? '<span class="ok">検証済</span>' : '<span class="ng">未確認</span>',
+        esc(a.how)];
+    })));
+
+  /* 4 */ add('各案の成果', '<div class="grid">' + d.plans.map(function (p) {
+    return '<div class="card"><h3>' + esc(p.name) + '</h3>' +
+      '<p class="sub">' + esc(p.result) + '</p>' +
+      '<span class="tag' + (p.adopted ? ' adopted' : '') + '">' + (p.adopted ? '採用' : '不採用') + '</span></div>';
+  }).join('') + '</div>');
+
+  /* 5 */ add('プレゼン30秒(各案)', d.plans.map(function (p) {
+    return '<div class="card"><h3>' + esc(p.name) + '</h3><p>' + esc(p.pitch30s) + '</p></div>';
+  }).join(''));
+
+  /* 6 */ add('比較表', table(d.comparison.headers, d.comparison.rows.map(function (r) {
+    return r.map(esc);
+  })));
+
+  /* 7 */ add('採用理由', '<p>' + esc(d.adopted_reason) + '</p>');
+  /* 8 */ add('不採用理由', '<p>' + esc(d.rejected_reason) + '</p>');
+  /* 9 */ add('改善点(今回の差分)', list(d.improvements));
+
+  /* 10 */ add('成果物リンク', list(d.artifacts, function (a) {
+    return '<li><a href="' + esc(a.href) + '">' + esc(a.label) + '</a></li>';
+  }));
+
+  /* 11 */ add('テスト結果', '<p><span class="mono">' + esc(d.tests.command) + '</span> ' +
+    (d.tests.executed ? '<span class="ok">実行済(' + esc(d.tests.executed_at) + ')</span>' : '<span class="ng">未実行</span>') +
+    ' — 合格 <b class="ok">' + esc(d.tests.passed) + '</b> / 失敗 <b class="' + (d.tests.failed ? 'ng' : 'ok') + '">' +
+    esc(d.tests.failed) + '</b>(' + esc(d.tests.duration) + ')</p>' +
+    table(['ケース', '結果'], d.tests.cases.map(function (c) {
+      return [esc(c.name), c.result === 'pass' ? '<span class="ok">合格</span>' : '<span class="ng">失敗</span>'];
+    })));
+
+  /* 12 */ add('失敗事項', list(d.failures));
+  /* 13 */ add('未確認事項(正直な記録)', list(d.unverified));
+
+  /* 14 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
+    d.denied_actions.map(function (x) { return [esc(x.time), '<span class="mono">' + esc(x.action) + '</span>', esc(x.reason), esc(x.next)]; })));
+
+  /* 15 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
+    [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
+    '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
+
+  /* 16 */ add('次回計画', list(d.next_plan));
+  /* 17 */ add('あなたが判断すべき事項(人間判断待ち)', list(d.human_decisions));
+
+  /* 18 */ add('停止・復旧履歴', table(['日時', '事象', '詳細'],
+    d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
+
+  /* 19 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
+    d.spec_compliance.map(function (s) {
+      var cls = s.state === '適合' ? 'ok' : (s.state === '未実装' ? 'ng' : 'kin');
+      return [esc(s.item), '<span class="' + cls + '">' + esc(s.state) + '</span>', esc(s.note)];
+    })));
+
+  /* 20 */ add('キュー状況(バックログ)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
+    ' / 進行中 ' + esc(d.queue_summary.in_progress) +
+    ' / 完了 ' + esc(d.queue_summary.done) +
+    ' / 保留 ' + esc(d.queue_summary.blocked) + '</p>' +
+    table(['ID', 'タスク', '状態'], d.queue_summary.items.map(function (t) {
+      var cls = t.status === 'done' ? 'ok' : (t.status === 'in_progress' ? 'kin' : 'sub');
+      return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>'];
+    })));
+
+  document.getElementById('body').innerHTML = sections.map(function (s, i) {
+    return '<section><h2><span class="no">' + (i + 1) + '</span>' + esc(s.title) + '</h2>' + s.html + '</section>';
+  }).join('');
+})();
+</script>
+</body>
+</html>
