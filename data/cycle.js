@@ -1,13 +1,13 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0008",
-  "cycle_label": "オーナーコメント#3・#4・#5 対応:アプリ本体の仮公開/オーナー認証/コメント欄の送信後クリア",
-  "generated_at": "2026-08-02T15:15:40+09:00",
+  "cycle_id": "cycle-0009",
+  "cycle_label": "R3検証で実バグ発見:supervisor が旧版スクリプトを使い続ける問題(R4)を修正(反映には supervisor 再起動が必要)",
+  "generated_at": "2026-08-02T16:29:26+09:00",
   "status": "IN_PROGRESS",
 
   "overall": {
-    "phase": "オーナーコメント対応(最優先)を3件完了 → 次は C7 仕上げ",
-    "progress_note": "オーナー指示3件に対応した。#3:アプリ本体を報告書と同じ仕組み(GitHub Pages)で閲覧用に仮公開する準備を完了(公開は次回 supervisor 実行時。スマホ用URLは下記リンク)。#4:オーナーのアカウント(fukuoka-shibuya)の投稿だけを指示として扱い、第三者の投稿は実行せず記録のみとする認証をコメント取得処理に組み込んだ(既存5件は全て本人と確認してから実行)。#5:コメント欄は送信画面が開いたら空に戻り、開き直し・更新時は常にまっさらになるよう変更(下書き自動保存は指示により廃止)。",
+    "phase": "R3(公開・認証の実行時検証)→ 実バグ R4 を発見し修正 → supervisor 再起動待ち",
+    "progress_note": "前サイクルで準備したアプリ本体の公開とオーナー認証が実際に動いたかを検証したところ、公開URLは 404 で、コメント取得も旧版の挙動のままだった。原因を調べた結果、常駐している監督プログラム(supervisor)が Python の仕組み上、起動時に読み込んだ古いスクリプトを使い続けており、サイクル中に更新した新しいスクリプト(アプリ公開・オーナー認証)が一度も実行されていないことを特定した。毎回最新のスクリプトを読み直すよう修正済み(R4)。ただしこの修正自体も、今動いている supervisor を再起動するまで反映されないため、オーナーに再起動をお願いしたい(下記「人間判断待ち」参照)。再起動後の次サイクルで公開URL・認証の実動を確認する(R3 継続)。",
     "cycles_done": 6,
     "cycles_total": 7,
     "app_runs": true,
@@ -15,133 +15,131 @@ window.DASHBOARD_DATA = {
   },
 
   "task": {
-    "id": "OC3+OC4+OC5",
-    "title": "オーナーコメント#3(アプリ本体の仮公開・承認済み)/#4(オーナー本人のコメントのみ指示扱い)/#5(送信後に入力欄を空へ)",
-    "why": "CLAUDE.md の優先順位で status:new のオーナーコメントは何よりも優先するため。#4 は他コメントの正当性判定に関わるため最初に実装し、#3・#5 は投稿者がオーナー本人であることを確認してから実行した。"
+    "id": "R4(R3 の検証中に発見)",
+    "title": "supervisor 常駐プロセスが旧版の fetch_comments.py / publish_dashboard.py / notifier.py を使い続けるバグの修正",
+    "why": "R3(OC3/OC4 の実行時検証)に着手したところ、公開URLが 404・16:17 のコメント取得が旧版の挙動であることを実測。オーナー指示 #3(アプリ公開)と #4(オーナー認証)が実際には機能していない状態であり、CLAUDE.md の優先順位で『未解決バグ』は開発順序より先のため、本サイクルの課題をこのバグ修正に確定した。"
   },
 
   "acceptance": [
-    { "text": "(#4)コメント取得処理が投稿者を記録し、オーナー(fukuoka-shibuya)以外の投稿を指示として扱わない(third_party として記録のみ)", "verified": true, "how": "supervisor/fetch_comments.py に実装(大文字小文字を無視して比較・done は不可侵・閉じた Issue も含め queue 全体を最終確認)。コードレビュー(批評・安全監査AI)で穴2件を検出し同サイクル内で修正。実行検証は python 権限拒否のため次回 supervisor 実行後に確認(未確認)" },
-    { "text": "(#4)今回実行した #3・#5 の投稿者がオーナー本人である", "verified": true, "how": "GitHub 公開読み取りAPIで全5件の投稿者が fukuoka-shibuya であることを確認してから対応した" },
-    { "text": "(#3)アプリ本体が報告書と同じ仕組み(GitHub Pages・無料)の公開対象に入っている", "verified": true, "how": "publish_dashboard.py の公開対象に app/index.html と app/engine/*.js を追加。公開対象リストのソース走査テストで確認(実際の公開と公開ページの表示は次回 supervisor 実行後=未確認)" },
-    { "text": "(#3)公開前の個人情報チェックがアプリ側にも適用される", "verified": true, "how": "_pii_check は全公開ファイルに適用される仕組み(コードで確認)。さらに全公開予定ファイルの PII 事前走査テストを追加し合格" },
-    { "text": "(#3)スマホ用URLが報告書に載っている", "verified": true, "how": "dashboard ヘッダーに https://fukuoka-shibuya.github.io/uranai-dashboard/app/ への常設リンクを追加し、表示テストで確認" },
-    { "text": "(#5)送信画面が開いたら入力欄が空に戻る", "verified": true, "how": "実ポップアップ(スタブなし)のテストで、開いた直後に欄が空になることを両幅で確認" },
-    { "text": "(#5)ページを開き直し・更新すると前回の文章が残らずまっさらになる", "verified": true, "how": "入力→リロードで空になること、旧版が端末に残した下書きも復元されず掃除されることをテストで確認" },
-    { "text": "既存機能の維持:空送信の抑止・ブロック時の代替リンク・長文の切り詰め・localStorage不可環境の継続動作", "verified": true, "how": "npx playwright test tests/dashboard.spec.js で 26 passed / 6 skipped(意図的)/ 0 failed を実測" }
+    { "text": "公開URLが 404 である原因が特定・記録されている", "verified": true, "how": "WebFetch で https://…/app/ が 404 を実測。16:17 の fetch が書いた note が旧文面・ログ書式が旧版(第三者件数なし)であること、現行 supervisor が 13:32:46 起動(watchdog 再起動)で cycle-0008 のスクリプト更新(15:00頃)より前に旧モジュールを import 済みであることから、import キャッシュが原因と特定(タイムライン完全一致)" },
+    { "text": "supervisor.py が毎サイクル最新のスクリプトを読み直す(importlib.reload)", "verified": true, "how": "publish_pages / fetch_owner_comments / notify の3か所に importlib.reload を追加(コードレビューで確認。python 実行は権限拒否のため実行検証は再起動後=R3)。reload 失敗(更新版の文法エラー等)は既存の try/except が受けてループ継続することもレビューで確認" },
+    { "text": "批評・安全監査AIのレビューに合格している", "verified": true, "how": "判定『合格・重大0/中1/軽微2』。中1件(notifier.py の同種 reload 漏れ)と軽微1件(sys.path の重複挿入蓄積)を同サイクル内で修正。軽微1件(初回 import 直後の reload で2回実行=現状副作用ゼロで実害なし)は記録のみ" },
+    { "text": "publish.log から『app を含む公開』が検証可能になっている", "verified": true, "how": "publish_dashboard.py の成功ログを『公開成功: cycle-XXXX(公開6ファイル: index.html, data/cycle.js, app/index.html, …)』形式に改善(R3 の合格条件3を将来検証可能にするため)。実ログ出力は再起動後に確認" },
+    { "text": "supervisor 再起動の依頼が人間判断待ちに記載されている", "verified": true, "how": "本報告書の『人間判断待ち』先頭と state/project-state.json の human_decisions_pending に記載(環境・運用の判断であり好みの質問ではない)" },
+    { "text": "既存の dashboard テストが合格する", "verified": true, "how": "npx playwright test tests/dashboard.spec.js を実行。初回 24 passed / 2 failed で、失敗2件は cycle-0008 が最終盤(テスト実行後)に報告書から『試作品 app/index.html』リンクを外した回帰と特定。本報告書でリンクを復活させ再実行で全合格(下記テスト欄)" }
   ],
 
   "plans": [
     {
-      "name": "採用案(#5):開いたら空+切り詰め時のみ未送信の続きを残す",
-      "pitch30s": "送信画面が開いた瞬間に入力欄は空に戻り、ページを開き直してもまっさらです。長文で末尾が省略された場合だけ、送れなかった続きが欄に残るので、そのままもう一度送信すれば全文を届けられます。",
-      "result": "実装完了。テスト(送信後空・リロード後まっさら・続き残し・絵文字長文)で検証済み",
+      "name": "採用案:毎サイクル importlib.reload で読み直す",
+      "pitch30s": "監督プログラムは動かしたまま、公開・コメント取得・通知の各処理を呼ぶ直前に、その場でスクリプトを読み直します。今後はサイクル中にスクリプトを改良すれば次の実行から反映され、今回のような『直したのに動いていない』が再発しません。読み直しに失敗しても既存の保護で全体は止まりません。",
+      "result": "実装完了。批評・安全監査AIのレビューで合格(重大指摘なし)。実動確認は supervisor 再起動後",
       "adopted": true
     },
     {
-      "name": "不採用案(#5):送信後も全文を欄に残し、手動の消去ボタンだけ置く",
-      "pitch30s": "誤送信時に書き直せる安心感はありますが、『送信が完了したら空に戻す』『開き直したらまっさら』というオーナー指示に真っ向から反します。",
-      "result": "オーナー指示違反のため不採用",
+      "name": "不採用案:別プロセス(subprocess)として毎回起動する",
+      "pitch30s": "毎回まっさらな Python で実行するため確実に最新版が動きますが、戻り値の受け渡しを文字列経由に作り替える必要があり、変更量と壊すリスクが reload 案より大きい。",
+      "result": "効果は同等で変更リスクが大きいため不採用",
       "adopted": false
     },
     {
-      "name": "不採用案(#3):アプリを別リポジトリとして公開",
-      "pitch30s": "将来の正式公開には向きますが、『報告書と同じ仕組みで』という要件1に反し、公開リポジトリの追加設定(人間の作業)も必要になります。今回は同一リポジトリのサブフォルダ公開が最短です。",
-      "result": "要件1(同じ仕組み)に合わないため今回は不採用。正式公開時の構成整理として backlog P1 に登録",
+      "name": "不採用案:supervisor.py 自身の更新を検知して自動再起動する",
+      "pitch30s": "supervisor.py 本体の更新も反映できる利点はありますが、自分を終了して watchdog に再起動させる動きは失敗時に無人運転全体が止まる危険があり、滅多に更新しない本体のために常用する仕組みではない。",
+      "result": "リスクが利点を上回るため不採用(本体更新時は人間への再起動依頼で足りる)",
       "adopted": false
     }
   ],
 
   "comparison": {
-    "headers": ["観点", "採用:開いたら空+続き残し", "全文を残す+手動消去", "別リポジトリ公開(#3)"],
+    "headers": ["観点", "採用:毎回 reload", "毎回 subprocess", "自動再起動"],
     "rows": [
-      ["オーナー指示への適合", "適合(#5 の両要件を満たす)", "違反(空に戻らない)", "違反(同じ仕組みでない)"],
-      ["長文送信時の安全", "未送信の続きだけ残り重複しない", "全文残るが送信済み分と重複しやすい", "—"],
-      ["追加の人間作業", "不要", "不要", "リポジトリ新設・Pages設定が必要"],
-      ["誤操作時の復元", "開いた画面に全文が入力済みのため喪失しない", "欄にも残る", "—"]
+      ["更新の反映", "モジュール3本は毎サイクル反映(supervisor.py 本体のみ再起動が必要)", "同左", "本体も反映"],
+      ["変更量・壊すリスク", "各3行・最小", "呼び出し部の作り替えが必要", "終了・再起動の失敗で全停止の危険"],
+      ["失敗時の挙動", "既存の try/except で捕捉しループ継続・次サイクルで自動回復", "同等の保護を新設する必要", "watchdog 頼みで最悪停止"],
+      ["今回の再発防止", "十分(今回の原因はモジュール3本のキャッシュ)", "十分", "過剰"]
     ]
   },
 
-  "adopted_reason": "#5 はオーナー指示(送信完了で空・開き直しでまっさら)を正確に満たしつつ、長文切り詰め時の内容喪失だけを防ぐ最小の例外を残す案が利用者にとって最も安全なため。#3 は要件1『報告書と同じ仕組み』に唯一適合する同一リポジトリのサブフォルダ公開を採用。",
-  "rejected_reason": "全文を残す案はオーナー指示に反する。別リポジトリ公開は要件1に反し人間側の追加設定も必要になるため(将来の正式公開時の課題として P1 に記録)。",
+  "adopted_reason": "今回の原因(fetch_comments / publish_dashboard / notifier の import キャッシュ)に対して最小の変更で確実に効き、失敗時も既存の例外処理で無人運転が守られるため。reload は更新版に文法エラーがあってもその回をスキップするだけで、ファイル修正後は自動回復する。",
+  "rejected_reason": "subprocess 案は効果が同等なのに作り替えが大きい。自動再起動案は無人運転を止め得る危険が、滅多に無い supervisor.py 本体更新への備えという利点に見合わない。",
 
   "improvements": [
-    "オーナー以外の投稿を指示として実行しない認証をコメント取得処理に追加(第三者コメントは『第三者コメントあり』として記録のみ)(改善基準②仕様違反解消・セキュリティ)",
-    "絵文字を含む長文コメントで、タイトル/本文の切り詰めが絵文字(サロゲートペア)を分断して URIError となり送信ボタンが無反応になる実バグを発見・修正(改善基準①バグ減少)",
-    "queue/owner-comments.json が破損した場合に対応済み指示がすべて未対応(new)へ戻り再実行される危険側動作を、取得中止(前回の queue 保持)へ修正(改善基準①バグ減少)",
-    "閉じられた Issue が第三者判定の再検査を受けない穴を、queue 全体の最終確認で塞いだ(改善基準①バグ減少)",
-    "コメント欄が指示どおり『送信画面が開いたら空・開き直したらまっさら』になった(改善基準②仕様違反解消=オーナー指示への適合)",
-    "アプリ本体の公開準備(公開対象追加+PII検査適用+URL掲載)が完了(改善基準⑦新機能)",
-    "新テスト5件を追加(送信後クリア・リロード後まっさら・絵文字長文・アプリリンク・公開ファイルPII走査)し全合格(改善基準⑧新テスト合格)"
+    "『オーナー指示 #3(アプリ公開)・#4(オーナー認証)が実際には一度も動いていない』という実バグの原因を特定し修正した(改善基準①バグ減少。反映は supervisor 再起動後)",
+    "notifier.py にも同じ reload 漏れがあることを批評AIが検出し同時修正(障害通知の修正が反映されない同種バグの予防)(改善基準①)",
+    "publish.log に公開ファイル一覧を記録するよう改善し、『app が本当に公開されたか』をログから検証可能にした(改善基準②仕様違反解消の検証手段)",
+    "sys.path へ同一パスが毎サイクル無限に蓄積する問題を解消(改善基準①)",
+    "cycle-0008 が最終盤に持ち込んだ報告書の回帰(『試作品 app/index.html』リンク消失でテスト2件不合格)を発見・修正(改善基準①)"
   ],
 
   "artifacts": [
-    { "label": "試作アプリ本体のスマホ用URL(次回 supervisor 公開後に有効)", "href": "https://fukuoka-shibuya.github.io/uranai-dashboard/app/" },
-    { "label": "オーナーコメント欄(本ページ末尾・#5 反映済み)", "href": "#owner-comment" },
-    { "label": "コメント対応の記録 queue/owner-comments.json(#1〜#5 すべて done)", "href": "../queue/owner-comments.json" },
-    { "label": "オーナー認証の実装 supervisor/fetch_comments.py", "href": "../supervisor/fetch_comments.py" },
-    { "label": "公開対象の追加 supervisor/publish_dashboard.py", "href": "../supervisor/publish_dashboard.py" }
+    { "label": "試作品 app/index.html(ローカル相対。アプリ本体は今回無変更)", "href": "../app/index.html" },
+    { "label": "試作アプリ本体のスマホ用URL(supervisor 再起動後の公開で有効になる予定。現在は404)", "href": "https://fukuoka-shibuya.github.io/uranai-dashboard/app/" },
+    { "label": "修正した監督プログラム supervisor/supervisor.py(毎回 reload)", "href": "../supervisor/supervisor.py" },
+    { "label": "公開ログ改善 supervisor/publish_dashboard.py", "href": "../supervisor/publish_dashboard.py" },
+    { "label": "オーナーコメント欄(本ページ末尾)", "href": "#owner-comment" }
   ],
 
   "tests": {
     "command": "npx playwright test tests/dashboard.spec.js",
     "executed": true,
-    "executed_at": "2026-08-02T15:10:00+09:00ごろ(完了直後に build.js --now で 15:13:04 を確認)",
+    "executed_at": "2026-08-02T16:30:00ごろ(1回目 16:26頃 24 passed/2 failed → 報告書修正後に再実行で全合格。時刻は build.js --now 16:24:14 起点の経過で記載)",
     "passed": 26,
     "failed": 0,
-    "duration": "1.1m",
+    "duration": "1.5m",
     "cases": [
-      { "name": "[w360/w412] コメント欄:送信で入力済み画面が開き欄が空に戻る/リロード後まっさら・旧下書き不復元", "result": "pass" },
-      { "name": "[w360/w412] コメント欄:空送信の抑止/ブロック時の代替リンクと内容保全/localStorage不可環境", "result": "pass" },
-      { "name": "[w360/w412] コメント欄:長文の切り詰めで未送信の続きだけが残る/絵文字長文でも分断されない", "result": "pass" },
-      { "name": "[w360/w412] アプリ本体へのスマホ用リンク表示(OC3)/20項目表示・横スクロールなし", "result": "pass" },
-      { "name": "[w360] 公開対象にapp追加+全公開ファイルのPII走査/外部依存ゼロ走査/時刻の自動記録(R1)4件", "result": "pass" }
+      { "name": "[w360/w412] 20項目表示・『試作品 app/index.html』リンク(cycle-0008 回帰の修正確認)", "result": "pass" },
+      { "name": "[w360/w412] 横スクロールなし・アプリ本体へのスマホ用リンク表示", "result": "pass" },
+      { "name": "[w360/w412] コメント欄:送信後クリア・リロード後まっさら・長文の続き残し・絵文字長文", "result": "pass" },
+      { "name": "[w360/w412] コメント欄:空送信抑止・ブロック時代替リンク・localStorage不可環境", "result": "pass" },
+      { "name": "[w360] 公開対象・PII走査・外部依存ゼロ走査・時刻の未来値走査(R1)", "result": "pass" }
     ],
-    "note": "アプリ本体(app/)のコードは無変更(公開対象に加えただけ)のため、節約規則に従い全スイートは再実行せず dashboard スイートのみ実行した(6 skipped は『ファイル検査は1構成で足りる』の意図的スキップ)。python の実行が権限拒否のため fetch_comments.py の実行検証は未実施(次回 supervisor 実行後に確認)。"
+    "note": "app/ のコードは無変更のため、節約規則に従い全スイートは再実行せず dashboard スイートのみ実行。supervisor の Python スクリプト(今回の修正本体)は python 実行が権限拒否のため実行検証不可で、批評・安全監査AIのコードレビューのみ。実動確認は supervisor 再起動後の R3 で行う(未確認と明記)。"
   },
 
   "failures": [
-    "テスト初版が、URL のタイトル部分に含まれる文字を本文と誤認して不合格になった(テスト側の欠陥。body パラメータから抽出する方式に修正して合格)",
-    "絵文字長文の回帰テストを追加したところ、本文だけでなくタイトルの50字切りでも絵文字分断→URIError で送信不能になることが判明(実装を修正して合格)",
-    "python(supervisor スクリプト)の実行が権限拒否のため、fetch_comments.py の動作を実行して確かめられなかった(投稿者の確認は WebFetch で代替。実行検証は次回 supervisor 実行後=backlog R3)"
+    "1回目の dashboard テストで 2件不合格(20項目表示テスト)。原因は本サイクルの変更ではなく、cycle-0008 がテスト実行(15:10)後に報告書 cycle.json を書き換えて『試作品 app/index.html』リンクを外したまま再テストしなかった回帰。本報告書でリンクを復活させ再実行で全合格。教訓:報告書(cycle.json)更新→build→テストの順を守る(cycle.json 更新後にテストを再実行する)",
+    "python(supervisor スクリプト)の実行が権限拒否のため、R4 修正の実行検証ができない(コードレビューで代替。実動確認は再起動後の R3)"
   ],
 
   "unverified": [
-    "GitHub Pages 上でのアプリ本体の実表示(公開は次回 supervisor の publish が行う。公開後にスマホ用URLを開いて確認する必要がある)",
-    "fetch_comments.py の新ロジック(author 記録・third_party 降格)の実行時動作(python 実行が権限拒否のため。次回 supervisor 実行後の owner-comments.json に author 欄が付くことで確認する)",
+    "R4 修正(importlib.reload)の実行時動作:supervisor 再起動までは今の常駐プロセスに反映されず、検証もできない",
+    "アプリ本体の GitHub Pages 実表示(現在 404。再起動後の publish で公開される見込み → R3)",
+    "fetch_comments.py の新ロジック(author 記録・第三者降格)の実行時動作(同上 → R3)",
     "実機スマートフォンでの表示・タップ操作",
-    "B2(supervisor 二重起動)の解消:本サイクル 14:45 ごろの起動は単独で、11:23 以降新たな重複記録は無いが、まだ解消と断定しない"
+    "B2(supervisor 二重起動):13:32:46 の watchdog 再起動以降は単独起動の記録のみ。引き続き観察"
   ],
 
   "denied_actions": [
-    "Bash(python supervisor/fetch_comments.py)→ 権限拒否。WebFetch(GitHub 公開読み取りAPI)で投稿者を確認し、owner-comments.json は手動更新で代替(実害なし・実行検証のみ次回へ)"
+    "PowerShell(Get-Content でログ末尾表示)→ 権限拒否(通算3回目のため以後この用途では試みない)。Bash tail と Read で代替(実害なし)",
+    "python 実行(R4 修正の検証)→ 8/2 14:53 に同種拒否記録済みのため再試行せず。批評・安全監査AIのコードレビューで代替"
   ],
 
   "usage": {
-    "wall_clock": "約30分(14:45〜15:15ごろ)",
+    "wall_clock": "約25分(16:17〜16:42ごろ)",
     "limit": "60分目安",
     "subagents_used": 1,
-    "estimate_note": "サブエージェントは批評・安全監査(読み取り専用)の1体。実装・修正・テスト実行は本体で実施。",
-    "tool_calls_approx": 30
+    "estimate_note": "サブエージェントは批評・安全監査(読み取り専用)の1体。調査・実装・テスト実行は本体で実施。",
+    "tool_calls_approx": 25
   },
 
   "next_plan": [
-    "次回 supervisor の publish 後:スマホ用URL(…/uranai-dashboard/app/)でアプリが表示されること、owner-comments.json に author 欄が付くこと(fetch_comments.py の実動作)を確認する(backlog R3)",
-    "C7 仕上げ:360/412 の表示崩れ・画面数7以内・外部依存ゼロ・禁止表現・13歳以上日本語を通しで監査し、全テストを通す",
+    "supervisor 再起動後の最初のサイクルで R3 を完了させる:(1) 公開URLの実表示、(2) owner-comments.json の note が新文面(『第三者』の記載あり)に変わる、(3) publish.log に公開ファイル一覧(app を含む)が出る、の3点を確認。再起動の有無は logs/recovery.log の 13:32:46 以降の『supervisor 起動』で判定",
+    "再起動までの間、新着コメントは旧版 fetch が取り込むため author 欄が付かない。status:new で author_is_owner が無い項目は、実行前に GitHub 公開読み取りAPIで投稿者を確認する(オーナー本人と確認できない限り実行しない)",
+    "C7 仕上げ:全画面の通し監査+全スイート実行(監査 E6/E7/E8 も反映)",
     "本日 18:24 以降のサイクルで最初の日報(reports/daily)を作成する",
-    "R2:B2 解消確認は recovery.log の重複記録の有無を数サイクル分観察して判定",
-    "監査残件:公開対象テストの文字列検査のドリフト(軽微)、fetch_comments.py のページネーション(100件超は当面実害なし)、GitHubアカウント改名時の残余リスク(記録のみ)"
+    "R2:recovery.log の観察継続(13:32 以降は単独起動の記録のみ)"
   ],
 
   "human_decisions": [
-    "【継続】B2: supervisor の二重起動。本サイクルも単独起動で新たな重複はありませんが、タスクスケジューラの登録が二重になっていないかの確認をお願いします(こちらからはプロセス一覧の取得が権限拒否で確認できません)。",
-    "【情報・対応不要】#4 の補足:GitHub はアカウント名の変更後に旧名を第三者が取得できる仕様のため、万一アカウント名を変更される場合はお知らせください(現在の認証は『fukuoka-shibuya という名前のアカウント』を本人とみなします)。"
+    "【新規・お願い】supervisor の再起動をお願いします。今動いている監督プログラムは古いスクリプトを記憶したまま動いており、アプリ公開(#3)とオーナー認証(#4)、および今回の修正(R4)が反映されません。方法はどちらでも可:(a) PC を再起動する/(b) タスクマネージャーで pythonw.exe を終了する(watchdog が数分内に自動で起動し直します。両方終了しても、タスクスケジューラの次回起動で復帰します)。再起動後のサイクルで反映を自動確認します。",
+    "【継続】B2: supervisor の二重起動。13:32 の watchdog 再起動以降は単独起動の記録のみですが、タスクスケジューラの二重登録の確認は引き続きお願いします(上記の再起動時に併せて確認いただけると B2 も閉じられます)。",
+    "【情報・対応不要】#4 の補足:GitHub はアカウント名変更後に旧名を第三者が取得できる仕様のため、アカウント名を変更される場合は事前にお知らせください。"
   ],
 
   "recovery_history": [
-    { "time": "2026-08-02T11:23:36 / 11:23:57", "event": "supervisor 起動2回(21秒差)", "detail": "B2 の実害(cycle-0006 で復旧済み)。以後は単独起動が継続。" },
-    { "time": "2026-08-02T13:32:46", "event": "watchdog が supervisor を再起動(単独起動)", "detail": "cycle-0007 の開始。重複なし。" },
-    { "time": "2026-08-02T14:45ごろ", "event": "本サイクル開始(単独起動)", "detail": "新たな重複記録なし。" }
+    { "time": "2026-08-02T13:32:46", "event": "watchdog が supervisor を再起動(heartbeat 108分無更新のため)", "detail": "この時点の supervisor が現在も常駐。cycle-0008 のスクリプト更新(15:00頃)より前の起動のため、旧モジュールを保持している(=R4 の原因)。" },
+    { "time": "2026-08-02T15:17:28", "event": "publish 成功(ただし旧版=dashboard 2ファイルのみ)", "detail": "app は公開されず 404(本サイクルで実測・原因特定)。" },
+    { "time": "2026-08-02T16:17:29", "event": "本サイクル開始(単独起動・重複なし)", "detail": "コメント取得は旧版の挙動(note 旧文面)。新着コメントは 0 件。" }
   ],
 
   "spec_compliance": [
@@ -151,42 +149,34 @@ window.DASHBOARD_DATA = {
     { "item": "起動イラストはCSS図形・点滅禁止", "state": "適合", "note": "維持" },
     { "item": "入力は4項目のみ(本名・出生時刻・出生地を要求しない)", "state": "適合", "note": "維持" },
     { "item": "色:個別 #7b8ec9 / 総合 #d8b45f / 基調 夜明け前の藍", "state": "適合", "note": "維持" },
-    { "item": "外部画像・CDN・フォント・API 禁止(dashboard は外部fetchも禁止・リンクとwindow.openのみ可)", "state": "適合", "note": "今回の変更もリンクと window.open のみ。ソース走査テストで恒常検査" },
-    { "item": "データは端末内のみ・保存は選んだ時だけ", "state": "適合", "note": "コメント下書きの自動保存は #5 指示で廃止(保存されるデータがさらに減少)" },
+    { "item": "外部画像・CDN・フォント・API 禁止(dashboard は外部fetchも禁止)", "state": "適合", "note": "今回の変更は supervisor の Python と報告書のみ。外部送信の追加なし(批評AIも確認)" },
+    { "item": "データは端末内のみ・保存は選んだ時だけ", "state": "適合", "note": "維持" },
     { "item": "プロフィール最大5件・1件削除/全削除可", "state": "適合", "note": "維持" },
-    { "item": "占術計算は決定論的・仮/正式を分離", "state": "適合", "note": "維持(エンジン無変更。公開対象に加えただけ)" },
+    { "item": "占術計算は決定論的・仮/正式を分離", "state": "適合", "note": "維持" },
     { "item": "非断定表現・恐怖/依存誘発の禁止", "state": "適合", "note": "維持(アプリ文言無変更)" },
     { "item": "画面数7以内・横スクロール禁止", "state": "適合", "note": "dashboard も両幅で横スクロールなしをテストで確認" },
-    { "item": "公開はオーナー承認の範囲のみ(dashboard 2ファイル+app 4ファイル)・個人情報は公開前検査", "state": "適合", "note": "app の公開は Issue #3 でオーナー承認済み。全公開ファイルの PII 事前走査テストを追加" }
+    { "item": "公開はオーナー承認の範囲のみ(dashboard 2+app 4)・個人情報は公開前検査", "state": "適合", "note": "公開対象の拡大なし(批評AIが PUBLISH_FILES と承認済み6ファイルの完全一致を確認)。オーナー認証は実行未反映の状態が判明したため、反映まで新着コメントはAI側でAPI確認する運用を明記" }
   ],
 
   "queue_summary": {
     "todo": 6,
     "in_progress": 0,
-    "done": 14,
+    "done": 15,
     "blocked": 1,
     "items": [
-      { "id": "B2", "title": "supervisor 二重起動 — 単独起動が継続中。数サイクル観察して判定", "status": "blocked" },
-      { "id": "R3", "title": "OC3/OC4 の実行時検証(公開URLの実表示・author 記録の実動作)— 次回最優先候補", "status": "todo" },
-      { "id": "OC3", "title": "オーナーコメント#3(アプリ本体の仮公開)— 公開準備完了・次回publish後にURL確認(今回完了)", "status": "done" },
-      { "id": "OC4", "title": "オーナーコメント#4(オーナー本人のコメントのみ指示扱い)— 認証実装(今回完了)", "status": "done" },
-      { "id": "OC5", "title": "オーナーコメント#5(送信後に入力欄を空へ)— 下書き廃止・送信後クリア(今回完了)", "status": "done" },
-      { "id": "OC1", "title": "オーナーコメント#1(テスト投稿)", "status": "done" },
-      { "id": "OC2", "title": "オーナーコメント#2(コメント送信の改善)", "status": "done" },
-      { "id": "C1", "title": "骨格(起動イラスト+入力+プルダウン+総合領域)", "status": "done" },
-      { "id": "C2", "title": "入力の保存と管理(localStorage・最大5件)", "status": "done" },
-      { "id": "C3", "title": "中核5占術の仮計算エンジン(決定論的)", "status": "done" },
-      { "id": "C4", "title": "個別結果画面と文章(非断定・仮データ明示)", "status": "done" },
-      { "id": "C5", "title": "解放フロー(2件読了→仮広告1回→総合解放)", "status": "done" },
-      { "id": "C6", "title": "総合占い(金色)の統合本文をエンジン生成化", "status": "done" },
-      { "id": "R1", "title": "報告書の生成時刻をシステム実時計から自動記録", "status": "done" },
-      { "id": "A2", "title": "localStorage が使えない環境の自動テスト", "status": "done" },
-      { "id": "A3", "title": "5件保存時の復元順序の自動テスト", "status": "done" },
+      { "id": "R3", "title": "OC3/OC4 の実行時検証 — 404と原因を確認済み。supervisor 再起動後に完了させる(次回最優先候補)", "status": "todo" },
+      { "id": "R4", "title": "supervisor が旧版スクリプトを使い続けるバグの修正(今回完了・実動確認は再起動後)", "status": "done" },
+      { "id": "B2", "title": "supervisor 二重起動 — 13:32 以降は単独起動の記録のみ。観察継続", "status": "blocked" },
       { "id": "C7", "title": "仕上げ(表示崩れ・安全監査・テスト網羅)", "status": "todo" },
       { "id": "P1", "title": "将来の正式なアプリ公開に向けた構成整理(#3 要件4)", "status": "todo" },
       { "id": "R2", "title": "B2(二重起動)の解消確認と表示訂正 — 観察継続", "status": "todo" },
       { "id": "R1b", "title": "executed_at 等の時刻欄も機械記録に寄せる", "status": "todo" },
-      { "id": "A1", "title": "1件削除に取り消し手段を用意する", "status": "todo" }
+      { "id": "A1", "title": "1件削除に取り消し手段を用意する", "status": "todo" },
+      { "id": "OC1〜OC5", "title": "オーナーコメント#1〜#5(全件 done。新着なし)", "status": "done" },
+      { "id": "C1〜C6", "title": "開発順序サイクル1〜6(骨格・保存・エンジン・結果画面・解放フロー・総合占い)", "status": "done" },
+      { "id": "R1", "title": "報告書の生成時刻をシステム実時計から自動記録", "status": "done" },
+      { "id": "A2", "title": "localStorage が使えない環境の自動テスト", "status": "done" },
+      { "id": "A3", "title": "5件保存時の復元順序の自動テスト", "status": "done" }
     ]
   }
 };
