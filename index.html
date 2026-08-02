@@ -65,6 +65,8 @@
   <header>
     <h1>占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></h1>
     <div class="meta" id="hdr-meta">読み込み中…</div>
+    <div class="meta">試作アプリ本体(スマホでそのまま開けます・閲覧用の仮公開):
+      <a id="app-link" href="https://fukuoka-shibuya.github.io/uranai-dashboard/app/" rel="noopener">fukuoka-shibuya.github.io/uranai-dashboard/app/</a></div>
   </header>
   <div id="body"></div>
   <p class="sub" id="fallback"></p>
@@ -77,7 +79,7 @@
     <button id="comment-send" type="button">送信する(仕上げはGitHubで緑のボタンを1回)</button>
     <p class="sub">文章はこのページ内で書けます。ボタンを押すと、書いた内容が<b>入力済み</b>のGitHub投稿画面が開くので、
        緑色の「Submit new issue」を1回押すだけで送信完了です(GitHubにログインしていない場合は先にログイン画面が表示されます。書いた内容は引き継がれます)。
-       <span id="draft-promise">書きかけの内容はこの端末内に自動保存され、ページを閉じても消えません。</span>
+       送信画面が開くと入力欄は空に戻ります。書きかけの内容は自動保存されません(ページを閉じたり更新すると消えます)。
        <a href="https://github.com/fukuoka-shibuya/uranai-dashboard/issues" rel="noopener">過去のコメント一覧を見る</a></p>
     <p class="sub">※ページ内だけで送信まで完結する方式は、無料の静的ページでは投稿用の鍵を誰でも見える場所に置く必要があり、
        第三者に悪用されるため採用していません。現在の方式が無料で安全に実現できる最短の手順です。</p>
@@ -89,48 +91,12 @@
 (function () {
   'use strict';
   var REPO = 'https://github.com/fukuoka-shibuya/uranai-dashboard';
-  var DRAFT_KEY = 'uranai.dashboard.commentDraft.v1';
   var ta = document.getElementById('comment-text');
   var note = document.getElementById('comment-note');
 
-  /* 書きかけの下書きはこの端末内(localStorage)にだけ保存する。外部送信はしない。
-     プライベートモード等で保存できない環境では、下書き機能なしで動き続ける。 */
-  var storageOk = false;
-  try {
-    localStorage.setItem(DRAFT_KEY + '.probe', '1');
-    localStorage.removeItem(DRAFT_KEY + '.probe');
-    storageOk = true;
-  } catch (e) {}
-
-  if (!storageOk) {
-    var promise = document.getElementById('draft-promise');
-    if (promise) {
-      promise.textContent = 'この環境では下書きの自動保存は使えません(送信前にページを閉じると内容が消えます)。';
-    }
-  }
-
-  try {
-    var draft = localStorage.getItem(DRAFT_KEY);
-    if (draft) {
-      ta.value = draft;
-      note.textContent = '前回の書きかけを復元しました(送信済みでしたら消してください)。';
-      var clearBtn = document.createElement('button');
-      clearBtn.type = 'button';
-      clearBtn.id = 'comment-draft-clear';
-      clearBtn.className = 'mini';
-      clearBtn.textContent = '下書きを消す';
-      clearBtn.addEventListener('click', function () {
-        ta.value = '';
-        try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
-        note.textContent = '下書きを消しました。';
-      });
-      note.appendChild(clearBtn);
-    }
-  } catch (e) {}
-
-  ta.addEventListener('input', function () {
-    try { localStorage.setItem(DRAFT_KEY, ta.value); } catch (e) {}
-  });
+  /* 下書きの自動保存は廃止(Issue #5:開き直し・更新時はまっさらな状態にする)。
+     旧版が端末に残した下書きは読み込まず、掃除だけする。外部送信はしない。 */
+  try { localStorage.removeItem('uranai.dashboard.commentDraft.v1'); } catch (e) {}
 
   document.getElementById('comment-send').addEventListener('click', function () {
     var text = ta.value.trim();
@@ -140,33 +106,42 @@
     }
     var d = window.DASHBOARD_DATA;
     var title = 'コメント: ' + text.split('\n')[0].slice(0, 50);
-    var body = text + (d && d.cycle_id ? '\n\n(閲覧していた報告書: ' + d.cycle_id + ')' : '');
+    /* タイトルの50字切りも絵文字(サロゲートペア)の途中に当たり得る。本文と同じく1単位余分に削る。 */
+    if (/[\uD800-\uDBFF]$/.test(title)) title = title.slice(0, -1);
+    var suffix = (d && d.cycle_id ? '\n\n(閲覧していた報告書: ' + d.cycle_id + ')' : '');
+    var omitNote = '\n\n(文字数の上限により末尾を省略しています。続きは欄に残した部分から送ってください)';
 
-    /* GitHub が受け付けるURL長(約8KB)に収まるよう、エンコード後の長さで切り詰める。
-       切り詰めても全文はこの欄と下書きに残る。 */
+    /* GitHub が受け付けるURL長(約8KB)に収まるよう、エンコード後の長さで本文を切り詰める。
+       送れなかった続きは送信後も欄に残す(送れた分だけ欄から消す)。 */
     var MAX_ENCODED = 6000;
+    var sentText = text;
     var truncated = false;
-    while (body && encodeURIComponent(body).length > MAX_ENCODED) {
-      body = body.slice(0, -200);
+    while (sentText && encodeURIComponent(sentText + (truncated ? omitNote : '') + suffix).length > MAX_ENCODED) {
+      sentText = sentText.slice(0, -200);
+      /* 絵文字等(サロゲートペア)の途中で切ると encodeURIComponent が例外を投げるため、
+         末尾が上位サロゲート単体なら1単位余分に削る。 */
+      if (/[\uD800-\uDBFF]$/.test(sentText)) sentText = sentText.slice(0, -1);
       truncated = true;
     }
-    if (truncated) {
-      body += '\n\n(文字数の上限により末尾を省略しています。続きは次のコメントで送ってください)';
-    }
+    var body = sentText + (truncated ? omitNote : '') + suffix;
 
     var url = REPO + '/issues/new?title=' + encodeURIComponent(title) +
       '&body=' + encodeURIComponent(body);
 
     /* 第3引数に 'noopener' を渡すと成功時も null が返りブロックと区別できないため、
-       開いた後に opener を切って同等の安全性を保つ。下書きは送信成立を検知できないので消さない。 */
+       開いた後に opener を切って同等の安全性を保つ。 */
     var opened = window.open(url, '_blank');
     if (opened) {
       try { opened.opener = null; } catch (e) {}
+      /* 送信画面が開いたら入力欄は空に戻す(Issue #5)。切り詰めた場合は未送信の続きだけを残す。 */
+      ta.value = truncated ? text.slice(sentText.length) : '';
       note.textContent = '投稿画面を開きました(内容は入力済みです)。緑色の「Submit new issue」を1回押すと送信完了です。'
-        + (truncated ? ' 長文のため末尾を省略して引き継ぎました。' : '');
+        + (truncated ? ' 長文のため末尾を省略しました。省略された続きは欄に残っています。' : '');
     } else {
-      /* ポップアップブロック時は「開きました」と偽らず、代替リンクを出す。 */
-      note.textContent = 'ポップアップがブロックされたため開けませんでした。こちらからどうぞ: ';
+      /* ポップアップブロック時は「開きました」と偽らず、代替リンクを出す(未送信のため欄は消さない)。 */
+      note.textContent = 'ポップアップがブロックされたため開けませんでした。'
+        + (truncated ? '(長文のため末尾を省略した内容が開きます。全文は欄に残っています)' : '')
+        + 'こちらからどうぞ: ';
       var a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
