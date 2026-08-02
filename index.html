@@ -42,6 +42,18 @@
   .tag.adopted{border-color:var(--kin);color:var(--kin);}
   .mono{font-family:Consolas,"Courier New",monospace;font-size:12px;background:#0e1327;border:1px solid var(--line);border-radius:6px;padding:2px 6px;}
   .err{color:var(--ng);}
+  #owner-comment h2{color:var(--kin);}
+  #owner-comment textarea{
+    width:100%;max-width:100%;min-height:110px;resize:vertical;
+    background:#0e1327;color:var(--fg);border:1px solid var(--line);border-radius:8px;
+    padding:10px;font:inherit;
+  }
+  #owner-comment button{
+    display:block;width:100%;margin-top:10px;padding:12px;cursor:pointer;
+    background:transparent;color:var(--kin);border:1px solid var(--kin);border-radius:8px;
+    font:inherit;font-weight:600;
+  }
+  #owner-comment button:active{background:#2a2a1e;}
 </style>
 </head>
 <body>
@@ -52,7 +64,40 @@
   </header>
   <div id="body"></div>
   <p class="sub" id="fallback"></p>
+
+  <section id="owner-comment">
+    <h2>オーナーコメント欄(要望・感想・修正指示)</h2>
+    <p class="sub">ここに書いて送信すると、次のサイクルでAIが自動で読み取り、タスクに反映します。
+       送信内容は公開リポジトリのIssueとして<b>誰でも見られる場所</b>に保存されます。個人情報(氏名・住所・連絡先など)は書かないでください。</p>
+    <textarea id="comment-text" placeholder="例:総合占いは別画面にしてほしい/起動アニメはもう少し短く など"></textarea>
+    <button id="comment-send" type="button">GitHubの投稿画面を開いて送信する</button>
+    <p class="sub">ボタンを押すとGitHubの投稿画面が開きます(初回はログインが必要)。内容を確かめて緑色の「Submit new issue」を押した時点で送信完了です。
+       <a href="https://github.com/fukuoka-shibuya/uranai-dashboard/issues" rel="noopener">過去のコメント一覧を見る</a></p>
+    <p class="sub" id="comment-note"></p>
+  </section>
 </div>
+
+<script>
+(function () {
+  'use strict';
+  var REPO = 'https://github.com/fukuoka-shibuya/uranai-dashboard';
+  document.getElementById('comment-send').addEventListener('click', function () {
+    var text = document.getElementById('comment-text').value.trim();
+    var note = document.getElementById('comment-note');
+    if (!text) {
+      note.textContent = 'コメントが空です。内容を書いてから送信してください。';
+      return;
+    }
+    var d = window.DASHBOARD_DATA;
+    var title = 'コメント: ' + text.split('\n')[0].slice(0, 50);
+    var body = text + (d && d.cycle_id ? '\n\n(閲覧していた報告書: ' + d.cycle_id + ')' : '');
+    var url = REPO + '/issues/new?title=' + encodeURIComponent(title) +
+      '&body=' + encodeURIComponent(body.slice(0, 4000));
+    note.textContent = 'GitHubの投稿画面を開きました。「Submit new issue」を押すと送信完了です。';
+    window.open(url, '_blank', 'noopener');
+  });
+})();
+</script>
 
 <script src="data/cycle.js"></script>
 <script>
