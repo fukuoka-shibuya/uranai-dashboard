@@ -309,7 +309,17 @@
     esc(d.tests.failed) + '</b>(' + esc(d.tests.duration) + ')</p>' +
     table(['ケース', '結果'], d.tests.cases.map(function (c) {
       return [esc(c.name), c.result === 'pass' ? '<span class="ok">合格</span>' : '<span class="ng">失敗</span>'];
-    })));
+    })) +
+    /* R1b: 実行時刻はツール(tools/run-tests.js)がシステム実時計で自動記録し、
+       build.js がその記録をここへ写す。手入力の時刻ではない。 */
+    ((d.tests.recorded_runs && d.tests.recorded_runs.length)
+      ? '<p style="margin-top:8px"><b class="sub">テスト実行の自動記録(実時計・直近' + d.tests.recorded_runs.length + '回)</b></p>' +
+        table(['開始', '終了', 'コマンド', '結果'], d.tests.recorded_runs.map(function (r) {
+          return [esc(r.started_at), esc(r.finished_at),
+            '<span class="mono">' + esc(r.command) + '</span>',
+            r.exit_code === 0 ? '<span class="ok">正常終了</span>' : '<span class="ng">終了コード ' + esc(r.exit_code) + '</span>'];
+        }))
+      : ''));
 
   /* 12 */ add('失敗・未確認の正直な記録',
     '<p><b class="sub">失敗した・できなかったこと</b></p>' + list(d.failures) +
