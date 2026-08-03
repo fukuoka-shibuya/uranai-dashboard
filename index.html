@@ -48,6 +48,9 @@
   .pdca span.active{border-color:var(--kin);color:var(--kin);font-weight:700;background:#221f14;}
   .bigline{font-size:15px;margin:0 0 6px;}
   .bigline b{color:var(--kin);}
+  /* 今からやりたいこと(OC11)。番号つきで次にやる順を示す */
+  ol.nextup{margin:0 0 8px;padding-left:1.6em;}
+  ol.nextup li{margin:0 0 4px;font-size:14px;}
   .donechip{display:inline-block;border:1px solid var(--ok);color:var(--ok);border-radius:999px;padding:1px 10px;font-size:12px;margin:0 6px 6px 0;}
   .nowork{color:var(--ok);font-size:15px;font-weight:600;}
   #owner-comment h2{color:var(--kin);}
@@ -201,9 +204,12 @@
   var sections = [];
   function add(title, html) { sections.push({ title: title, html: html }); }
 
-  /* 1: いまの状況ひと目まとめ(OC8:いま何をしていて何が完成したか+PDCAの現在地)
+  /* 1: いまの状況ひと目まとめ(OC8:いま何をしていて何が完成したか+PDCAの現在地。
+        OC11:「今やっていること」と「今からやりたいこと(次にやる順)」をラベルで分離)
      契約:cycle.json の overall.pdca_phase は 'Plan'/'Do'/'Check'/'Act' の完全一致のみ有効。
-     それ以外の値は無強調になり、tests/dashboard.spec.js の OC8 検査(強調ちょうど1つ)が落ちる。 */
+     それ以外の値は無強調になり、tests/dashboard.spec.js の OC8 検査(強調ちょうど1つ)が落ちる。
+     overall.next_up の各行 {id, text} の id は pending_work の行と対応させる
+     (架空の予定は tests/dashboard.spec.js の OC11 検査が検出する)。 */
   var pdcaSteps = [
     { key: 'Plan', label: 'Plan 計画' },
     { key: 'Do', label: 'Do 実装' },
@@ -216,7 +222,13 @@
   add('いまの状況(ひと目でわかる進み具合)',
     pdcaHtml +
     '<p class="sub">今回のサイクルのPDCA:' + esc(d.overall.pdca_note) + '</p>' +
-    '<p class="bigline"><b>いま:</b>' + esc(d.overall.now_doing) + '</p>' +
+    '<p class="bigline"><b>今やっていること:</b>' + esc(d.overall.now_doing) + '</p>' +
+    '<p class="bigline"><b>今からやりたいこと(次にやる順):</b></p>' +
+    ((d.overall.next_up && d.overall.next_up.length)
+      ? '<ol class="nextup">' + d.overall.next_up.map(function (n) {
+          return '<li>' + esc(n.text) + ' <span class="sub">(詳しくは下の「溜まっている作業」の ' + esc(n.id) + ')</span></li>';
+        }).join('') + '</ol>'
+      : '<p class="sub">次の予定はありません(溜まっている作業もありません)</p>') +
     '<p class="bigline"><b>今回できたこと:</b></p>' + list(d.overall.done_this_cycle) +
     '<p class="sub">' + esc(d.overall.progress_note) + '</p>' +
     table(['開発順序の進捗', '試作品の起動', '無人運転(質問ゼロ)'],
@@ -242,7 +254,7 @@
      契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
      漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。 */
   add('溜まっている作業(これから対応する予定)',
-    '<p class="sub">いま積み上がっている未対応の作業の一覧です。終わったものは最下部の「完了した作業」に移ります。</p>' +
+    '<p class="sub">いま積み上がっている未対応の作業の一覧です。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
     ((d.pending_work && d.pending_work.length)
       ? table(['ID', '作業', '状態', '予定・方針'],
           d.pending_work.map(function (t) {
