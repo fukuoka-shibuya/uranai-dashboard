@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>五つの読み解き — 試作</title>
+<title>夜明けの五占 — 試作</title>
 <style>
   :root{
     --yoake:#141a2e;        /* 夜明け前の藍色(基調) */
@@ -35,10 +35,11 @@
   #splash{
     position:fixed;inset:0;z-index:50;
     background:var(--sumi);
-    display:flex;align-items:center;justify-content:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
     cursor:pointer;
     transition:opacity .6s ease;
   }
+  .splash-title{margin:0;font-size:20px;font-weight:600;letter-spacing:.14em;color:var(--ko);}
   #splash.hide{opacity:0;pointer-events:none;}
   .mark{position:relative;width:132px;height:132px;}
   .mark .ring{
@@ -60,6 +61,21 @@
     .mark .ring,.mark .dot{animation:none;}
     #splash{transition:none;}
   }
+
+  /* ---- タイトル画面(起動イラストの後。「占いを始める」でメイン画面へ) ---- */
+  #title-screen{
+    position:fixed;inset:0;z-index:45;
+    background:var(--yoake);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:24px 20px;text-align:center;
+  }
+  #title-screen.hidden{display:none;}
+  .title-mark{display:block;width:56px;height:56px;border-radius:50%;border:1px solid var(--ai-murasaki);position:relative;margin:0 0 18px;}
+  .title-mark::after{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--kin);}
+  .app-title{margin:0 0 10px;font-size:28px;font-weight:600;letter-spacing:.12em;color:var(--ko);}
+  .app-subtitle{margin:0 0 30px;font-size:13px;color:var(--ko-sub);}
+  #start-app{width:100%;max-width:240px;}
+  h1:focus{outline:none;}
 
   /* ---- 入力 ---- */
   section{
@@ -190,18 +206,28 @@
 </head>
 <body>
 
-<!-- 起動イラスト:CSS図形(輪と点中心)のみ。1.6秒で自動的に消え、タップでスキップ可 -->
+<!-- 起動イラスト:CSS図形(輪と点中心)のみ。3秒(Issue #18)で自動的に消え、タップでスキップ可 -->
 <div id="splash" role="button" tabindex="0" aria-label="起動画面をスキップ">
   <div class="mark">
     <span class="ring"></span>
     <span class="ring inner"></span>
     <span class="dot"></span>
   </div>
+  <p class="splash-title">夜明けの五占</p>
   <p class="splash-note">画面をタップすると進みます</p>
 </div>
 
+<!-- タイトル画面:起動イラストが終わると現れる(Issue #19・#21)。
+     「占いを始める」を押すとメイン画面へ。 -->
+<div id="title-screen" aria-labelledby="app-title">
+  <span class="title-mark" aria-hidden="true"></span>
+  <p id="app-title" class="app-title">夜明けの五占</p>
+  <p class="app-subtitle">算命学を中心に、五つの見方から静かに読み解きます。</p>
+  <button id="start-app" type="button">占いを始める</button>
+</div>
+
 <div class="wrap">
-  <h1>五つの読み解き</h1>
+  <h1 id="main-title" tabindex="-1">夜明けの五占</h1>
   <p class="lead">算命学を中心に、五つの見方から静かに読み解く試作品です。13歳以上の方を対象としています。</p>
 
   <!-- 1. 入力 -->
@@ -310,20 +336,46 @@
 (function () {
   'use strict';
 
-  /* ---------- 起動イラスト ---------- */
+  /* ---------- 起動イラストとタイトル画面 ----------
+     流れ:起動イラスト(3秒・タップでスキップ可)→ タイトル画面 →
+     「占いを始める」でメイン画面(Issue #18・#19・#21)。
+     タイトル画面までの表示中は背後のスクロールを止める。 */
   var splash = document.getElementById('splash');
+  var titleScreen = document.getElementById('title-screen');
+  var startButton = document.getElementById('start-app');
   var closed = false;
+  var titleVisible = true;
+  document.body.classList.add('no-scroll');
+
   function closeSplash() {
     if (closed) { return; }
     closed = true;
     splash.classList.add('hide');
     window.setTimeout(function () { splash.style.display = 'none'; }, 600);
+    /* キーボード利用者が迷わないよう、次の操作対象へフォーカスを移す */
+    if (titleVisible) { startButton.focus(); }
   }
   splash.addEventListener('click', closeSplash);
   splash.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' || e.key === ' ') { closeSplash(); }
   });
-  window.setTimeout(closeSplash, 1600); /* 1〜2秒 */
+  window.setTimeout(closeSplash, 3000); /* 3秒(Issue #18) */
+
+  startButton.addEventListener('click', function () {
+    if (!closed) { closeSplash(); }
+    titleVisible = false;
+    titleScreen.classList.add('hidden');
+    document.body.classList.remove('no-scroll');
+    document.getElementById('main-title').focus();
+  });
+
+  /* 起動イラスト・タイトル画面の表示中は、Tabの行き先をその画面の操作に留める
+     (背後のメイン画面へフォーカスが抜けないように) */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') { return; }
+    if (!closed) { e.preventDefault(); splash.focus(); return; }
+    if (titleVisible) { e.preventDefault(); startButton.focus(); }
+  });
 
   /* ---------- 占術エンジンの呼び出し ----------
      計算そのものは app/engine/ に置いてある。画面側はどちらの計算(仮/正式)が
