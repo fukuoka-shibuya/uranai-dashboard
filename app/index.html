@@ -198,6 +198,61 @@
     border:1px solid var(--ko-sub);color:var(--ko-sub);margin:0 0 8px;
   }
 
+  /* ---- 結果専用ページ(Issue #16・#20。「一夜の頁」) ----
+     メイン画面(.wrap)と入れ替わりに表示する読み物の頁。
+     個別=藍紫/総合=金色は --accent 1変数で切り替える。 */
+  #result-screen{display:none;}
+  body.viewing-result .wrap{display:none;}
+  body.viewing-result{background:#0b0f1f;}
+  /* 表示時は縦のflexにして、短い内容でも戻るボタンが下端に寄るようにする(監査軽微4) */
+  body.viewing-result #result-screen{display:flex;flex-direction:column;animation:page-in .6s ease-out both;}
+  @keyframes page-in{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){
+    body.viewing-result #result-screen{animation:none;}
+  }
+  #result-screen{min-height:100vh;}
+  .result-page-body{flex:1 1 auto;width:100%;}
+  .result-back-bar{width:100%;}
+  #result-screen[data-mode="individual"]{--accent:var(--ai-murasaki);}
+  #result-screen[data-mode="overall"]{--accent:var(--kin);}
+  .result-head{
+    padding:28px 20px 22px;text-align:center;
+    background:radial-gradient(circle at 50% -40%, rgba(123,142,201,.28), transparent 60%), var(--sumi);
+    border-bottom:1px solid var(--accent);
+  }
+  #result-screen[data-mode="overall"] .result-head{
+    background:radial-gradient(circle at 50% -40%, rgba(216,180,95,.26), transparent 60%), var(--sumi);
+  }
+  .result-ring{display:inline-block;width:44px;height:44px;border:1.5px solid var(--accent);border-radius:50%;position:relative;margin:0 0 10px;}
+  .result-ring::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:var(--accent);}
+  /* 総合だけ輪を二重にして「上位の読み物」の格を表す */
+  #result-screen[data-mode="overall"] .result-ring{box-shadow:0 0 0 5px rgba(216,180,95,.15);}
+  .result-kicker{margin:0;font-size:12px;letter-spacing:.3em;color:var(--ko-sub);}
+  #result-title{font-size:26px;font-weight:800;letter-spacing:.14em;color:var(--accent);margin:4px 0 0;}
+  /* プログラム的フォーカスの行き先。位置の手がかりを消さない控えめな点線(監査軽微2) */
+  #result-title:focus{outline:1px dotted var(--accent);outline-offset:8px;}
+  .result-page-body{max-width:412px;margin:0 auto;padding:18px 16px 8px;}
+  #result-screen .result{border-top:none;margin-top:0;padding-top:0;}
+  #result-screen .result h3{font-size:14px;color:var(--ko-sub);font-weight:600;}
+  #result-screen .result p{font-size:15px;line-height:2;}
+  /* 読み解き項目の見出しを太字で目立たせる(Issue #20) */
+  #result-screen .items dt{
+    font-size:17px;font-weight:800;color:var(--accent);
+    border-left:3px solid var(--accent);padding-left:14px;margin:20px 0 0;
+  }
+  #result-screen .items dd{padding:6px 0 14px;border-bottom:1px dashed var(--line);}
+  #result-screen .items dd b{font-size:16px;font-weight:700;}
+  #result-screen .items dd span{font-size:14px;line-height:1.9;color:var(--ko-sub);}
+  .result-back-bar{
+    position:sticky;bottom:0;max-width:412px;margin:0 auto;
+    padding:12px 16px 16px;
+    background:linear-gradient(transparent, #0b0f1f 40%);
+  }
+  .result-back{
+    min-height:48px;border:1px solid var(--accent);border-radius:24px;
+    background:transparent;color:var(--accent);font-weight:700;
+  }
+
   footer{color:var(--ko-sub);font-size:12px;text-align:center;margin-top:8px;}
   .hidden{display:none;}
   /* 仮広告の表示中だけ背後のスクロールを止める */
@@ -219,14 +274,16 @@
 
 <!-- タイトル画面:起動イラストが終わると現れる(Issue #19・#21)。
      「占いを始める」を押すとメイン画面へ。 -->
-<div id="title-screen" aria-labelledby="app-title">
+<div id="title-screen" role="dialog" aria-modal="true" aria-labelledby="app-title">
   <span class="title-mark" aria-hidden="true"></span>
   <p id="app-title" class="app-title">藍空うらない手帖</p>
   <p class="app-subtitle">算命学を中心に、五つの見方から静かに読み解きます。</p>
   <button id="start-app" type="button">占いを始める</button>
 </div>
 
-<div class="wrap">
+<!-- タイトル画面の表示中は inert で背後を操作不能にする(OC21-L1。支援技術の仮想カーソル対策)。
+     「占いを始める」で inert を外す -->
+<div class="wrap" inert>
   <h1 id="main-title" tabindex="-1">藍空うらない手帖</h1>
   <p class="lead">算命学を中心に、五つの見方から静かに読み解く試作品です。13歳以上の方を対象としています。</p>
 
@@ -301,7 +358,6 @@
       </select>
     </div>
     <button id="read-individual" type="button">この占術で読む</button>
-    <div id="individual-result" class="result hidden" aria-live="polite"></div>
   </section>
 
   <!-- 3. 総合占い:プルダウンに含めず、別領域・上位機能として分離 -->
@@ -311,11 +367,29 @@
     <p id="overall-lock" class="locked">個別の占いを2つ読み終えると、こちらが開きます。(現在 <span id="read-count">0</span> / 2)</p>
     <p id="overall-open" class="locked hidden">総合占いが開きました。五つの見方を並べて読み解きます。</p>
     <button id="read-overall" type="button" class="kin" disabled>総合占いを読む</button>
-    <div id="overall-result" class="result hidden" aria-live="polite"></div>
   </section>
 
   <footer>データは端末内にのみ保存されます。</footer>
 </div>
+
+<!-- 結果専用ページ(Issue #16・#20)。「この占術で読む」「総合占いを読む」で
+     メイン画面と入れ替わりに表示し、「入力にもどる」で戻る(単一HTML内の画面切替)。
+     雰囲気は独立3案から採用した「一夜の頁」:手帖を開いた読み物の頁として見せる。
+     個別=藍紫・総合=金色は data-mode の --accent 1変数で切り替える。 -->
+<section id="result-screen" aria-labelledby="result-title" data-mode="individual">
+  <header class="result-head">
+    <span class="result-ring" aria-hidden="true"></span>
+    <p id="result-kicker" class="result-kicker">個別の占い</p>
+    <h2 id="result-title" tabindex="-1">占術</h2>
+  </header>
+  <div class="result-page-body">
+    <div id="individual-result" class="result hidden" aria-live="polite"></div>
+    <div id="overall-result" class="result hidden" aria-live="polite"></div>
+  </div>
+  <div class="result-back-bar">
+    <button id="result-back" type="button" class="result-back">入力にもどる</button>
+  </div>
+</section>
 
 <!-- 仮広告:本物の広告SDK・外部スクリプトは使わず、画面内の擬似表示のみ。
      個別2件読了後に1回だけ表示し、閉じると総合占いが解放される。解放後は再表示しない。 -->
@@ -365,6 +439,8 @@
     if (!closed) { closeSplash(); }
     titleVisible = false;
     titleScreen.classList.add('hidden');
+    /* タイトル画面を閉じたら背後の操作禁止(inert)を解く(OC21-L1) */
+    document.querySelector('.wrap').removeAttribute('inert');
     document.body.classList.remove('no-scroll');
     document.getElementById('main-title').focus();
   });
@@ -436,30 +512,90 @@
   var readSet = Object.create(null);
   var readCount = 0;
 
-  document.getElementById('read-individual').addEventListener('click', function () {
+  /* ---------- 結果専用ページの切替(Issue #16・#20) ----------
+     読むボタンでメイン画面(.wrap)と入れ替わりに結果の頁を表示し、
+     「入力にもどる」で戻る。戻ったときフォーカスは押したボタンへ返す。
+     仮広告(2件読了)は結果を読み終えて戻った時に表示する(読む前に覆わない)。 */
+  var resultScreen = document.getElementById('result-screen');
+  var resultTitle = document.getElementById('result-title');
+  var resultKicker = document.getElementById('result-kicker');
+  var boxIndividual = document.getElementById('individual-result');
+  var boxOverall = document.getElementById('overall-result');
+  var resultOpen = false;
+  var resultTrigger = null;
+  var adPending = false;
+  var mainScrollY = 0;
+
+  function openResult(mode, kicker, title, trigger) {
+    mainScrollY = window.scrollY;
+    resultScreen.setAttribute('data-mode', mode);
+    resultKicker.textContent = kicker;
+    resultTitle.textContent = title;
+    boxIndividual.classList.toggle('hidden', mode !== 'individual');
+    boxOverall.classList.toggle('hidden', mode !== 'overall');
+    resultOpen = true;
+    resultTrigger = trigger;
+    document.body.classList.add('viewing-result');
+    window.scrollTo(0, 0);
+    resultTitle.focus();
+  }
+
+  function closeResult() {
+    if (!resultOpen) { return; }
+    resultOpen = false;
+    document.body.classList.remove('viewing-result');
+    if (resultTrigger) { resultTrigger.focus(); }
+    resultTrigger = null;
+    /* メイン画面を、読む前に見ていた位置まで戻す */
+    window.scrollTo(0, mainScrollY);
+    /* 2件読了の広告は、結果を読み終えてメイン画面へ戻ったこの時点で出す */
+    if (adPending) {
+      adPending = false;
+      if (!unlocked) { showAd(); }
+    }
+  }
+  document.getElementById('result-back').addEventListener('click', closeResult);
+
+  /* Escでも結果の頁から戻れる(仮広告の表示中はそちらのEscが優先)。
+     注意:closeResult() が2件読了の仮広告を開いた場合、同じ Escape イベントが
+     後続の広告側 Esc 処理に届くと、広告が1度も見えないまま閉じられ
+     「広告なしで総合解放」になってしまう(cycle-0023 監査の重大1)。
+     stopImmediatePropagation で1押し=1操作に限定する */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && resultOpen && !adVisible) {
+      e.stopImmediatePropagation();
+      closeResult();
+    }
+  });
+
+  var elReadIndividual = document.getElementById('read-individual');
+  elReadIndividual.addEventListener('click', function () {
     var key = document.getElementById('divination-select').value;
     var input = { birthdate: document.getElementById('birthdate').value };
-    var box = document.getElementById('individual-result');
+    var box = boxIndividual;
 
     var check = engine.validate(input);
     if (!check.ok) {
       renderMessage(box, check.message);
+      openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
       return;
     }
 
     var result = engine.computeOne(key, input);
     if (!result) {
       renderMessage(box, 'この占術はまだ読み解けませんでした。');
+      openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
       return;
     }
     renderResult(box, result);
+    openResult('individual', '個別の占い', result.name, elReadIndividual);
 
     /* 読了は占術ごとに1回だけ数える */
     if (!readSet[key]) {
       readSet[key] = true;
       readCount++;
       document.getElementById('read-count').textContent = String(readCount);
-      if (readCount >= 2 && !unlocked && !adVisible) { showAd(); }
+      if (readCount >= 2 && !unlocked) { adPending = true; }
     }
   });
 
@@ -570,22 +706,26 @@
     box.classList.remove('hidden');
   }
 
-  document.getElementById('read-overall').addEventListener('click', function () {
-    var box = document.getElementById('overall-result');
+  var elReadOverall = document.getElementById('read-overall');
+  elReadOverall.addEventListener('click', function () {
+    var box = boxOverall;
     var input = { birthdate: document.getElementById('birthdate').value };
 
     var check = engine.validate(input);
     if (!check.ok) {
       renderMessage(box, check.message);
+      openResult('overall', '上位の読み物', '入力のご確認', elReadOverall);
       return;
     }
 
     var overall = engine.computeOverall(input);
     if (!overall) {
       renderMessage(box, '総合占いはまだ読み解けませんでした。');
+      openResult('overall', '上位の読み物', '入力のご確認', elReadOverall);
       return;
     }
     renderOverall(box, overall);
+    openResult('overall', '上位の読み物', '総合占い', elReadOverall);
   });
 
   /* ---------- プロフィールの保存と管理(端末内のみ・localStorage) ----------
