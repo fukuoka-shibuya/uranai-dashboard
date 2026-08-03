@@ -6,9 +6,13 @@
 <title>占いアプリ常設AIループ — サイクル報告</title>
 <style>
   :root{
+    /* 強調色 --kin は #15(2026-08-03 オーナー指示「この報告書に黄色は使わないで」)により
+       金色から紫系へ変更した。報告書には黄色系(金色を含む)の色コードを書かない
+       (tests/dashboard.spec.js の OC15 がコメント内も含め全色コードを走査する)。
+       アプリ本体(app/)の総合占い=金色は CLAUDE.md の絶対条件のため変更しない。 */
     --bg:#12172a; --panel:#1b2240; --line:#2c3660;
     --fg:#e9ebf5; --sub:#a5adc8;
-    --ai:#7b8ec9; --kin:#d8b45f; --ok:#6fbf8b; --ng:#d97a7a;
+    --ai:#7b8ec9; --kin:#b9a3e3; --ok:#6fbf8b; --ng:#d97a7a;
   }
   *,*::before,*::after{box-sizing:border-box;}
   body{
@@ -45,7 +49,7 @@
   /* PDCA の現在地表示(OC8)。点滅・アニメーションは使わない */
   .pdca{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
   .pdca span{flex:1 1 90px;text-align:center;padding:6px 4px;border:1px solid var(--line);border-radius:8px;color:var(--sub);font-size:12px;}
-  .pdca span.active{border-color:var(--kin);color:var(--kin);font-weight:700;background:#221f14;}
+  .pdca span.active{border-color:var(--kin);color:var(--kin);font-weight:700;background:#211a33;}
   .bigline{font-size:15px;margin:0 0 6px;}
   .bigline b{color:var(--kin);}
   /* 今からやりたいこと(OC11)。番号つきで次にやる順を示す */
@@ -53,8 +57,9 @@
   ol.nextup li{margin:0 0 4px;font-size:14px;}
   .donechip{display:inline-block;border:1px solid var(--ok);color:var(--ok);border-radius:999px;padding:1px 10px;font-size:12px;margin:0 6px 6px 0;}
   .nowork{color:var(--ok);font-size:15px;font-weight:600;}
-  /* オーナーコメント欄(OC13 で刷新):報告書と同じダーク基調に、オーナー向けの金色
-     (総合占いと同じ #d8b45f)の枠・番号・ボタンで統一する。点滅・アニメーションは使わない */
+  /* オーナーコメント欄(OC13 で刷新):報告書と同じダーク基調に、オーナー向けの強調色
+     (--kin。#15 の指示により黄色系ではなく紫系)の枠・番号・ボタンで統一する。
+     点滅・アニメーションは使わない */
   #owner-comment{border-color:var(--kin);background:#1d1b31;}
   #owner-comment h2{color:var(--kin);}
   #owner-comment .renewed{color:var(--kin);}
@@ -73,7 +78,16 @@
     background:var(--kin);color:#12172a;border:1px solid var(--kin);border-radius:8px;
     font:inherit;font-weight:700;
   }
-  #owner-comment button:active{background:#c9a651;}
+  #owner-comment button:active{background:#9f87d4;}
+  /* 折りたたみ(OC22・#22):長い欄は見出しを押すまで畳んでページを短くする。
+     アニメーション・点滅は使わない。中身は DOM に残る(検査・検索可能)。 */
+  #body summary{cursor:pointer;list-style:none;}
+  #body summary::-webkit-details-marker{display:none;}
+  #body summary h2{margin:0;}
+  #body details[open] > summary h2{margin:0 0 10px;}
+  .fold-hint{color:var(--sub);font-size:11px;font-weight:400;margin-left:auto;flex:none;}
+  #body details:not([open]) .fold-hint::after{content:"▽ 押すと開きます";}
+  #body details[open] .fold-hint::after{content:"△ 押すと閉じます";}
 </style>
 </head>
 <body>
@@ -89,7 +103,7 @@
 
   <section id="owner-comment">
     <h2>オーナーコメント欄(要望・感想・修正指示)</h2>
-    <p class="sub"><b class="renewed">コメント欄刷新済み(2026-08-03・#13対応)</b> — デザインを報告書と同じダーク+金色に統一し、送信までの手順を下の3つに整理しました。</p>
+    <p class="sub"><b class="renewed">コメント欄刷新済み(2026-08-03・#13対応)</b> — デザインを報告書と同じダーク基調の統一デザインにし、送信までの手順を下の3つに整理しました(#15 の指示を受け、強調色は黄色系をやめて紫系にしています)。</p>
     <p class="sub">ここに書いて送信すると、次のサイクルでAIが自動で読み取り、タスクに反映します。
        送信内容は公開リポジトリのIssueとして<b>誰でも見られる場所</b>に保存されます。個人情報(氏名・住所・連絡先など)は書かないでください。</p>
     <ol class="steps">
@@ -246,7 +260,32 @@
         d.overall.app_runs ? '<span class="ok">起動する(実測)</span>' : '<span class="ng">未確認</span>',
         d.overall.unattended_ok ? '<span class="ok">確認画面ゼロ</span>' : '<span class="ng">停止あり</span>']]));
 
-  /* 2: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように)
+  /* 2: 溜まっている作業(OC10:未対応の作業をトップ付近に常設。
+        #23(2026-08-03)の指示で2番目へ繰り上げ、内容を普通の言葉で書く)
+     契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
+     漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。 */
+  add('溜まっている作業(これから対応する予定)',
+    '<p class="sub">まだ終わっていない作業の一覧です(上にあるものほど先にやります)。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
+    ((d.pending_work && d.pending_work.length)
+      ? table(['ID', 'どんな作業か', '状態', 'いつ・どう進めるか'],
+          d.pending_work.map(function (t) {
+            var cls = t.status === '対応中' ? 'kin' : 'sub';
+            return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
+          }))
+      : '<p class="sub">該当なし(溜まっている作業はありません)</p>'));
+
+  /* 3: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
+  add('対応できなかったこと・保留(別枠)',
+    '<p class="sub">試みたけれど実現できなかったこと・意図して保留していることの一覧です。理由と、代わりにどうしているかを添えています。</p>' +
+    ((d.undone_items && d.undone_items.length)
+      ? table(['ID', 'できていないこと', '状態', '理由と代わりの対応'],
+          d.undone_items.map(function (u) {
+            return [esc(u.id), esc(u.title), '<span class="sub">' + esc(u.state) + '</span>', esc(u.reason)];
+          }))
+      : '<p class="sub">該当なし</p>'));
+
+  /* 4: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように。
+        #23 の指示で「溜まっている作業」より下へ移動。長くなるため初期表示では畳まれる=OC22)
      契約:queue/owner-comments.json の全コメントを owner_directives に漏れなく載せる。
      状態は「完了/対応中/保留/対象外」のいずれか(キュー側 done→完了、third_party→対象外)。
      整合は tests/dashboard.spec.js の OC9 検査が毎サイクル確認する。 */
@@ -260,29 +299,6 @@
           }))
       : '<p class="sub">該当なし(まだコメントによる指示はありません)</p>'));
 
-  /* 3: 溜まっている作業(OC10:いま積み上がっている未対応の作業をトップ付近に常設)
-     契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
-     漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。 */
-  add('溜まっている作業(これから対応する予定)',
-    '<p class="sub">いま積み上がっている未対応の作業の一覧です。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
-    ((d.pending_work && d.pending_work.length)
-      ? table(['ID', '作業', '状態', '予定・方針'],
-          d.pending_work.map(function (t) {
-            var cls = t.status === '対応中' ? 'kin' : 'sub';
-            return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
-          }))
-      : '<p class="sub">該当なし(溜まっている作業はありません)</p>'));
-
-  /* 4: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
-  add('対応できなかったこと・保留(別枠)',
-    '<p class="sub">試みたけれど実現できなかったこと・意図して保留していることの一覧です。理由と、代わりにどうしているかを添えています。</p>' +
-    ((d.undone_items && d.undone_items.length)
-      ? table(['ID', 'できていないこと', '状態', '理由と代わりの対応'],
-          d.undone_items.map(function (u) {
-            return [esc(u.id), esc(u.title), '<span class="sub">' + esc(u.state) + '</span>', esc(u.reason)];
-          }))
-      : '<p class="sub">該当なし</p>'));
-
   /* 5 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
 
   /* 6 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
@@ -292,28 +308,22 @@
         esc(a.how)];
     })));
 
-  /* 7: 各案の成果とプレゼン30秒(OC9 の欄を増やしても20項目を保つため統合。内容は両方とも維持) */
-  add('各案の成果とプレゼン30秒', '<div class="grid">' + d.plans.map(function (p) {
-    return '<div class="card"><h3>' + esc(p.name) + '</h3>' +
-      '<p>' + esc(p.pitch30s) + '</p>' +
-      '<p class="sub">' + esc(p.result) + '</p>' +
-      '<span class="tag' + (p.adopted ? ' adopted' : '') + '">' + (p.adopted ? '採用' : '不採用') + '</span></div>';
-  }).join('') + '</div>');
+  /* (旧7「各案の成果とプレゼン30秒」は #24(2026-08-03)の指示で廃止。全19項目構成) */
 
-  /* 8: 比較表と採用理由(OC10 で欄を増やしても20項目を保つため統合。内容は両方とも維持) */
+  /* 7: 比較表と採用理由(OC10 で欄を増やしても項目数を保つため統合。内容は両方とも維持) */
   add('比較表と採用・不採用の理由', table(d.comparison.headers, d.comparison.rows.map(function (r) {
     return r.map(esc);
   })) +
     '<p style="margin-top:8px"><b class="kin">採用:</b>' + esc(d.adopted_reason) + '</p>' +
     '<p><b class="sub">不採用:</b>' + esc(d.rejected_reason) + '</p>');
 
-  /* 9 */ add('改善点(今回の差分)', list(d.improvements));
+  /* 8 */ add('改善点(今回の差分)', list(d.improvements));
 
-  /* 10 */ add('成果物リンク', list(d.artifacts, function (a) {
+  /* 9 */ add('成果物リンク', list(d.artifacts, function (a) {
     return '<li><a href="' + esc(a.href) + '">' + esc(a.label) + '</a></li>';
   }));
 
-  /* 11 */ add('テスト結果', '<p><span class="mono">' + esc(d.tests.command) + '</span> ' +
+  /* 10 */ add('テスト結果', '<p><span class="mono">' + esc(d.tests.command) + '</span> ' +
     (d.tests.executed ? '<span class="ok">実行済(' + esc(d.tests.executed_at) + ')</span>' : '<span class="ng">未実行</span>') +
     ' — 合格 <b class="ok">' + esc(d.tests.passed) + '</b> / 失敗 <b class="' + (d.tests.failed ? 'ng' : 'ok') + '">' +
     esc(d.tests.failed) + '</b>(' + esc(d.tests.duration) + ')</p>' +
@@ -331,45 +341,45 @@
         }))
       : ''));
 
-  /* 12 */ add('失敗・未確認の正直な記録',
+  /* 11 */ add('失敗・未確認の正直な記録',
     '<p><b class="sub">失敗した・できなかったこと</b></p>' + list(d.failures) +
     '<p style="margin-top:8px"><b class="sub">まだ確認できていないこと</b></p>' + list(d.unverified));
 
-  /* 13 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
+  /* 12 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
     d.denied_actions.map(function (x) { return [esc(x.time), '<span class="mono">' + esc(x.action) + '</span>', esc(x.reason), esc(x.next)]; })));
 
-  /* 14 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
+  /* 13 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
     [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
     '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
 
-  /* 15: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
+  /* 14: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
      (旧「次回計画」欄は OC10 の「溜まっている作業」(予定・方針の列)に統合した) */
   add('あなたの作業(判断・操作のお願い)',
     (d.human_decisions && d.human_decisions.length)
       ? list(d.human_decisions)
       : '<p class="nowork">今日はあなたの作業はありません。</p>');
 
-  /* 16: お知らせ(OC7:対応不要の連絡はこちらに分離) */
+  /* 15: お知らせ(OC7:対応不要の連絡はこちらに分離) */
   add('お知らせ(確認だけ・対応は不要)', list(d.notices));
 
-  /* 17: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
+  /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
     d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
 
-  /* 18 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
+  /* 17 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
     d.spec_compliance.map(function (s) {
       var cls = s.state === '適合' ? 'ok' : (s.state === '未実装' ? 'ng' : 'kin');
       return [esc(s.item), '<span class="' + cls + '">' + esc(s.state) + '</span>', esc(s.note)];
     })));
 
-  /* 19: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
+  /* 18: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
   add('完成済みの機能(これまでの成果)',
     '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
     (d.completed_features && d.completed_features.length
       ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
       : '<p class="sub">該当なし</p>'));
 
-  /* 20: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は3・4番の欄が持つ) */
+  /* 19: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は2・3番の欄が持つ) */
   add('完了した作業(これまでに終わったタスク)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
     ' / 対応中 ' + esc(d.queue_summary.in_progress) +
     ' / 完了 ' + esc(d.queue_summary.done) +
@@ -379,8 +389,19 @@
       return [esc(t.id), esc(t.title), esc(t.note)];
     })));
 
+  /* OC22(#22):ページを短くするため、重要3欄以外は初期表示で畳み、見出しを押すと開く。
+     <details>/<summary> のみ(JSトグル不使用)なのでJSエラーやアニメーションの余地がない。
+     中身は DOM に残るため、既存の文言・整合検査(textContent 照合)はそのまま働く。 */
+  var OPEN_DEFAULT = [
+    'いまの状況(ひと目でわかる進み具合)',
+    '溜まっている作業(これから対応する予定)',
+    'あなたの作業(判断・操作のお願い)'
+  ];
   document.getElementById('body').innerHTML = sections.map(function (s, i) {
-    return '<section><h2><span class="no">' + (i + 1) + '</span>' + esc(s.title) + '</h2>' + s.html + '</section>';
+    var open = OPEN_DEFAULT.indexOf(s.title) !== -1;
+    return '<section><details' + (open ? ' open' : '') + '><summary><h2><span class="no">' +
+      (i + 1) + '</span>' + esc(s.title) + '<span class="fold-hint"></span></h2></summary>' +
+      s.html + '</details></section>';
   }).join('');
 })();
 </script>
