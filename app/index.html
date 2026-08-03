@@ -335,6 +335,14 @@
       </div>
     </div>
 
+    <!-- 姓名判断(Issue #26)用の任意入力。本名を求めない(ニックネーム可)。
+         プロフィール保存の対象には含めない(端末にも残さない) -->
+    <div class="field">
+      <label for="seimei-name">占いたい名前(任意・ニックネームでかまいません)</label>
+      <input type="text" id="seimei-name" name="seimei-name" autocomplete="off" maxlength="20" placeholder="姓名判断で使う名前">
+      <p class="hint">姓名判断にだけ使います。空のままでも他の占術は使えます。保存はされません。</p>
+    </div>
+
     <div class="field">
       <label for="gender">性別(任意)</label>
       <select id="gender" name="gender">
@@ -389,6 +397,7 @@
         <option value="suuhi">数秘術</option>
         <option value="seiyou">西洋占星術</option>
         <option value="sukuyo">宿曜</option>
+        <option value="seimei">姓名判断</option>
       </select>
     </div>
     <button id="read-individual" type="button">この占術で読む</button>
@@ -605,14 +614,27 @@
   var elReadIndividual = document.getElementById('read-individual');
   elReadIndividual.addEventListener('click', function () {
     var key = document.getElementById('divination-select').value;
-    var input = { birthdate: document.getElementById('birthdate').value };
     var box = boxIndividual;
+    var input;
 
-    var check = engine.validate(input);
-    if (!check.ok) {
-      renderMessage(box, check.message);
-      openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
-      return;
+    /* 姓名判断(Issue #26)は生年月日でなく「占いたい名前」(任意入力)から読む。
+       未入力のときは読み解かず、案内だけを出す(入力を強要しない) */
+    if (key === 'seimei') {
+      var seimeiName = document.getElementById('seimei-name').value.trim();
+      if (!seimeiName) {
+        renderMessage(box, '「占いたい名前」を入れていただくと、姓名判断を読み解けます。ニックネームでかまいません。');
+        openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
+        return;
+      }
+      input = { seimeiName: seimeiName };
+    } else {
+      input = { birthdate: document.getElementById('birthdate').value };
+      var check = engine.validate(input);
+      if (!check.ok) {
+        renderMessage(box, check.message);
+        openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
+        return;
+      }
     }
 
     var result = engine.computeOne(key, input);

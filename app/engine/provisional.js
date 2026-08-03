@@ -380,6 +380,142 @@
     };
   }
 
+  /* ============ 追加占術:姓名判断(画数・Issue #26) ============
+   *
+   * 中核5占術とは別の「追加占術」。生年月日ではなく「占いたい名前」(任意入力・
+   * ニックネーム可・本名を求めない)から計算する。総合占い(computeOverall)には
+   * 加えない(総合は中核5占術のみで組む)。
+   * 商標登録されている占術の名称・固有用語は使わない(cycle-0021 調査。詳細は CLAUDE.md)。
+   *
+   * 画数の数え方(試作用の簡易換算):
+   *  - ひらがな・カタカナは一般的な画数表のとおり(濁点+2画・半濁点+1画)
+   *  - それ以外の文字(漢字・英数など)は文字コードから決める試作用の換算値
+   *    (同じ文字なら常に同じ値=決定論的)。正式な字画辞典は official.js 側の課題
+   *  - 空白は数えない
+   */
+
+  var KANA_STROKES = {
+    'あ': 3, 'い': 2, 'う': 2, 'え': 2, 'お': 3,
+    'か': 3, 'き': 4, 'く': 1, 'け': 3, 'こ': 2,
+    'さ': 3, 'し': 1, 'す': 2, 'せ': 3, 'そ': 1,
+    'た': 4, 'ち': 2, 'つ': 1, 'て': 1, 'と': 2,
+    'な': 4, 'に': 3, 'ぬ': 2, 'ね': 2, 'の': 1,
+    'は': 3, 'ひ': 1, 'ふ': 4, 'へ': 1, 'ほ': 4,
+    'ま': 3, 'み': 2, 'む': 3, 'め': 2, 'も': 3,
+    'や': 3, 'ゆ': 2, 'よ': 2,
+    'ら': 2, 'り': 2, 'る': 1, 'れ': 2, 'ろ': 1,
+    'わ': 2, 'ゐ': 1, 'ゑ': 1, 'を': 3, 'ん': 1,
+    'ぁ': 3, 'ぃ': 2, 'ぅ': 2, 'ぇ': 2, 'ぉ': 3,
+    'ゃ': 3, 'ゅ': 2, 'ょ': 2, 'っ': 1,
+    'ア': 2, 'イ': 2, 'ウ': 3, 'エ': 3, 'オ': 3,
+    'カ': 2, 'キ': 3, 'ク': 2, 'ケ': 3, 'コ': 2,
+    'サ': 3, 'シ': 3, 'ス': 2, 'セ': 2, 'ソ': 2,
+    'タ': 3, 'チ': 3, 'ツ': 3, 'テ': 3, 'ト': 2,
+    'ナ': 2, 'ニ': 2, 'ヌ': 2, 'ネ': 4, 'ノ': 1,
+    'ハ': 2, 'ヒ': 2, 'フ': 1, 'ヘ': 1, 'ホ': 4,
+    'マ': 2, 'ミ': 3, 'ム': 2, 'メ': 2, 'モ': 3,
+    'ヤ': 2, 'ユ': 2, 'ヨ': 3,
+    'ラ': 2, 'リ': 2, 'ル': 2, 'レ': 1, 'ロ': 3,
+    'ワ': 2, 'ヰ': 3, 'ヱ': 3, 'ヲ': 3, 'ン': 2,
+    'ァ': 2, 'ィ': 2, 'ゥ': 3, 'ェ': 3, 'ォ': 3,
+    'ャ': 2, 'ュ': 2, 'ョ': 3, 'ッ': 3,
+    'ー': 1
+  };
+
+  /** 1文字ぶんの画数(試作用)。同じ文字なら常に同じ値を返す */
+  function charStrokes(ch) {
+    if (Object.prototype.hasOwnProperty.call(KANA_STROKES, ch)) { return KANA_STROKES[ch]; }
+    /* が・ぱ 等は「もとの字+濁点/半濁点」に分けてから数える */
+    if (typeof ch.normalize === 'function') {
+      var parts = ch.normalize('NFD');
+      if (parts.length > 1) {
+        var base = parts.charAt(0);
+        if (Object.prototype.hasOwnProperty.call(KANA_STROKES, base)) {
+          var extra = 0;
+          for (var i = 1; i < parts.length; i++) {
+            var code = parts.charCodeAt(i);
+            if (code === 0x3099) { extra += 2; }       /* 濁点 */
+            else if (code === 0x309A) { extra += 1; }  /* 半濁点 */
+          }
+          return KANA_STROKES[base] + extra;
+        }
+      }
+    }
+    /* かな以外(漢字・英数など)の試作用の換算値。3〜29画の範囲に収める */
+    return (ch.codePointAt(0) % 27) + 3;
+  }
+
+  /** 名前の空白を除いた文字の並び(サロゲートペアも1文字として扱う)。
+      見た目が同じ名前は内部表現が違っても同じ結果になるよう、先に NFKC で
+      そろえる(「か+結合濁点」→「が」、半角カナ→全角カナ。監査 cycle-0025 M1/L4) */
+  function seimeiChars(name) {
+    var out = [];
+    var text = String(name || '');
+    if (typeof text.normalize === 'function') { text = text.normalize('NFKC'); }
+    for (var i = 0; i < text.length;) {
+      var cp = text.codePointAt(i);
+      var ch = String.fromCodePoint(cp);
+      i += ch.length;
+      if (/\s/.test(ch)) { continue; }
+      out.push(ch);
+    }
+    return out;
+  }
+
+  /* 画の型(総画を一桁に畳んだ1〜9)。語り口(W8):姓名判断の note は
+     名前・画数を主語に置き「〜と映ります。」で結ぶ(他の5占術の文型と重ねない) */
+  var KAKU_KATA_NOTE = [
+    'ひと筆で線を引くように、迷いを残さず進む振る舞いが似合う名前と映ります。',
+    '二つの点が支え合うように、誰かと組んで進む場面がなじむ名前と映ります。',
+    '三方へ枝が伸びるように、思いつきを外へ広げる動きが似合う名前と映ります。',
+    '四隅のそろった箱のように、こつこつ積み上げる過ごし方がなじむ名前と映ります。',
+    '五指を開いて風を受けるように、変わり目を面白がる身のこなしが似合う名前と映ります。',
+    '六つの面が組み合う立方のように、身近な人を受け止める役回りがなじむ名前と映ります。',
+    '七日ごとに区切りを引くように、一人で深く調べる時間が似合う名前と映ります。',
+    '八方へ道が延びるように、大きな流れをまとめる役回りがなじむ名前と映ります。',
+    '九つの升を満たすように、行き渡らせて締めくくる動きが似合う名前と映ります。'
+  ];
+
+  function seimei(name) {
+    var chars = seimeiChars(name);
+    if (chars.length === 0) { return null; }
+
+    var total = 0;
+    var strokes = [];
+    for (var i = 0; i < chars.length; i++) {
+      var s = charStrokes(chars[i]);
+      strokes.push(s);
+      total += s;
+    }
+    var kata = digitRoot(total);
+    var head = strokes[0];
+    var tail = strokes[strokes.length - 1];
+
+    return {
+      key: 'seimei',
+      name: '姓名判断',
+      view: '名前の画数から見た印象',
+      summary: '「' + chars.join('') + '」という名前を画数に置きかえると、合わせて' + total +
+               '画になります。かな以外の文字は試作用の簡易換算で数えています。' +
+               '画の重なりから、名前がまとう雰囲気を眺めていきます。',
+      closing: '姓名判断が見ているのは、名前という持ち物の一つの側面にすぎません。' +
+               '呼ばれて心地よい響きであることをいちばんに数えて、軽やかに受け取っていただけたらと思います。',
+      items: [
+        { label: '総画', value: total + '画',
+          note: '名前の文字の画数をぜんぶ足し合わせた数です。名前がまとう雰囲気の土台と映ります。' },
+        { label: '画の型', value: KANJI_KAZU[kata] + 'の型', note: KAKU_KATA_NOTE[kata - 1] },
+        { label: '頭字の画', value: head + '画',
+          note: (head % 2 === 1
+            ? '最初の字の画数が奇数の名前は、外へ向かって開く出だしと映ります。'
+            : '最初の字の画数が偶数の名前は、そっと整えて入る出だしと映ります。') },
+        { label: '結字の画', value: tail + '画',
+          note: (tail % 2 === 1
+            ? '最後の字の画数が奇数の名前は、余韻を残して締めくくる結びと映ります。'
+            : '最後の字の画数が偶数の名前は、静かにそろえて閉じる結びと映ります。') }
+      ]
+    };
+  }
+
   /* ============ 総合占い(C6):5占術の重なりと食い違い ============ */
 
   /* 総合占いは個別占術の文の再掲・連結にしない。判定は各占術の既存の計算値を
@@ -564,16 +700,27 @@
   };
 
   /* プルダウンに並べる順。算命学を先頭に置く。
-     天中殺などの内部要素はここに含めない。 */
+     天中殺などの内部要素はここに含めない。
+     追加占術(EXTRA_ORDER)は中核5占術の後ろに並べ、総合占いには加えない。 */
   var ORDER = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
+  var EXTRA_ORDER = ['seimei'];
 
   /**
    * 1占術を仮計算する。
    * @param {string} key 占術キー
-   * @param {{birthdate:string}} input
+   * @param {{birthdate?:string, seimeiName?:string}} input
+   *   中核5占術は birthdate、姓名判断は seimeiName(任意入力の名前)を使う
    * @returns {object|null} 計算できないときは null
    */
   function computeOne(key, input) {
+    /* 姓名判断(追加占術)は生年月日でなく「占いたい名前」から計算する */
+    if (key === 'seimei') {
+      var result2 = seimei(input && input.seimeiName);
+      if (!result2) { return null; }
+      result2.provisional = true;
+      result2.notice = '現在は試作用の仮データです。';
+      return result2;
+    }
     var calc = CALCULATORS[key];
     if (!calc) { return null; }
     var b = parseDate(input && input.birthdate);
@@ -596,10 +743,12 @@
   return {
     mode: 'provisional',
     order: ORDER.slice(),
+    extraOrder: EXTRA_ORDER.slice(),
     computeOne: computeOne,
     computeAll: computeAll,
     computeOverall: computeOverall,
     /* 検証と再利用のために公開する純粋関数 */
-    util: { parseDate: parseDate, digitRoot: digitRoot, honmei: honmei, sunSign: sunSign }
+    util: { parseDate: parseDate, digitRoot: digitRoot, honmei: honmei, sunSign: sunSign,
+            charStrokes: charStrokes, seimeiChars: seimeiChars }
   };
 });

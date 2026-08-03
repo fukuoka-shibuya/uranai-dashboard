@@ -43,6 +43,7 @@
   return {
     mode: MODE,
     order: provisional.order.slice(),
+    extraOrder: (provisional.extraOrder || []).slice(),
     isProvisional: isProvisional,
     validate: validate,
     computeOne: function (key, input) { return active().computeOne(key, input); },
