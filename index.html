@@ -25,6 +25,11 @@
   h1{font-size:21px;margin:0 0 6px;}
   .meta{color:var(--sub);font-size:13px;}
   .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--ai);color:var(--ai);margin-left:8px;}
+  /* OC27(#27):ループ稼働マーク。稼働中=青・停止の可能性=赤。点滅・アニメーションは使わない。
+     青 #5b9bd5 は色相およそ209度で、黄系禁止(OC15:色相35〜75度)に抵触しない。 */
+  .loop-mark{font-size:13px;font-weight:700;}
+  .loop-mark.loop-ok{color:#5b9bd5;}
+  .loop-mark.loop-ng{color:var(--ng);}
   section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px;}
   h2{font-size:15px;margin:0 0 10px;color:var(--ai);display:flex;gap:8px;align-items:baseline;}
   h2 .no{color:var(--kin);font-size:12px;font-variant-numeric:tabular-nums;flex:none;}
@@ -94,6 +99,7 @@
 <div class="page">
   <header>
     <h1>占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></h1>
+    <div class="meta"><span id="loop-status" class="loop-mark">—</span></div>
     <div class="meta" id="hdr-meta">読み込み中…</div>
     <div class="meta">試作アプリ本体(スマホでそのまま開けます・閲覧用の仮公開):
       <a id="app-link" href="https://fukuoka-shibuya.github.io/uranai-dashboard/app/" rel="noopener">fukuoka-shibuya.github.io/uranai-dashboard/app/</a></div>
@@ -195,6 +201,9 @@
   'use strict';
   var d = window.DASHBOARD_DATA;
   if (!d) {
+    var lsFail = document.getElementById('loop-status');
+    lsFail.className = 'loop-mark loop-ng';
+    lsFail.textContent = '● ループの状態を判定できません(報告データを読み込めませんでした)';
     document.getElementById('fallback').innerHTML =
       '<span class="err">data/cycle.js を読み込めませんでした。' +
       '<span class="mono">node dashboard/build.js</span> を実行してください。</span>';
@@ -224,6 +233,35 @@
   document.getElementById('hdr-status').textContent = d.status || '—';
   document.getElementById('hdr-meta').textContent =
     d.cycle_id + ' / ' + d.cycle_label + ' — 生成 ' + d.generated_at;
+
+  /* OC27(#27):ループ稼働マーク。報告書の生成時刻(generated_at)と閲覧端末の時計の差で
+     稼働/停止の見込みを判定し、タイトル直下に表示する(外部への問い合わせはしない)。
+     閾値180分の根拠:サイクルは約60分ごとで、作業セッションの中断1回は次サイクル冒頭の
+     検証で回復される(=最大2時間前後の遅れまでは正常運転)ため、それを超えたら停止の
+     可能性として赤にする。表示は1分ごとの文字の掛け替えのみで、点滅・アニメーションは無い。 */
+  var LOOP_STALL_MINUTES = 180;
+  function renderLoopStatus() {
+    var el = document.getElementById('loop-status');
+    var t = Date.parse(d.generated_at);
+    if (isNaN(t)) {
+      el.className = 'loop-mark loop-ng';
+      el.textContent = '● ループの状態を判定できません(更新時刻を読めませんでした)';
+      return;
+    }
+    var mins = Math.floor((Date.now() - t) / 60000);
+    if (mins < 0) mins = 0;
+    var age = mins < 1 ? '1分未満' :
+      (mins < 60 ? mins + '分' : Math.floor(mins / 60) + '時間' + (mins % 60) + '分');
+    if (mins <= LOOP_STALL_MINUTES) {
+      el.className = 'loop-mark loop-ok';
+      el.textContent = '● ループ稼働中(最終更新:' + age + '前)';
+    } else {
+      el.className = 'loop-mark loop-ng';
+      el.textContent = '● ループが止まっている可能性(最終更新:' + age + '前。3時間以上更新がありません)';
+    }
+  }
+  renderLoopStatus();
+  setInterval(renderLoopStatus, 60000);
 
   var sections = [];
   function add(title, html) { sections.push({ title: title, html: html }); }
