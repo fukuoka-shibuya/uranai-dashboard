@@ -224,24 +224,36 @@
         d.overall.app_runs ? '<span class="ok">起動する(実測)</span>' : '<span class="ng">未確認</span>',
         d.overall.unattended_ok ? '<span class="ok">確認画面ゼロ</span>' : '<span class="ng">停止あり</span>']]));
 
-  /* 2 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+  /* 2: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように)
+     契約:queue/owner-comments.json の全コメントを owner_directives に漏れなく載せる。
+     状態は「完了/対応中/保留/対象外」のいずれか(キュー側 done→完了、third_party→対象外)。
+     整合は tests/dashboard.spec.js の OC9 検査が毎サイクル確認する。 */
+  add('オーナー指示の対応状況(コメントの要約一覧)',
+    '<p class="sub">コメント欄からいただいた指示の要約と、それぞれの対応状況です。詳しい対応内容は各サイクルの報告書に記録されています。</p>' +
+    ((d.owner_directives || []).length
+      ? table(['#', '指示の要約', '状態', '対応内容'],
+          d.owner_directives.map(function (o) {
+            var cls = o.status === '完了' ? 'ok' : (o.status === '対応中' ? 'kin' : 'sub');
+            return ['#' + esc(o.no), esc(o.summary), '<span class="' + cls + '">' + esc(o.status) + '</span>', esc(o.note)];
+          }))
+      : '<p class="sub">該当なし(まだコメントによる指示はありません)</p>'));
 
-  /* 3 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
+  /* 3 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+
+  /* 4 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
     d.acceptance.map(function (a) {
       return [esc(a.text),
         a.verified ? '<span class="ok">検証済</span>' : '<span class="ng">未確認</span>',
         esc(a.how)];
     })));
 
-  /* 4 */ add('各案の成果', '<div class="grid">' + d.plans.map(function (p) {
+  /* 5: 各案の成果とプレゼン30秒(OC9 の欄を増やしても20項目を保つため統合。内容は両方とも維持) */
+  add('各案の成果とプレゼン30秒', '<div class="grid">' + d.plans.map(function (p) {
     return '<div class="card"><h3>' + esc(p.name) + '</h3>' +
+      '<p>' + esc(p.pitch30s) + '</p>' +
       '<p class="sub">' + esc(p.result) + '</p>' +
       '<span class="tag' + (p.adopted ? ' adopted' : '') + '">' + (p.adopted ? '採用' : '不採用') + '</span></div>';
   }).join('') + '</div>');
-
-  /* 5 */ add('プレゼン30秒(各案)', d.plans.map(function (p) {
-    return '<div class="card"><h3>' + esc(p.name) + '</h3><p>' + esc(p.pitch30s) + '</p></div>';
-  }).join(''));
 
   /* 6 */ add('比較表', table(d.comparison.headers, d.comparison.rows.map(function (r) {
     return r.map(esc);
