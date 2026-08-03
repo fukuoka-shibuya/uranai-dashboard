@@ -53,22 +53,27 @@
   ol.nextup li{margin:0 0 4px;font-size:14px;}
   .donechip{display:inline-block;border:1px solid var(--ok);color:var(--ok);border-radius:999px;padding:1px 10px;font-size:12px;margin:0 6px 6px 0;}
   .nowork{color:var(--ok);font-size:15px;font-weight:600;}
+  /* オーナーコメント欄(OC13 で刷新):報告書と同じダーク基調に、オーナー向けの金色
+     (総合占いと同じ #d8b45f)の枠・番号・ボタンで統一する。点滅・アニメーションは使わない */
+  #owner-comment{border-color:var(--kin);background:#1d1b31;}
   #owner-comment h2{color:var(--kin);}
+  #owner-comment .renewed{color:var(--kin);}
+  ol.steps{margin:0 0 10px;padding-left:1.6em;}
+  ol.steps li{margin:0 0 5px;}
+  ol.steps li::marker{color:var(--kin);font-weight:700;}
+  ol.steps b{color:var(--kin);font-weight:600;}
   #owner-comment textarea{
     width:100%;max-width:100%;min-height:110px;resize:vertical;
     background:#0e1327;color:var(--fg);border:1px solid var(--line);border-radius:8px;
     padding:10px;font:inherit;
   }
+  #owner-comment textarea:focus{border-color:var(--kin);outline:none;}
   #owner-comment button{
     display:block;width:100%;margin-top:10px;padding:12px;cursor:pointer;
-    background:transparent;color:var(--kin);border:1px solid var(--kin);border-radius:8px;
-    font:inherit;font-weight:600;
+    background:var(--kin);color:#12172a;border:1px solid var(--kin);border-radius:8px;
+    font:inherit;font-weight:700;
   }
-  #owner-comment button:active{background:#2a2a1e;}
-  #owner-comment button.mini{
-    display:inline-block;width:auto;margin:0 0 0 6px;padding:1px 10px;
-    font-size:12px;font-weight:400;color:var(--sub);border-color:var(--line);
-  }
+  #owner-comment button:active{background:#c9a651;}
 </style>
 </head>
 <body>
@@ -84,16 +89,21 @@
 
   <section id="owner-comment">
     <h2>オーナーコメント欄(要望・感想・修正指示)</h2>
+    <p class="sub"><b class="renewed">コメント欄刷新済み(2026-08-03・#13対応)</b> — デザインを報告書と同じダーク+金色に統一し、送信までの手順を下の3つに整理しました。</p>
     <p class="sub">ここに書いて送信すると、次のサイクルでAIが自動で読み取り、タスクに反映します。
        送信内容は公開リポジトリのIssueとして<b>誰でも見られる場所</b>に保存されます。個人情報(氏名・住所・連絡先など)は書かないでください。</p>
+    <ol class="steps">
+      <li><b>ここで書く</b> — 下の欄に伝えたいことを全文書きます(文章づくりはこのページ内で完結します)</li>
+      <li><b>送信ボタンを押す</b> — 書いた内容が<b>入力済み</b>の送信画面が新しいタブで開き、この欄は空に戻ります</li>
+      <li><b>緑のボタンを1回押す</b> — 開いた画面の「Submit new issue」を押せば送信完了です(GitHubにログインしていない場合は先にログイン画面が出ます。書いた内容は引き継がれます)</li>
+    </ol>
     <textarea id="comment-text" placeholder="例:総合占いは別画面にしてほしい/起動アニメはもう少し短く など"></textarea>
-    <button id="comment-send" type="button">送信する(仕上げはGitHubで緑のボタンを1回)</button>
-    <p class="sub">文章はこのページ内で書けます。ボタンを押すと、書いた内容が<b>入力済み</b>のGitHub投稿画面が開くので、
-       緑色の「Submit new issue」を1回押すだけで送信完了です(GitHubにログインしていない場合は先にログイン画面が表示されます。書いた内容は引き継がれます)。
-       送信画面が開くと入力欄は空に戻ります。書きかけの内容は自動保存されません(ページを閉じたり更新すると消えます)。
+    <button id="comment-send" type="button">送信する(このあとは緑のボタンを1回押すだけ)</button>
+    <p class="sub">書きかけの内容は自動保存されません(ページを閉じたり更新すると消えます)。
        <a href="https://github.com/fukuoka-shibuya/uranai-dashboard/issues" rel="noopener">過去のコメント一覧を見る</a></p>
     <p class="sub">※ページ内だけで送信まで完結する方式は、無料の静的ページでは投稿用の鍵を誰でも見える場所に置く必要があり、
-       第三者に悪用されるため採用していません。現在の方式が無料で安全に実現できる最短の手順です。</p>
+       第三者に悪用されるため採用していません。現在の方式が無料で安全に実現できる最短の手順です
+       (外部サービスの利用を承認いただける場合のみ、完全ページ内化を再検討できます)。</p>
     <p class="sub" id="comment-note"></p>
   </section>
 </div>
