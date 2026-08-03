@@ -42,6 +42,14 @@
   .tag.adopted{border-color:var(--kin);color:var(--kin);}
   .mono{font-family:Consolas,"Courier New",monospace;font-size:12px;background:#0e1327;border:1px solid var(--line);border-radius:6px;padding:2px 6px;}
   .err{color:var(--ng);}
+  /* PDCA の現在地表示(OC8)。点滅・アニメーションは使わない */
+  .pdca{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+  .pdca span{flex:1 1 90px;text-align:center;padding:6px 4px;border:1px solid var(--line);border-radius:8px;color:var(--sub);font-size:12px;}
+  .pdca span.active{border-color:var(--kin);color:var(--kin);font-weight:700;background:#221f14;}
+  .bigline{font-size:15px;margin:0 0 6px;}
+  .bigline b{color:var(--kin);}
+  .donechip{display:inline-block;border:1px solid var(--ok);color:var(--ok);border-radius:999px;padding:1px 10px;font-size:12px;margin:0 6px 6px 0;}
+  .nowork{color:var(--ok);font-size:15px;font-weight:600;}
   #owner-comment h2{color:var(--kin);}
   #owner-comment textarea{
     width:100%;max-width:100%;min-height:110px;resize:vertical;
@@ -167,8 +175,10 @@
   }
 
   function esc(s) {
+    /* 属性値の文脈(href 等)でも安全なよう引用符もエスケープする(監査指摘) */
     return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
   function list(items, fn) {
     if (!items || !items.length) { return '<p class="sub">該当なし</p>'; }
@@ -191,7 +201,24 @@
   var sections = [];
   function add(title, html) { sections.push({ title: title, html: html }); }
 
-  /* 1 */ add('全体状況', '<p>' + esc(d.overall.phase) + '</p><p class="sub">' + esc(d.overall.progress_note) + '</p>' +
+  /* 1: いまの状況ひと目まとめ(OC8:いま何をしていて何が完成したか+PDCAの現在地)
+     契約:cycle.json の overall.pdca_phase は 'Plan'/'Do'/'Check'/'Act' の完全一致のみ有効。
+     それ以外の値は無強調になり、tests/dashboard.spec.js の OC8 検査(強調ちょうど1つ)が落ちる。 */
+  var pdcaSteps = [
+    { key: 'Plan', label: 'Plan 計画' },
+    { key: 'Do', label: 'Do 実装' },
+    { key: 'Check', label: 'Check 検証' },
+    { key: 'Act', label: 'Act 改善' }
+  ];
+  var pdcaHtml = '<div class="pdca">' + pdcaSteps.map(function (s) {
+    return '<span' + (d.overall.pdca_phase === s.key ? ' class="active"' : '') + '>' + esc(s.label) + '</span>';
+  }).join('') + '</div>';
+  add('いまの状況(ひと目でわかる進み具合)',
+    pdcaHtml +
+    '<p class="sub">今回のサイクルのPDCA:' + esc(d.overall.pdca_note) + '</p>' +
+    '<p class="bigline"><b>いま:</b>' + esc(d.overall.now_doing) + '</p>' +
+    '<p class="bigline"><b>今回できたこと:</b></p>' + list(d.overall.done_this_cycle) +
+    '<p class="sub">' + esc(d.overall.progress_note) + '</p>' +
     table(['開発順序の進捗', '試作品の起動', '無人運転(質問ゼロ)'],
       [[esc(d.overall.cycles_done) + ' / ' + esc(d.overall.cycles_total) + ' サイクル完了',
         d.overall.app_runs ? '<span class="ok">起動する(実測)</span>' : '<span class="ng">未確認</span>',
@@ -220,9 +247,16 @@
     return r.map(esc);
   })));
 
-  /* 7 */ add('採用理由', '<p>' + esc(d.adopted_reason) + '</p>');
-  /* 8 */ add('不採用理由', '<p>' + esc(d.rejected_reason) + '</p>');
-  /* 9 */ add('改善点(今回の差分)', list(d.improvements));
+  /* 7 */ add('採用・不採用の理由', '<p><b class="kin">採用:</b>' + esc(d.adopted_reason) + '</p>' +
+    '<p><b class="sub">不採用:</b>' + esc(d.rejected_reason) + '</p>');
+  /* 8 */ add('改善点(今回の差分)', list(d.improvements));
+
+  /* 9: 完成済みの機能一覧(OC8:何が完成したのかをいつでも一覧できるように) */
+  add('完成済みの機能(これまでの成果)',
+    '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
+    (d.completed_features && d.completed_features.length
+      ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
+      : '<p class="sub">該当なし</p>'));
 
   /* 10 */ add('成果物リンク', list(d.artifacts, function (a) {
     return '<li><a href="' + esc(a.href) + '">' + esc(a.label) + '</a></li>';
@@ -236,20 +270,30 @@
       return [esc(c.name), c.result === 'pass' ? '<span class="ok">合格</span>' : '<span class="ng">失敗</span>'];
     })));
 
-  /* 12 */ add('失敗事項', list(d.failures));
-  /* 13 */ add('未確認事項(正直な記録)', list(d.unverified));
+  /* 12 */ add('失敗・未確認の正直な記録',
+    '<p><b class="sub">失敗した・できなかったこと</b></p>' + list(d.failures) +
+    '<p style="margin-top:8px"><b class="sub">まだ確認できていないこと</b></p>' + list(d.unverified));
 
-  /* 14 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
+  /* 13 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
     d.denied_actions.map(function (x) { return [esc(x.time), '<span class="mono">' + esc(x.action) + '</span>', esc(x.reason), esc(x.next)]; })));
 
-  /* 15 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
+  /* 14 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
     [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
     '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
 
-  /* 16 */ add('次回計画', list(d.next_plan));
-  /* 17 */ add('あなたが判断すべき事項(人間判断待ち)', list(d.human_decisions));
+  /* 15 */ add('次回計画', list(d.next_plan));
 
-  /* 18 */ add('停止・復旧履歴', table(['日時', '事象', '詳細'],
+  /* 16: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示) */
+  add('あなたの作業(判断・操作のお願い)',
+    (d.human_decisions && d.human_decisions.length)
+      ? list(d.human_decisions)
+      : '<p class="nowork">今日はあなたの作業はありません。</p>');
+
+  /* 17: お知らせ(OC7:対応不要の連絡はこちらに分離) */
+  add('お知らせ(確認だけ・対応は不要)', list(d.notices));
+
+  /* 18: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
+  add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
     d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
 
   /* 19 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
