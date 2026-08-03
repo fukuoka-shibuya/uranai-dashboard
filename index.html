@@ -238,16 +238,39 @@
           }))
       : '<p class="sub">該当なし(まだコメントによる指示はありません)</p>'));
 
-  /* 3 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+  /* 3: 溜まっている作業(OC10:いま積み上がっている未対応の作業をトップ付近に常設)
+     契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
+     漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。 */
+  add('溜まっている作業(これから対応する予定)',
+    '<p class="sub">いま積み上がっている未対応の作業の一覧です。終わったものは最下部の「完了した作業」に移ります。</p>' +
+    ((d.pending_work && d.pending_work.length)
+      ? table(['ID', '作業', '状態', '予定・方針'],
+          d.pending_work.map(function (t) {
+            var cls = t.status === '対応中' ? 'kin' : 'sub';
+            return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
+          }))
+      : '<p class="sub">該当なし(溜まっている作業はありません)</p>'));
 
-  /* 4 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
+  /* 4: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
+  add('対応できなかったこと・保留(別枠)',
+    '<p class="sub">試みたけれど実現できなかったこと・意図して保留していることの一覧です。理由と、代わりにどうしているかを添えています。</p>' +
+    ((d.undone_items && d.undone_items.length)
+      ? table(['ID', 'できていないこと', '状態', '理由と代わりの対応'],
+          d.undone_items.map(function (u) {
+            return [esc(u.id), esc(u.title), '<span class="sub">' + esc(u.state) + '</span>', esc(u.reason)];
+          }))
+      : '<p class="sub">該当なし</p>'));
+
+  /* 5 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+
+  /* 6 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
     d.acceptance.map(function (a) {
       return [esc(a.text),
         a.verified ? '<span class="ok">検証済</span>' : '<span class="ng">未確認</span>',
         esc(a.how)];
     })));
 
-  /* 5: 各案の成果とプレゼン30秒(OC9 の欄を増やしても20項目を保つため統合。内容は両方とも維持) */
+  /* 7: 各案の成果とプレゼン30秒(OC9 の欄を増やしても20項目を保つため統合。内容は両方とも維持) */
   add('各案の成果とプレゼン30秒', '<div class="grid">' + d.plans.map(function (p) {
     return '<div class="card"><h3>' + esc(p.name) + '</h3>' +
       '<p>' + esc(p.pitch30s) + '</p>' +
@@ -255,20 +278,14 @@
       '<span class="tag' + (p.adopted ? ' adopted' : '') + '">' + (p.adopted ? '採用' : '不採用') + '</span></div>';
   }).join('') + '</div>');
 
-  /* 6 */ add('比較表', table(d.comparison.headers, d.comparison.rows.map(function (r) {
+  /* 8: 比較表と採用理由(OC10 で欄を増やしても20項目を保つため統合。内容は両方とも維持) */
+  add('比較表と採用・不採用の理由', table(d.comparison.headers, d.comparison.rows.map(function (r) {
     return r.map(esc);
-  })));
-
-  /* 7 */ add('採用・不採用の理由', '<p><b class="kin">採用:</b>' + esc(d.adopted_reason) + '</p>' +
+  })) +
+    '<p style="margin-top:8px"><b class="kin">採用:</b>' + esc(d.adopted_reason) + '</p>' +
     '<p><b class="sub">不採用:</b>' + esc(d.rejected_reason) + '</p>');
-  /* 8 */ add('改善点(今回の差分)', list(d.improvements));
 
-  /* 9: 完成済みの機能一覧(OC8:何が完成したのかをいつでも一覧できるように) */
-  add('完成済みの機能(これまでの成果)',
-    '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
-    (d.completed_features && d.completed_features.length
-      ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
-      : '<p class="sub">該当なし</p>'));
+  /* 9 */ add('改善点(今回の差分)', list(d.improvements));
 
   /* 10 */ add('成果物リンク', list(d.artifacts, function (a) {
     return '<li><a href="' + esc(a.href) + '">' + esc(a.label) + '</a></li>';
@@ -293,34 +310,41 @@
     [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
     '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
 
-  /* 15 */ add('次回計画', list(d.next_plan));
-
-  /* 16: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示) */
+  /* 15: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
+     (旧「次回計画」欄は OC10 の「溜まっている作業」(予定・方針の列)に統合した) */
   add('あなたの作業(判断・操作のお願い)',
     (d.human_decisions && d.human_decisions.length)
       ? list(d.human_decisions)
       : '<p class="nowork">今日はあなたの作業はありません。</p>');
 
-  /* 17: お知らせ(OC7:対応不要の連絡はこちらに分離) */
+  /* 16: お知らせ(OC7:対応不要の連絡はこちらに分離) */
   add('お知らせ(確認だけ・対応は不要)', list(d.notices));
 
-  /* 18: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
+  /* 17: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
     d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
 
-  /* 19 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
+  /* 18 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
     d.spec_compliance.map(function (s) {
       var cls = s.state === '適合' ? 'ok' : (s.state === '未実装' ? 'ng' : 'kin');
       return [esc(s.item), '<span class="' + cls + '">' + esc(s.state) + '</span>', esc(s.note)];
     })));
 
-  /* 20 */ add('キュー状況(バックログ)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
-    ' / 進行中 ' + esc(d.queue_summary.in_progress) +
+  /* 19: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
+  add('完成済みの機能(これまでの成果)',
+    '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
+    (d.completed_features && d.completed_features.length
+      ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
+      : '<p class="sub">該当なし</p>'));
+
+  /* 20: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は3・4番の欄が持つ) */
+  add('完了した作業(これまでに終わったタスク)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
+    ' / 対応中 ' + esc(d.queue_summary.in_progress) +
     ' / 完了 ' + esc(d.queue_summary.done) +
-    ' / 保留 ' + esc(d.queue_summary.blocked) + '</p>' +
-    table(['ID', 'タスク', '状態'], d.queue_summary.items.map(function (t) {
-      var cls = t.status === 'done' ? 'ok' : (t.status === 'in_progress' ? 'kin' : 'sub');
-      return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>'];
+    ' / 保留・観察中 ' + esc(d.queue_summary.blocked) +
+    ' — 未着手・対応中の内訳は上の「溜まっている作業」、保留の内訳は「対応できなかったこと・保留」にあります。</p>' +
+    table(['ID', '終わったタスク', '完了時期・備考'], d.queue_summary.items.map(function (t) {
+      return [esc(t.id), esc(t.title), esc(t.note)];
     })));
 
   document.getElementById('body').innerHTML = sections.map(function (s, i) {
