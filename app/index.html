@@ -101,6 +101,24 @@
   .check input{margin-top:4px;flex:none;}
   .hint{font-size:12px;color:var(--ko-sub);margin:4px 0 0;}
 
+  /* ---- 生年月日の選択窓(Issue #17)----
+     書かずに選べる入力部品。欄の直下に浮かぶ小窓で、全画面オーバーレイ(画面)ではない */
+  .bd-row{display:flex;gap:8px;align-items:stretch;}
+  .bd-row input[type=date]{flex:1 1 auto;min-width:0;width:auto;}
+  .bd-row button{flex:none;width:auto;padding:0 14px;font-size:13px;font-weight:600;}
+  #birthdate-field{position:relative;}
+  #bd-picker{
+    position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:10;
+    background:var(--sumi);
+    border:1px solid var(--ai-murasaki);border-radius:12px;
+    padding:12px;
+    box-shadow:0 10px 28px rgba(0,0,0,.5);
+  }
+  #bd-picker.hidden{display:none;}
+  .bd-selects{display:flex;gap:8px;margin:0 0 12px;}
+  .bd-selects select{flex:1 1 0;min-width:0;padding:9px 6px;background:var(--yoake-2);}
+  #bd-picker .row-2 button{padding:9px 10px;font-size:13px;}
+
   /* ---- 保存したプロフィール ---- */
   .plist{list-style:none;margin:0 0 10px;padding:0;}
   .plist li{
@@ -296,9 +314,25 @@
       <input type="text" id="nickname" name="nickname" autocomplete="off" maxlength="20" placeholder="呼ばれたい名前">
     </div>
 
-    <div class="field">
+    <div class="field" id="birthdate-field">
       <label for="birthdate">生年月日</label>
-      <input type="date" id="birthdate" name="birthdate" min="1900-01-01">
+      <div class="bd-row">
+        <input type="date" id="birthdate" name="birthdate" min="1900-01-01">
+        <button id="bd-open" type="button" class="ghost" aria-haspopup="dialog" aria-expanded="false">選んで入力</button>
+      </div>
+      <!-- 生年月日の選択窓(Issue #17)。中の select は生年月日1項目を組み立てる部品であり、
+           入力4種(ニックネーム/生年月日/性別/保存可否)を増やすものではない(input.spec.js が照合) -->
+      <div id="bd-picker" class="hidden" role="dialog" aria-label="生年月日を選ぶ窓">
+        <div class="bd-selects">
+          <select id="bd-year" aria-label="年"></select>
+          <select id="bd-month" aria-label="月"></select>
+          <select id="bd-day" aria-label="日"></select>
+        </div>
+        <div class="row-2">
+          <button id="bd-decide" type="button">この日付にする</button>
+          <button id="bd-cancel" type="button" class="ghost">やめる</button>
+        </div>
+      </div>
     </div>
 
     <div class="field">
@@ -1082,6 +1116,107 @@
   });
 
   render();
+
+  /* ---------- 生年月日の選択窓(Issue #17) ----------
+     ・「選んで入力」で欄の直下に小窓が開き、年・月・日を書かずに選べる
+     ・「この日付にする」で #birthdate に反映(既存の検証・保存・計算の経路は不変)
+     ・「やめる」・Esc・窓の外の操作では値を変えずに閉じる
+     ・選択肢は 1900年〜今日 に絞る(未来日・存在しない日を選ばせない) */
+  var bdOpenBtn = document.getElementById('bd-open');
+  var bdPicker = document.getElementById('bd-picker');
+  var bdYear = document.getElementById('bd-year');
+  var bdMonth = document.getElementById('bd-month');
+  var bdDay = document.getElementById('bd-day');
+  var BD_MIN_YEAR = 1900;
+  /* 窓を初めて開いた時の初期位置。リスト中ほどで、そこから前後へ動かしやすい年 */
+  var BD_DEFAULT = { y: 2000, m: 1, d: 1 };
+  var bdPickerOpen = false;
+
+  function bdToday() {
+    var t = todayText().split('-');
+    return { y: +t[0], m: +t[1], d: +t[2] };
+  }
+  /* その年月の末日(引数から決まる決定論的な計算) */
+  function bdDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+  function bdSetOptions(sel, from, to, unit, selected) {
+    sel.textContent = '';
+    for (var i = from; i <= to; i++) {
+      var opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = i + unit;
+      if (i === selected) { opt.selected = true; }
+      sel.appendChild(opt);
+    }
+  }
+
+  /* 年→月→日の順に選択肢を作り直す。月や年を変えて日が末日を超えたら末日へ詰める */
+  function bdRefresh(selY, selM, selD) {
+    var t = bdToday();
+    bdSetOptions(bdYear, BD_MIN_YEAR, t.y, '年', Math.min(Math.max(selY, BD_MIN_YEAR), t.y));
+    var y = +bdYear.value;
+    var maxM = (y === t.y) ? t.m : 12;
+    bdSetOptions(bdMonth, 1, maxM, '月', Math.min(selM, maxM));
+    var m = +bdMonth.value;
+    var maxD = bdDaysInMonth(y, m);
+    if (y === t.y && m === t.m) { maxD = Math.min(maxD, t.d); }
+    bdSetOptions(bdDay, 1, maxD, '日', Math.min(selD, maxD));
+  }
+
+  function bdOpenPicker() {
+    /* 欄に有効な日付が入っていればそこから、無ければ初期位置から始める */
+    var sel = BD_DEFAULT;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(elBirthdate.value);
+    if (m) {
+      var c = { y: +m[1], m: +m[2], d: +m[3] };
+      var t = bdToday();
+      if (c.y >= BD_MIN_YEAR && c.m >= 1 && c.m <= 12 &&
+          c.d >= 1 && c.d <= bdDaysInMonth(c.y, c.m) &&
+          elBirthdate.value <= todayText()) { sel = c; }
+    }
+    bdRefresh(sel.y, sel.m, sel.d);
+    bdPicker.classList.remove('hidden');
+    bdOpenBtn.setAttribute('aria-expanded', 'true');
+    bdPickerOpen = true;
+    bdYear.focus();
+  }
+
+  function bdClosePicker(returnFocus) {
+    bdPicker.classList.add('hidden');
+    bdOpenBtn.setAttribute('aria-expanded', 'false');
+    bdPickerOpen = false;
+    if (returnFocus) { bdOpenBtn.focus(); }
+  }
+
+  bdOpenBtn.addEventListener('click', function () {
+    if (bdPickerOpen) { bdClosePicker(true); } else { bdOpenPicker(); }
+  });
+  bdYear.addEventListener('change', function () { bdRefresh(+bdYear.value, +bdMonth.value, +bdDay.value); });
+  bdMonth.addEventListener('change', function () { bdRefresh(+bdYear.value, +bdMonth.value, +bdDay.value); });
+
+  document.getElementById('bd-decide').addEventListener('click', function () {
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    elBirthdate.value = bdYear.value + '-' + two(+bdMonth.value) + '-' + two(+bdDay.value);
+    elBirthdate.dispatchEvent(new Event('change', { bubbles: true }));
+    bdClosePicker(true);
+  });
+  document.getElementById('bd-cancel').addEventListener('click', function () { bdClosePicker(true); });
+
+  /* Escで値を変えずに閉じる。この窓は入力画面でだけ開くため、結果ページ・仮広告の
+     Esc処理(それぞれ表示中のみ動く)と競合しない。フォーカスの引き戻しは、
+     フォーカスが窓の中にある時だけ行う(窓の外の操作中に奪わない) */
+  document.addEventListener('keydown', function (e) {
+    if (bdPickerOpen && e.key === 'Escape') {
+      bdClosePicker(bdPicker.contains(document.activeElement));
+    }
+  });
+  /* 窓の外を押したら閉じる(値は変えない)。開くボタン自身は toggle に任せる */
+  document.addEventListener('click', function (e) {
+    if (!bdPickerOpen) { return; }
+    var t = e.target;
+    if ((t instanceof Node) && (bdPicker.contains(t) || t === bdOpenBtn)) { return; }
+    bdClosePicker(false);
+  });
 })();
 </script>
 </body>
