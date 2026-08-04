@@ -299,9 +299,12 @@
   <section id="input-section" aria-labelledby="input-h">
     <h2 id="input-h">あなたのこと</h2>
 
+    <!-- 名前の入力は「占いたい名前」1欄のみ(Issue #39。旧ニックネーム欄は統合して廃止)。
+         本名を求めない(ニックネーム可)。姓名判断と、プロフィール保存の表示名の両方に使う -->
     <div class="field">
-      <label for="nickname">ニックネーム</label>
-      <input type="text" id="nickname" name="nickname" autocomplete="off" maxlength="20" placeholder="呼ばれたい名前">
+      <label for="seimei-name">占いたい名前(任意・ニックネームでかまいません)</label>
+      <input type="text" id="seimei-name" name="seimei-name" autocomplete="off" maxlength="20" placeholder="姓名判断や保存に使う名前">
+      <p class="hint">姓名判断と、保存するときの表示名に使います。空のままでも姓名判断以外の占術は使えます。保存は「この端末にだけ保存する」を選んだ時だけです。</p>
     </div>
 
     <div class="field" id="birthdate-field">
@@ -317,14 +320,6 @@
         <select id="bd-day" aria-label="生年月日(日)"></select>
       </div>
       <input type="hidden" id="birthdate" name="birthdate">
-    </div>
-
-    <!-- 姓名判断(Issue #26)用の任意入力。本名を求めない(ニックネーム可)。
-         プロフィール保存の対象には含めない(端末にも残さない) -->
-    <div class="field">
-      <label for="seimei-name">占いたい名前(任意・ニックネームでかまいません)</label>
-      <input type="text" id="seimei-name" name="seimei-name" autocomplete="off" maxlength="20" placeholder="姓名判断で使う名前">
-      <p class="hint">姓名判断にだけ使います。空のままでも他の占術は使えます。保存はされません。</p>
     </div>
 
     <div class="field">
@@ -663,7 +658,7 @@
   /* ---------- 総合占いの解放フロー(C5) ----------
      個別2件読了 → 仮広告を1回表示 → 閉じると解放。解放後は二度と広告を出さない。
      解放状態として端末に残すのは個人情報を含まない印(値 "1")だけで、
-     ニックネーム・生年月日は含めない。プロフィール保存の同意(save-consent)とは
+     名前・生年月日は含めない。プロフィール保存の同意(save-consent)とは
      別扱いとする。localStorage が使えない環境では、この画面を開いている間だけ
      解放を保つ(リロード後は再び2件読了と広告が必要になる)。 */
   var UNLOCK_KEY = 'uranai.unlock.v1';
@@ -795,7 +790,9 @@
   var STORE_KEY = 'uranai.profiles.v1';
   var MAX_PROFILES = 5;
 
-  var elNickname = document.getElementById('nickname');
+  /* 名前欄は「占いたい名前」1欄に統合(Issue #39)。保存データの内部キーは
+     後方互換のため nickname のまま(旧保存分がそのまま表示名として読める) */
+  var elName = document.getElementById('seimei-name');
   var elBirthdate = document.getElementById('birthdate');
   var elGender = document.getElementById('gender');
   var elConsent = document.getElementById('save-consent');
@@ -948,7 +945,7 @@
         use.textContent = '使う';
         use.setAttribute('aria-label', p.nickname + ' の内容を入力欄に戻す');
         use.addEventListener('click', function () {
-          elNickname.value = p.nickname;
+          elName.value = p.nickname;
           elBirthdate.value = p.birthdate;
           /* 年・月・日のプルダウン(Issue #29)を復元した値に追随させる */
           bdSyncFromValue();
@@ -1017,7 +1014,7 @@
   }
 
   document.getElementById('save-profile').addEventListener('click', function () {
-    var nickname = elNickname.value.trim();
+    var nickname = elName.value.trim();
     var birthdate = elBirthdate.value;
 
     hideDeleteAllConfirm();
@@ -1027,7 +1024,7 @@
       return;
     }
     if (!nickname || !birthdate) {
-      say('ニックネームと生年月日を入れていただくと保存できます。');
+      say('占いたい名前と生年月日を入れていただくと保存できます。');
       return;
     }
     if (birthdate > todayText()) {
@@ -1038,7 +1035,7 @@
     /* 別のタブでの変更を消さないよう、書き込む直前に最新を読み直す */
     profiles = loadProfiles();
 
-    /* 同じニックネーム+生年月日は上書きし、件数を増やさない */
+    /* 同じ名前+生年月日は上書きし、件数を増やさない */
     var existing = -1;
     for (var i = 0; i < profiles.length; i++) {
       if (profiles[i].nickname === nickname && profiles[i].birthdate === birthdate) { existing = i; break; }
