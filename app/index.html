@@ -1050,13 +1050,16 @@
 
     if (!writeStore(profiles)) {
       profiles = loadProfiles();
-      render();
-      say('この端末では保存機能を使えないようです。');
+      /* 一覧を描けない事態では render() 側の復旧案内(すべて削除への誘導)を優先する
+         (削除ハンドラと同じ抑止パターン。M10-L3) */
+      if (render()) { say('この端末では保存機能を使えないようです。'); }
       return;
     }
-    render();
+    var renderedAfterSave = render();
     clearUndo();
-    say(existing >= 0 ? '保存済みの内容を更新しました。' : '端末内に保存しました。');
+    if (renderedAfterSave) {
+      say(existing >= 0 ? '保存済みの内容を更新しました。' : '端末内に保存しました。');
+    }
   });
 
   elDeleteAll.addEventListener('click', function () {
@@ -1074,9 +1077,10 @@
     confirmingDeleteAll = false;
     /* removeItem まで失敗する環境でも黙殺しない(1件削除の M10 対応と同じ扱い) */
     var ok = writeStore(profiles);
-    render();
-    say(ok ? 'すべて削除しました。'
-           : 'すべて一覧から消しましたが、この端末では保存機能を使えないようです。開き直すと元に戻ることがあります。');
+    if (render()) {
+      say(ok ? 'すべて削除しました。'
+             : 'すべて一覧から消しましたが、この端末では保存機能を使えないようです。開き直すと元に戻ることがあります。');
+    }
   });
 
   /* 「元に戻す」ボタンは押すと消えるため、フォーカスの行き場を一覧側へ移す
@@ -1105,16 +1109,16 @@
     for (var i = 0; i < latest.length; i++) {
       if (latest[i].nickname === target.nickname && latest[i].birthdate === target.birthdate) {
         profiles = latest;
-        render();
-        say('同じ内容が既に保存されているため、元に戻す操作は行いませんでした。');
+        /* rendered=false のときは render() 側の復旧案内を残す(M10-L3。フォーカス移動は
+           一覧が描けない場合も focusListItem が保存ボタンへ安全に逃がすため常に行う) */
+        if (render()) { say('同じ内容が既に保存されているため、元に戻す操作は行いませんでした。'); }
         focusListItem(i);
         return;
       }
     }
     if (latest.length >= MAX_PROFILES) {
       profiles = latest;
-      render();
-      say('保存できるのは' + MAX_PROFILES + '件までのため、元に戻せませんでした。');
+      if (render()) { say('保存できるのは' + MAX_PROFILES + '件までのため、元に戻せませんでした。'); }
       focusListItem(0);
       return;
     }
@@ -1124,9 +1128,10 @@
     latest.splice(pos, 0, target);
     profiles = latest;
     var ok = writeStore(profiles);
-    render();
-    say(ok ? target.nickname + ' さんを元に戻しました。'
-           : target.nickname + ' さんを画面に戻しましたが、この端末では保存機能を使えないようです。');
+    if (render()) {
+      say(ok ? target.nickname + ' さんを元に戻しました。'
+             : target.nickname + ' さんを画面に戻しましたが、この端末では保存機能を使えないようです。');
+    }
     focusListItem(pos);
   });
 
