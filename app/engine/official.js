@@ -500,19 +500,50 @@
     return sunLongitude(jdOfUt(b.year, b.month, b.day, 3) + deltaTSec(b.year) / 86400);
   }
 
-  /** 太陽星座の番号(0=牡羊座〜11=魚座)。黄経を30度ごとに区切る */
+  /* 星座の替わり目(黄経が30度の倍数になる瞬間=二十四節気の中気)が正午(日本時)の
+     ごく近くに来る日は、略算の誤差(数分〜十数分)では正午のどちら側かが決まらない。
+     その日付だけを国立天文台暦計算室「二十四節気・雑節 長期版」の公表時刻と照合して
+     確定させた上書き表。値は正午の時点での星座の番号(0=牡羊座〜11=魚座)。
+     公表値の確認が取れた日付だけを載せる(出典なしで足さない)。
+     替わり目が正午の前後20分以内に来る日は1900〜2029年で43日あり、その43日すべてを
+     公表時刻と1件ずつ照合した(cycle-0040)。略算が正午の反対側と出したのは下の2日だけで、
+     残る41日は略算のままで公表時刻と同じ側だった。照合済みの既知値は
+     tests/official.spec.js の NOON_EDGE_SIGNS にも置いてある */
+  var SIGN_DAY_FIX = {
+    /* 秋分(黄経180度)は 12:05 JST=正午にはまだ未到達。略算は正午の3.9分前と出す */
+    '1981-09-23': 5,  /* 乙女座(略算は天秤座) */
+    /* 春分(黄経0度)は 12:02 JST=正午にはまだ未到達。略算は正午の2.6分前と出す */
+    '1991-03-21': 11  /* 魚座(略算は牡羊座) */
+  };
+
+  function signFixKeyOf(b) {
+    return b.year + '-' + (b.month < 10 ? '0' : '') + b.month +
+           '-' + (b.day < 10 ? '0' : '') + b.day;
+  }
+
+  /** 太陽星座の番号(0=牡羊座〜11=魚座)。黄経を30度ごとに区切る。
+      製品の結果文もこの関数を通す(区画式はここ1か所。台帳 OC35d-M2) */
   function sunSignIndexOf(b) {
+    var fixKey = signFixKeyOf(b);
+    if (Object.prototype.hasOwnProperty.call(SIGN_DAY_FIX, fixKey)) {
+      return SIGN_DAY_FIX[fixKey];
+    }
     return mod(Math.floor(sunLongitudeAtNoonJst(b) / 30), 12);
   }
 
+  /** 星座の中での度数(0〜29度)。選ばれた星座の起点から数えるため、
+      上書き表が効いた日でも星座と度数が食い違わない(台帳 OC35d-M3) */
+  function degreeInSignOf(b, order) {
+    var deg = Math.floor(mod(sunLongitudeAtNoonJst(b) - order * 30, 360));
+    return deg > 29 ? 29 : deg;
+  }
+
   function seiyouOfficial(b) {
-    var lambda = sunLongitudeAtNoonJst(b);
-    var order = mod(Math.floor(lambda / 30), 12);
+    var order = sunSignIndexOf(b);
     var name = SIGN_ORDER[order];
     var el = ELEMENT[order % 4];
     var md = MODE[order % 3];
-    /* 星座の中での度数(0〜29度)。正午の位置なので整数の度までを示す */
-    var degInSign = Math.floor(mod(lambda, 30));
+    var degInSign = degreeInSignOf(b, order);
 
     return {
       key: 'seiyou',
