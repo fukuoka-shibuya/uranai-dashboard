@@ -4,8 +4,9 @@
  * 正式な暦・天文計算を入れるのはこのファイルだけで、仮計算側には手を入れません。
  * どの占術を正式計算へ切り替えるかは engine/index.js の OFFICIAL_KEYS 1か所で決めます。
  *
- * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)/数秘術(cycle-0038)
- * 未実装 :西洋占星術/宿曜/姓名判断(availableKeys に無い占術は
+ * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)/数秘術(cycle-0038)/
+ *          西洋占星術(cycle-0039)
+ * 未実装 :宿曜/姓名判断(availableKeys に無い占術は
  *          computeOne が null を返し、engine/index.js が自動的に仮計算へ戻します)
  *
  * ==== 算命学の採用方式(計算根拠。サイクル報告書にも明記)====
@@ -43,6 +44,22 @@
  *  - 誕生数: 生まれた日(1〜31)だけを同じ規則で縮める(11・22 はそのまま)。
  *    生まれた日のみからの縮約であることを結果の文章でも開示する
  *  - 数秘術は暦の計算を使わない(生年月日の数字だけで決まる決定論の計算)
+ *
+ * ==== 西洋占星術の採用方式(計算根拠。サイクル報告書にも明記)====
+ *  - 太陽星座: 太陽の視黄経を実際に計算し、0度(春分点)から30度ごとに区切って
+ *    牡羊座〜魚座に当てる。区切りの瞬間は二十四節気の中気(春分=牡羊座・穀雨=牡牛座・
+ *    小満=双子座・夏至=蟹座・大暑=獅子座・処暑=乙女座・秋分=天秤座・霜降=蠍座・
+ *    小雪=射手座・冬至=山羊座・大寒=水瓶座・雨水=魚座)と同じ瞬間になる
+ *  - 出生時刻を求めない仕様のため、生まれた日の正午(日本標準時)の太陽黄経で
+ *    その日の星座を決める。日ごとの切り替えではなく正午を代表点に選ぶ理由は二つ:
+ *    (1) 時刻の分からない生まれに対して、実際の星座と一致する見込みが最も高い
+ *    (星座が替わる瞬間が正午より前なら、その日の大半は新しい星座に入っている)
+ *    (2) 黄経の略算には十数分の誤差があるが、正午を境にすると誤差が結果を
+ *    変えるのは「替わる瞬間が正午のすぐ近く」の場合だけで、真夜中際の日付ずれで
+ *    その日の生まれ全員の星座が入れ替わる事故が起きない
+ *  - 星座が替わる日に生まれた方は、生まれた時刻によって隣の星座になり得る。
+ *    この点は結果の文章でも開示する
+ *  - エレメント(火地風水)・三区分(活動不動柔軟)は星座の並び順から決まる公知の対応
  * いずれも端末内で完結する計算のみで、外部APIは使いません。
  */
 (function (root, factory) {
@@ -52,7 +69,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi'];
+  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou'];
 
   /* ============ 共通の小道具 ============ */
 
@@ -456,6 +473,69 @@
     };
   }
 
+  /* ============ 西洋占星術(正式計算) ============ */
+
+  /* 星座・エレメント・三区分の対応と文言は仮計算側と同じ表。仮・正式の二重管理に
+     なるため、改稿時は provisional.js 側と同時に更新する(台帳 OC35a-L1 と同じ扱い)。
+     並びは黄経0度(春分点)からの順で、添字がそのまま 30度刻みの区画になる */
+  var SIGN_ORDER = ['牡羊座', '牡牛座', '双子座', '蟹座', '獅子座', '乙女座',
+                    '天秤座', '蠍座', '射手座', '山羊座', '水瓶座', '魚座'];
+  var ELEMENT = ['火', '地', '風', '水'];
+  /* 語り口(W8):西洋の note は空・自然の比喩「〜ように、」から入り「〜でしょう。」で結ぶ */
+  var ELEMENT_NOTE = {
+    '火': 'たき火が人を寄せるように、熱を分けて場をあたためる出方をしやすいでしょう。',
+    '地': '大地に種をおろすように、手で触れられる形にしてから進める出方をしやすいでしょう。',
+    '風': '風が知らせを運ぶように、言葉にして人と分け合う出方をしやすいでしょう。',
+    '水': '水が器に沿うように、場の空気を受け取ってから動く出方をしやすいでしょう。'
+  };
+  var MODE = ['活動', '不動', '柔軟'];
+  var MODE_NOTE = {
+    '活動': '夜明けの空が動き出すように、始まりの場面で力が出やすいでしょう。',
+    '不動': '北極星が座を変えないように、続けていく場面で力が出やすいでしょう。',
+    '柔軟': '月が満ち欠けで姿を変えるように、切り替えの場面で力が出やすいでしょう。'
+  };
+
+  /** 生まれた日の正午(日本標準時=世界時の3時)の太陽の視黄経(度) */
+  function sunLongitudeAtNoonJst(b) {
+    return sunLongitude(jdOfUt(b.year, b.month, b.day, 3) + deltaTSec(b.year) / 86400);
+  }
+
+  /** 太陽星座の番号(0=牡羊座〜11=魚座)。黄経を30度ごとに区切る */
+  function sunSignIndexOf(b) {
+    return mod(Math.floor(sunLongitudeAtNoonJst(b) / 30), 12);
+  }
+
+  function seiyouOfficial(b) {
+    var lambda = sunLongitudeAtNoonJst(b);
+    var order = mod(Math.floor(lambda / 30), 12);
+    var name = SIGN_ORDER[order];
+    var el = ELEMENT[order % 4];
+    var md = MODE[order % 3];
+    /* 星座の中での度数(0〜29度)。正午の位置なので整数の度までを示す */
+    var degInSign = Math.floor(mod(lambda, 30));
+
+    return {
+      key: 'seiyou',
+      name: '西洋占星術',
+      view: '空の配置から見た傾向',
+      summary: '太陽の位置を正式に計算すると、生まれた日の正午(日本時)の太陽は' + name + 'の' +
+               degInSign + '度あたりに位置していました。' + el + 'のグループと' + md +
+               'のしるしの重なりから、力の出やすい場面を探っていきます。',
+      closing: '空の配置は生まれた日の眺めであって、これからの道筋を定めるものではありません。' +
+               '星空を見上げるつもりで読んでいただけたらと思います。',
+      items: [
+        { label: '太陽星座', value: name,
+          note: '空を一周する太陽の道を三十度ずつに分けるように、正午の太陽の位置から求めた星座です。' +
+                '星座が替わる日の生まれの方は、生まれた時刻によって隣の星座として読まれることもあるでしょう。' },
+        { label: 'エレメント', value: el + 'のグループ', note: ELEMENT_NOTE[el] },
+        { label: '三区分', value: md + 'のしるし', note: MODE_NOTE[md] },
+        { label: '向かい合う星座', value: SIGN_ORDER[(order + 6) % 12],
+          note: '空の上で正面に位置する星座です。自分に足りない見方を借りたいときの手がかりになるでしょう。' }
+      ],
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -467,6 +547,7 @@
     if (key === 'sanmei') { return sanmeiOfficial(b); }
     if (key === 'kyusei') { return kyuseiOfficial(b); }
     if (key === 'suuhi') { return suuhiOfficial(b); }
+    if (key === 'seiyou') { return seiyouOfficial(b); }
     return null;
   }
 
@@ -500,7 +581,10 @@
       honmeiStarOf: honmeiStarOf,
       getsumeiStarOf: getsumeiStarOf,
       reduceKeepMaster: reduceKeepMaster,
-      lifePathOf: lifePathOf
+      lifePathOf: lifePathOf,
+      sunLongitudeAtNoonJst: sunLongitudeAtNoonJst,
+      sunSignIndexOf: sunSignIndexOf,
+      signOrder: SIGN_ORDER.slice()
     }
   };
 });
