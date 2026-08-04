@@ -26,7 +26,7 @@
     -webkit-text-size-adjust:100%;
   }
   .wrap{width:100%;max-width:412px;margin:0 auto;padding:16px 14px 40px;}
-  h1{font-size:19px;margin:0 0 4px;font-weight:600;letter-spacing:.04em;}
+  h1{font-size:19px;margin:0 0 16px;font-weight:600;letter-spacing:.04em;text-align:center;}
   h2{font-size:16px;margin:0 0 10px;font-weight:600;}
   p{margin:0 0 10px;}
   .lead{color:var(--ko-sub);font-size:13px;margin:0 0 18px;}
@@ -292,7 +292,8 @@
      「占いを始める」で inert を外す -->
 <div class="wrap" inert>
   <h1 id="main-title" tabindex="-1">藍色の運命占い</h1>
-  <p class="lead">算命学を中心に、五つの見方から静かに読み解く試作品です。13歳以上の方を対象としています。</p>
+  <!-- メイン画面の説明文(旧 p.lead)は Issue #32 のオーナー指示で削除。
+       「現在は試作用の仮データです」の明示は結果画面側(仕様の絶対条件)で維持 -->
 
   <!-- 1. 入力 -->
   <section id="input-section" aria-labelledby="input-h">
