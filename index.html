@@ -23,6 +23,9 @@
   .page{max-width:1000px;margin:0 auto;padding:24px 18px 64px;}
   header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px;}
   h1{font-size:21px;margin:0 0 6px;}
+  /* OC28(#28):更新時刻の常設表示。ヘッダーの一番上・右端の一定の場所に、
+     本文と違う色(紫系 #b9a3e3=黄系禁止 OC15 非抵触)で少しだけ太く出す(過度な強調はしない) */
+  .hdr-updated{text-align:right;font-size:13px;font-weight:600;color:var(--kin);margin:0 0 2px;}
   .meta{color:var(--sub);font-size:13px;}
   .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;border:1px solid var(--ai);color:var(--ai);margin-left:8px;}
   /* OC27(#27):ループ稼働マーク。稼働中=青・停止の可能性=赤。点滅・アニメーションは使わない。
@@ -98,6 +101,9 @@
 <body>
 <div class="page">
   <header>
+    <!-- OC28(#28):更新時刻をいつも同じ場所(ヘッダー右上)に表示する。
+         h1 より前に置くこと(OC27 検査は h1 の直後の要素に稼働マークがある前提) -->
+    <div class="hdr-updated" id="hdr-updated">更新時刻 —</div>
     <h1>占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></h1>
     <div class="meta"><span id="loop-status" class="loop-mark">—</span></div>
     <div class="meta" id="hdr-meta">読み込み中…</div>
@@ -233,6 +239,22 @@
   document.getElementById('hdr-status').textContent = d.status || '—';
   document.getElementById('hdr-meta').textContent =
     d.cycle_id + ' / ' + d.cycle_label + ' — 生成 ' + d.generated_at;
+
+  /* OC28(#28):更新時刻をヘッダー右上の一定の場所に、読みやすい日本語表記で表示する。
+     値は報告書の生成時刻(generated_at)そのもの。読めない場合は元の文字列を出す。
+     表記は閲覧端末の時間帯に合わせる(OC27 マークと同じ性質。日本以外の端末では現地時刻になる) */
+  (function () {
+    var el = document.getElementById('hdr-updated');
+    var t = Date.parse(d.generated_at);
+    if (isNaN(t)) {
+      el.textContent = '更新時刻 ' + (d.generated_at || '不明');
+      return;
+    }
+    var u = new Date(t);
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    el.textContent = '更新時刻 ' + u.getFullYear() + '/' + (u.getMonth() + 1) + '/' + u.getDate() +
+      ' ' + u.getHours() + ':' + two(u.getMinutes());
+  })();
 
   /* OC27(#27):ループ稼働マーク。報告書の生成時刻(generated_at)と閲覧端末の時計の差で
      稼働/停止の見込みを判定し、タイトル直下に表示する(外部への問い合わせはしない)。

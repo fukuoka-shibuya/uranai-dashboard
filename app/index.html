@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>藍空うらない手帖 — 試作</title>
+<title>藍色の運命占い — 試作</title>
 <style>
   :root{
     --yoake:#141a2e;        /* 夜明け前の藍色(基調) */
@@ -101,23 +101,12 @@
   .check input{margin-top:4px;flex:none;}
   .hint{font-size:12px;color:var(--ko-sub);margin:4px 0 0;}
 
-  /* ---- 生年月日の選択窓(Issue #17)----
-     書かずに選べる入力部品。欄の直下に浮かぶ小窓で、全画面オーバーレイ(画面)ではない */
-  .bd-row{display:flex;gap:8px;align-items:stretch;}
-  .bd-row input[type=date]{flex:1 1 auto;min-width:0;width:auto;}
-  .bd-row button{flex:none;width:auto;padding:0 14px;font-size:13px;font-weight:600;}
-  #birthdate-field{position:relative;}
-  #bd-picker{
-    position:absolute;left:0;right:0;top:100%;margin-top:6px;z-index:10;
-    background:var(--sumi);
-    border:1px solid var(--ai-murasaki);border-radius:12px;
-    padding:12px;
-    box-shadow:0 10px 28px rgba(0,0,0,.5);
-  }
-  #bd-picker.hidden{display:none;}
-  .bd-selects{display:flex;gap:8px;margin:0 0 12px;}
+  /* ---- 生年月日の選択式入力(Issue #29)----
+     年・月・日をそれぞれプルダウンで選ぶ(書き込み式と「選んで入力」窓は #29 で廃止)。
+     年は桁数が多いためやや広めに取る */
+  .bd-selects{display:flex;gap:8px;}
   .bd-selects select{flex:1 1 0;min-width:0;padding:9px 6px;background:var(--yoake-2);}
-  #bd-picker .row-2 button{padding:9px 10px;font-size:13px;}
+  .bd-selects #bd-year{flex:1.5 1 0;}
 
   /* ---- 保存したプロフィール ---- */
   .plist{list-style:none;margin:0 0 10px;padding:0;}
@@ -286,7 +275,7 @@
     <span class="ring inner"></span>
     <span class="dot"></span>
   </div>
-  <p class="splash-title">藍空うらない手帖</p>
+  <p class="splash-title">藍色の運命占い</p>
   <p class="splash-note">画面をタップすると進みます</p>
 </div>
 
@@ -294,7 +283,7 @@
      「占いを始める」を押すとメイン画面へ。 -->
 <div id="title-screen" role="dialog" aria-modal="true" aria-labelledby="app-title">
   <span class="title-mark" aria-hidden="true"></span>
-  <p id="app-title" class="app-title">藍空うらない手帖</p>
+  <p id="app-title" class="app-title">藍色の運命占い</p>
   <p class="app-subtitle">算命学を中心に、五つの見方から静かに読み解きます。</p>
   <button id="start-app" type="button">占いを始める</button>
 </div>
@@ -302,7 +291,7 @@
 <!-- タイトル画面の表示中は inert で背後を操作不能にする(OC21-L1。支援技術の仮想カーソル対策)。
      「占いを始める」で inert を外す -->
 <div class="wrap" inert>
-  <h1 id="main-title" tabindex="-1">藍空うらない手帖</h1>
+  <h1 id="main-title" tabindex="-1">藍色の運命占い</h1>
   <p class="lead">算命学を中心に、五つの見方から静かに読み解く試作品です。13歳以上の方を対象としています。</p>
 
   <!-- 1. 入力 -->
@@ -315,24 +304,18 @@
     </div>
 
     <div class="field" id="birthdate-field">
-      <label for="birthdate">生年月日</label>
-      <div class="bd-row">
-        <input type="date" id="birthdate" name="birthdate" min="1900-01-01">
-        <button id="bd-open" type="button" class="ghost" aria-haspopup="dialog" aria-expanded="false">選んで入力</button>
+      <label for="bd-year">生年月日</label>
+      <!-- 生年月日は年・月・日をそれぞれプルダウンで選ぶ(Issue #29。Issue #17 の
+           「選んで入力」窓は #29 の指示で廃止し、常時この3つで入力する)。
+           #bd-parts の select は生年月日1項目を組み立てる部品であり、入力5種を
+           増やすものではない(input.spec.js が照合)。3つそろうと下の隠し入力
+           #birthdate に YYYY-MM-DD が入り、保存・計算の経路は従来と変わらない -->
+      <div id="bd-parts" class="bd-selects">
+        <select id="bd-year" aria-label="生年月日(年)"></select>
+        <select id="bd-month" aria-label="生年月日(月)"></select>
+        <select id="bd-day" aria-label="生年月日(日)"></select>
       </div>
-      <!-- 生年月日の選択窓(Issue #17)。中の select は生年月日1項目を組み立てる部品であり、
-           入力4種(ニックネーム/生年月日/性別/保存可否)を増やすものではない(input.spec.js が照合) -->
-      <div id="bd-picker" class="hidden" role="dialog" aria-label="生年月日を選ぶ窓">
-        <div class="bd-selects">
-          <select id="bd-year" aria-label="年"></select>
-          <select id="bd-month" aria-label="月"></select>
-          <select id="bd-day" aria-label="日"></select>
-        </div>
-        <div class="row-2">
-          <button id="bd-decide" type="button">この日付にする</button>
-          <button id="bd-cancel" type="button" class="ghost">やめる</button>
-        </div>
-      </div>
+      <input type="hidden" id="birthdate" name="birthdate">
     </div>
 
     <!-- 姓名判断(Issue #26)用の任意入力。本名を求めない(ニックネーム可)。
@@ -403,8 +386,10 @@
     <button id="read-individual" type="button">この占術で読む</button>
   </section>
 
-  <!-- 3. 総合占い:プルダウンに含めず、別領域・上位機能として分離 -->
-  <section id="overall-section" aria-labelledby="overall-h">
+  <!-- 3. 総合占い:プルダウンに含めず、別領域・上位機能として分離。
+       Issue #31:個別の占いを2つ読み終えるまでは欄ごと隠し、存在を意識させない
+       (2件読了で現れ、仮広告を経て解放される。解放済みの端末では起動時から表示) -->
+  <section id="overall-section" class="hidden" aria-labelledby="overall-h">
     <span class="badge">上位の読み物</span>
     <h2 id="overall-h">総合占い</h2>
     <p id="overall-lock" class="locked">個別の占いを2つ読み終えると、こちらが開きます。(現在 <span id="read-count">0</span> / 2)</p>
@@ -651,13 +636,21 @@
       readSet[key] = true;
       readCount++;
       document.getElementById('read-count').textContent = String(readCount);
+      /* Issue #31:2件読了ではじめて総合占いの欄を見えるようにする(それまで隠す) */
+      if (readCount >= 2) { revealOverall(); }
       if (readCount >= 2 && !unlocked) { adPending = true; }
     }
   });
 
   /* 読了の案内は文言を差し替えるのではなく段落ごと入れ替える。
      #read-count を消してしまうと、以後の読了数の更新ができなくなるため。 */
+  /* Issue #31:総合占いの欄は2件読了(または解放済み)まで欄ごと隠しておく */
+  function revealOverall() {
+    document.getElementById('overall-section').classList.remove('hidden');
+  }
+
   function unlockOverall() {
+    revealOverall();
     document.getElementById('read-overall').disabled = false;
     document.getElementById('overall-lock').classList.add('hidden');
     document.getElementById('overall-open').classList.remove('hidden');
@@ -809,8 +802,6 @@
     function two(n) { return (n < 10 ? '0' : '') + n; }
     return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate());
   }
-  elBirthdate.max = todayText();
-
   var GENDERS = { female: 1, male: 1, other: 1 };
   var idCounter = 0;
 
@@ -947,6 +938,8 @@
         use.addEventListener('click', function () {
           elNickname.value = p.nickname;
           elBirthdate.value = p.birthdate;
+          /* 年・月・日のプルダウン(Issue #29)を復元した値に追随させる */
+          bdSyncFromValue();
           elGender.value = p.gender || '';
           hideDeleteAllConfirm();
           say(p.nickname + ' さんの内容を入力欄に戻しました。');
@@ -1139,20 +1132,15 @@
 
   render();
 
-  /* ---------- 生年月日の選択窓(Issue #17) ----------
-     ・「選んで入力」で欄の直下に小窓が開き、年・月・日を書かずに選べる
-     ・「この日付にする」で #birthdate に反映(既存の検証・保存・計算の経路は不変)
-     ・「やめる」・Esc・窓の外の操作では値を変えずに閉じる
-     ・選択肢は 1900年〜今日 に絞る(未来日・存在しない日を選ばせない) */
-  var bdOpenBtn = document.getElementById('bd-open');
-  var bdPicker = document.getElementById('bd-picker');
+  /* ---------- 生年月日の選択式入力(Issue #29) ----------
+     ・年・月・日をそれぞれプルダウンで選ぶ(Issue #17 の「選んで入力」窓は #29 で廃止)
+     ・3つそろったら隠し入力 #birthdate に YYYY-MM-DD を組み立てる(検証・保存・計算の経路は不変)
+     ・選択肢は 1900年〜今日 に絞る(未来日・存在しない日はそもそも選べない)
+     ・月や年を変えて日が末日を超えたら末日へ詰める。未選択の項目は未選択のまま保つ */
   var bdYear = document.getElementById('bd-year');
   var bdMonth = document.getElementById('bd-month');
   var bdDay = document.getElementById('bd-day');
   var BD_MIN_YEAR = 1900;
-  /* 窓を初めて開いた時の初期位置。リスト中ほどで、そこから前後へ動かしやすい年 */
-  var BD_DEFAULT = { y: 2000, m: 1, d: 1 };
-  var bdPickerOpen = false;
 
   function bdToday() {
     var t = todayText().split('-');
@@ -1161,8 +1149,14 @@
   /* その年月の末日(引数から決まる決定論的な計算) */
   function bdDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
-  function bdSetOptions(sel, from, to, unit, selected) {
+  /* 先頭に未選択の行(value='')を置き、from〜to を並べる。selected は数値か ''(未選択) */
+  function bdSetOptions(sel, from, to, unit, selected, placeholder) {
     sel.textContent = '';
+    var ph = document.createElement('option');
+    ph.value = '';
+    ph.textContent = placeholder;
+    if (selected === '') { ph.selected = true; }
+    sel.appendChild(ph);
     for (var i = from; i <= to; i++) {
       var opt = document.createElement('option');
       opt.value = String(i);
@@ -1172,73 +1166,59 @@
     }
   }
 
-  /* 年→月→日の順に選択肢を作り直す。月や年を変えて日が末日を超えたら末日へ詰める */
+  /* 年→月→日の順に選択肢を作り直す。選択済みの値が新しい上限を超えたら上限へ詰める。
+     年・月が未選択の間、日の候補は 1〜31 で待ち、そろった時点で実在する日に絞る */
   function bdRefresh(selY, selM, selD) {
     var t = bdToday();
-    bdSetOptions(bdYear, BD_MIN_YEAR, t.y, '年', Math.min(Math.max(selY, BD_MIN_YEAR), t.y));
-    var y = +bdYear.value;
+    var y = (selY === '') ? '' : Math.min(Math.max(selY, BD_MIN_YEAR), t.y);
+    bdSetOptions(bdYear, BD_MIN_YEAR, t.y, '年', y, '年');
     var maxM = (y === t.y) ? t.m : 12;
-    bdSetOptions(bdMonth, 1, maxM, '月', Math.min(selM, maxM));
-    var m = +bdMonth.value;
-    var maxD = bdDaysInMonth(y, m);
+    var m = (selM === '') ? '' : Math.min(selM, maxM);
+    bdSetOptions(bdMonth, 1, maxM, '月', m, '月');
+    var maxD = (y !== '' && m !== '') ? bdDaysInMonth(y, m) : 31;
     if (y === t.y && m === t.m) { maxD = Math.min(maxD, t.d); }
-    bdSetOptions(bdDay, 1, maxD, '日', Math.min(selD, maxD));
+    var d = (selD === '') ? '' : Math.min(selD, maxD);
+    bdSetOptions(bdDay, 1, maxD, '日', d, '日');
+    bdCompose();
   }
 
-  function bdOpenPicker() {
-    /* 欄に有効な日付が入っていればそこから、無ければ初期位置から始める */
-    var sel = BD_DEFAULT;
+  /* 3つそろったら #birthdate に反映し、欠けている間は空にする(値が変わった時だけ通知) */
+  function bdCompose() {
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    var v = '';
+    if (bdYear.value && bdMonth.value && bdDay.value) {
+      v = bdYear.value + '-' + two(+bdMonth.value) + '-' + two(+bdDay.value);
+    }
+    if (elBirthdate.value !== v) {
+      elBirthdate.value = v;
+      elBirthdate.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  function bdVal(sel) { return sel.value === '' ? '' : +sel.value; }
+  function bdOnChange() { bdRefresh(bdVal(bdYear), bdVal(bdMonth), bdVal(bdDay)); }
+  bdYear.addEventListener('change', bdOnChange);
+  bdMonth.addEventListener('change', bdOnChange);
+  bdDay.addEventListener('change', bdOnChange);
+
+  /* 保存済みプロフィールの「使う」などで #birthdate の値を直接書き換えた側が呼ぶ。
+     壊れた値・範囲外・未来日は未選択に戻す(値の検証は既存の保存・計算側が引き続き行う) */
+  function bdSyncFromValue() {
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(elBirthdate.value);
     if (m) {
       var c = { y: +m[1], m: +m[2], d: +m[3] };
-      var t = bdToday();
       if (c.y >= BD_MIN_YEAR && c.m >= 1 && c.m <= 12 &&
           c.d >= 1 && c.d <= bdDaysInMonth(c.y, c.m) &&
-          elBirthdate.value <= todayText()) { sel = c; }
+          elBirthdate.value <= todayText()) {
+        bdRefresh(c.y, c.m, c.d);
+        return;
+      }
     }
-    bdRefresh(sel.y, sel.m, sel.d);
-    bdPicker.classList.remove('hidden');
-    bdOpenBtn.setAttribute('aria-expanded', 'true');
-    bdPickerOpen = true;
-    bdYear.focus();
+    bdRefresh('', '', '');
   }
 
-  function bdClosePicker(returnFocus) {
-    bdPicker.classList.add('hidden');
-    bdOpenBtn.setAttribute('aria-expanded', 'false');
-    bdPickerOpen = false;
-    if (returnFocus) { bdOpenBtn.focus(); }
-  }
-
-  bdOpenBtn.addEventListener('click', function () {
-    if (bdPickerOpen) { bdClosePicker(true); } else { bdOpenPicker(); }
-  });
-  bdYear.addEventListener('change', function () { bdRefresh(+bdYear.value, +bdMonth.value, +bdDay.value); });
-  bdMonth.addEventListener('change', function () { bdRefresh(+bdYear.value, +bdMonth.value, +bdDay.value); });
-
-  document.getElementById('bd-decide').addEventListener('click', function () {
-    function two(n) { return (n < 10 ? '0' : '') + n; }
-    elBirthdate.value = bdYear.value + '-' + two(+bdMonth.value) + '-' + two(+bdDay.value);
-    elBirthdate.dispatchEvent(new Event('change', { bubbles: true }));
-    bdClosePicker(true);
-  });
-  document.getElementById('bd-cancel').addEventListener('click', function () { bdClosePicker(true); });
-
-  /* Escで値を変えずに閉じる。この窓は入力画面でだけ開くため、結果ページ・仮広告の
-     Esc処理(それぞれ表示中のみ動く)と競合しない。フォーカスの引き戻しは、
-     フォーカスが窓の中にある時だけ行う(窓の外の操作中に奪わない) */
-  document.addEventListener('keydown', function (e) {
-    if (bdPickerOpen && e.key === 'Escape') {
-      bdClosePicker(bdPicker.contains(document.activeElement));
-    }
-  });
-  /* 窓の外を押したら閉じる(値は変えない)。開くボタン自身は toggle に任せる */
-  document.addEventListener('click', function (e) {
-    if (!bdPickerOpen) { return; }
-    var t = e.target;
-    if ((t instanceof Node) && (bdPicker.contains(t) || t === bdOpenBtn)) { return; }
-    bdClosePicker(false);
-  });
+  /* 初期表示:すべて未選択 */
+  bdRefresh('', '', '');
 })();
 </script>
 </body>
