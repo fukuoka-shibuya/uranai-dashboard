@@ -4,8 +4,8 @@
  * 正式な暦・天文計算を入れるのはこのファイルだけで、仮計算側には手を入れません。
  * どの占術を正式計算へ切り替えるかは engine/index.js の OFFICIAL_KEYS 1か所で決めます。
  *
- * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)
- * 未実装 :数秘術/西洋占星術/宿曜/姓名判断(availableKeys に無い占術は
+ * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)/数秘術(cycle-0038)
+ * 未実装 :西洋占星術/宿曜/姓名判断(availableKeys に無い占術は
  *          computeOne が null を返し、engine/index.js が自動的に仮計算へ戻します)
  *
  * ==== 算命学の採用方式(計算根拠。サイクル報告書にも明記)====
@@ -33,6 +33,16 @@
  *     辰戌丑未年=三碧・六白・九紫の年は寅月が五黄/
  *     寅申巳亥年=二黒・五黄・八白の年は寅月が二黒)から、節月ごとに一つずつ下る。
  *    月の区切りは算命学と同じ十二節の実日付(termDayNo を共用)
+ *
+ * ==== 数秘術の採用方式(計算根拠。サイクル報告書にも明記)====
+ *  - ライフパスナンバー: 生年月日(西暦の年・月・日)の数字をすべて足し、
+ *    一桁になるまで足し進める。途中で 11・22・33(ゾロ目=マスターナンバー)が
+ *    現れたらそこで止めてそのまま採用する(現代数秘術で広く使われるピタゴラス式)。
+ *    年・月・日を別々に一桁へ縮めてから足す流派もあるが、ゾロ目の現れ方が
+ *    変わることがあるため、全桁を通して足す方式に統一して開示する
+ *  - 誕生数: 生まれた日(1〜31)だけを同じ規則で縮める(11・22 はそのまま)。
+ *    生まれた日のみからの縮約であることを結果の文章でも開示する
+ *  - 数秘術は暦の計算を使わない(生年月日の数字だけで決まる決定論の計算)
  * いずれも端末内で完結する計算のみで、外部APIは使いません。
  */
 (function (root, factory) {
@@ -42,7 +52,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var AVAILABLE_KEYS = ['sanmei', 'kyusei'];
+  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi'];
 
   /* ============ 共通の小道具 ============ */
 
@@ -373,6 +383,79 @@
     };
   }
 
+  /* ============ 数秘術(正式計算) ============ */
+
+  /* 数の文言は仮計算側と同じ表。仮・正式の二重管理になるため、改稿時は
+     provisional.js 側と同時に更新する(台帳 OC35a-L1・OC35b-L3 と同じ扱い)。
+     語り口(W8):数秘の note は数そのものを主語に置き「〜ようです。」で結ぶ */
+  var LIFEPATH_NOTE = {
+    1: '1という数は、自分で決めて先へ進む動きにつながるようです。',
+    2: '2という数は、相手の様子を受け取って合わせる力につながるようです。',
+    3: '3という数は、思いつきを形にして楽しむ力につながるようです。',
+    4: '4という数は、手順を整えて積み上げる力につながるようです。',
+    5: '5という数は、場所や環境の変わり目で力を引き出すようです。',
+    6: '6という数は、身近な人の世話を引き受ける場面を増やすようです。',
+    7: '7という数は、一人で調べて掘り下げる時間を求めるようです。',
+    8: '8という数は、大きな流れをまとめる役目を引き寄せるようです。',
+    9: '9という数は、広く行き渡らせる方向へ気を向かわせるようです。',
+    11: '11という数は、感じ取ったことをそのまま人へ伝えやすくするようです。',
+    22: '22という数は、大きな形へまとめ上げる働きを帯びるようです。',
+    33: '33という数は、損得から離れて人へ手を貸す働きを帯びるようです。'
+  };
+
+  /** 一桁になるまで各桁を足す。11・22・33(ゾロ目)が現れたらそこで止める */
+  function reduceKeepMaster(n) {
+    var v = n;
+    while (v > 9 && v !== 11 && v !== 22 && v !== 33) {
+      var s = 0, t = v;
+      while (t > 0) { s += t % 10; t = Math.floor(t / 10); }
+      v = s;
+    }
+    return v;
+  }
+
+  /** ライフパスナンバー:生年月日の全桁の和から縮める(ピタゴラス式) */
+  function lifePathOf(b) {
+    var digits = String(b.year) + String(b.month) + String(b.day);
+    var sum = 0;
+    for (var i = 0; i < digits.length; i++) { sum += Number(digits.charAt(i)); }
+    return reduceKeepMaster(sum);
+  }
+
+  function suuhiOfficial(b) {
+    var life = lifePathOf(b);
+    var birth = reduceKeepMaster(b.day);
+    var master = (life === 11 || life === 22 || life === 33);
+
+    return {
+      key: 'suuhi',
+      name: '数秘術',
+      view: '数に置きかえた性質',
+      summary: (master
+        ? '生年月日の数字を正式な作法で足し進めると、同じ数が重なる「' + life + '」が現れます。' +
+          'この並びは、それ以上足し進めずにそのまま読む作法があります。'
+        : '生年月日の数字を正式な作法で足しつづけると「' + life + '」にたどり着きます。') +
+        '生まれた日だけを縮めた誕生数「' + birth + '」との取り合わせから、' +
+        '日々の選び方に出る癖が浮かび上がると読み取れます。',
+      closing: '数はその人のすべてを言い当てる物差しではありません。' +
+               '合うと感じたところだけを、そっと持ち帰っていただけたらと思います。',
+      items: [
+        { label: 'ライフパスナンバー', value: String(life), note: LIFEPATH_NOTE[life] },
+        { label: '誕生数', value: String(birth),
+          note: '誕生数は生まれた日だけを縮めて出す数です。ふだん表に出やすい面を映すようです。' },
+        { label: '数の性質', value: master ? 'ゾロ目の数' : (life % 2 === 0 ? '偶数の数' : '奇数の数'),
+          note: master ? '同じ数が重なる並びです。この数は力の出方に波を持たせるようです。'
+                       : (life % 2 === 0 ? '偶数という数は、周りとつり合いを取る動き方へ寄せるようです。'
+                                         : '奇数という数は、自分から先に動く動き方へ寄せるようです。') },
+        { label: '数の重なり', value: (life === birth ? '重なっている' : '離れている'),
+          note: (life === birth
+            ? '生き方の数と生まれた日の数が同じ組み合わせです。二つの数は向きをそろえやすいようです。'
+            : '生き方の数と生まれた日の数が違う組み合わせです。場面によって前へ出る数が替わるようです。') }
+      ],
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -383,6 +466,7 @@
     if (!b) { return null; }
     if (key === 'sanmei') { return sanmeiOfficial(b); }
     if (key === 'kyusei') { return kyuseiOfficial(b); }
+    if (key === 'suuhi') { return suuhiOfficial(b); }
     return null;
   }
 
@@ -414,7 +498,9 @@
       solarYearOf: solarYearOf,
       setsuIndexOf: setsuIndexOf,
       honmeiStarOf: honmeiStarOf,
-      getsumeiStarOf: getsumeiStarOf
+      getsumeiStarOf: getsumeiStarOf,
+      reduceKeepMaster: reduceKeepMaster,
+      lifePathOf: lifePathOf
     }
   };
 });
