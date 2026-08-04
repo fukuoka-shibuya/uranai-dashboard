@@ -4,8 +4,8 @@
  * 正式な暦・天文計算を入れるのはこのファイルだけで、仮計算側には手を入れません。
  * どの占術を正式計算へ切り替えるかは engine/index.js の OFFICIAL_KEYS 1か所で決めます。
  *
- * 切替済み:算命学(cycle-0036)
- * 未実装 :九星気学/数秘術/西洋占星術/宿曜/姓名判断(availableKeys に無い占術は
+ * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)
+ * 未実装 :数秘術/西洋占星術/宿曜/姓名判断(availableKeys に無い占術は
  *          computeOne が null を返し、engine/index.js が自動的に仮計算へ戻します)
  *
  * ==== 算命学の採用方式(計算根拠。サイクル報告書にも明記)====
@@ -22,6 +22,17 @@
  *    蔵干は本気(その支の主たる干)を用いる。初気・中気の日数配分は流派で異なるため、
  *    流派差に依存しない本気方式を採用する
  *  - 天中殺: 日干支の旬から求める(甲子旬=戌亥天中殺 … 甲寅旬=子丑天中殺)
+ *
+ * ==== 九星気学の採用方式(計算根拠。サイクル報告書にも明記)====
+ *  - 本命星: 立春替わりの年を九星に写す標準式(西暦の各桁を一桁になるまで足し、
+ *    11 から引く。10になったら9を引く)。年の変わり目は算命学と同じ立春の実日付。
+ *    男女とも同じ星で読む方式を採用する(女性を別回りで数える流派もあるが、
+ *    日本の九星気学で広く使われる男女同星の方式に合わせる)
+ *  - 月命星: 生まれた節月の月盤の中宮星。古来の月紫白の定め
+ *    (子午卯酉年=本命星が一白・四緑・七赤の年は寅月が八白/
+ *     辰戌丑未年=三碧・六白・九紫の年は寅月が五黄/
+ *     寅申巳亥年=二黒・五黄・八白の年は寅月が二黒)から、節月ごとに一つずつ下る。
+ *    月の区切りは算命学と同じ十二節の実日付(termDayNo を共用)
  * いずれも端末内で完結する計算のみで、外部APIは使いません。
  */
 (function (root, factory) {
@@ -31,7 +42,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var AVAILABLE_KEYS = ['sanmei'];
+  var AVAILABLE_KEYS = ['sanmei', 'kyusei'];
 
   /* ============ 共通の小道具 ============ */
 
@@ -160,8 +171,27 @@
     return result;
   }
 
-  /** 立春(黄経315度)の通日。年干支・月干支の年の変わり目 */
+  /** 立春(黄経315度)の通日。年干支・月干支・本命星の年の変わり目 */
   function risshunDayNo(y) { return termDayNo(y, 2, 315); }
+
+  /** 立春替わりで数えた年(立春の当日から新しい年。日単位) */
+  function solarYearOf(b) {
+    return (b.dayNo < risshunDayNo(b.year)) ? b.year - 1 : b.year;
+  }
+
+  /**
+   * 節月の番号(0=寅月〜11=丑月)。立春替わりの年 sy の中で、
+   * 生まれた日を含む節月を実際の節入り日から探す。
+   * 小寒(添字11)だけは翌年の1月にあるため年を1つ進めて調べる。
+   */
+  function setsuIndexOf(b, sy) {
+    var idx = 0;
+    for (var i = 1; i < 12; i++) {
+      var ty = (SETSU[i].mo === 1) ? sy + 1 : sy;
+      if (b.dayNo >= termDayNo(ty, SETSU[i].mo, SETSU[i].deg)) { idx = i; } else { break; }
+    }
+    return idx;
+  }
 
   /* ============ 干支・十大主星・天中殺の表 ============ */
 
@@ -232,17 +262,12 @@
 
   function sanmeiOfficial(b) {
     /* 年干支:立春で年が替わる。立春の当日は新しい年として扱う(日単位) */
-    var solarYear = (b.dayNo < risshunDayNo(b.year)) ? b.year - 1 : b.year;
+    var solarYear = solarYearOf(b);
     var yearIdx = mod(solarYear - 1984, 60);
     var yearKan = yearIdx % 10;
 
-    /* 節月:立春(寅月)から数えて、生まれた日を含む節月を探す。
-       小寒(添字11)だけは翌年の1月にあるため年を1つ進めて調べる */
-    var setsuIdx = 0;
-    for (var i = 1; i < 12; i++) {
-      var ty = (SETSU[i].mo === 1) ? solarYear + 1 : solarYear;
-      if (b.dayNo >= termDayNo(ty, SETSU[i].mo, SETSU[i].deg)) { setsuIdx = i; } else { break; }
-    }
+    /* 節月:立春(寅月)から数えて、生まれた日を含む節月を探す */
+    var setsuIdx = setsuIndexOf(b, solarYear);
 
     /* 月干支:五虎遁。寅月の干は年干から決まる(甲己=丙・乙庚=戊・丙辛=庚・丁壬=壬・戊癸=甲) */
     var monthKan = mod(2 + (yearKan % 5) * 2 + setsuIdx, 10);
@@ -284,17 +309,80 @@
     };
   }
 
+  /* ============ 九星気学(正式計算) ============ */
+
+  /* 九星の名前・色・定位は仮計算側と同じ公知の対応表。文言は仮・正式の二重管理に
+     なるため、改稿時は provisional.js 側と同時に更新する(台帳 OC35a-L1 と同じ扱い) */
+  var KYUSEI_NAME = ['一白水星', '二黒土星', '三碧木星', '四緑木星', '五黄土星',
+                     '六白金星', '七赤金星', '八白土星', '九紫火星'];
+  var KYUSEI_IRO = ['白', '黒', '碧', '緑', '黄', '白', '赤', '白', '紫'];
+  var KYUSEI_HOUI = ['北', '南西', '東', '南東', '中央', '北西', '西', '北東', '南'];
+  /* 語り口(W8):九星の note は「この巡りでは、〜とされています。」の型 */
+  var KYUSEI_NOTE = [
+    'この巡りでは、流れに沿って動くうちに道が見えてくるとされています。',
+    'この巡りでは、手間のかかる役を引き受けるほど信頼が積み上がるとされています。',
+    'この巡りでは、思いついたことを先に口へ出すと物事が進みやすいとされています。',
+    'この巡りでは、人と人をつなぐ役目が回ってきやすいとされています。',
+    'この巡りでは、中心に置かれて任される場面が増えやすいとされています。',
+    'この巡りでは、筋を通す姿勢がそのまま周りへ伝わりやすいとされています。',
+    'この巡りでは、場を和ませる言葉がよく届くとされています。',
+    'この巡りでは、積み重ねてきたものが変わり目で形になりやすいとされています。',
+    'この巡りでは、目立つ場所へ押し出されやすいとされています。'
+  ];
+
+  /** 本命星(1〜9)。立春替わりの年の各桁を一桁まで足し、11から引く標準式 */
+  function honmeiStarOf(solarYear) {
+    var s = mod(11 - solarYear, 9); /* 各桁の和の一桁化は 9 で割った余りと同じ */
+    return s === 0 ? 9 : s;
+  }
+
+  /**
+   * 月命星(1〜9)。生まれた節月の月盤の中宮星。
+   * 寅月の星は本命星の組で決まり(一白・四緑・七赤=八白/三碧・六白・九紫=五黄/
+   * 二黒・五黄・八白=二黒)、節月ごとに一つずつ下る(月紫白の定め)。
+   */
+  function getsumeiStarOf(honmei, setsuIdx) {
+    var start = (honmei % 3 === 1) ? 8 : (honmei % 3 === 0) ? 5 : 2;
+    return mod(start - 1 - setsuIdx, 9) + 1;
+  }
+
+  function kyuseiOfficial(b) {
+    var solarYear = solarYearOf(b);
+    var h = honmeiStarOf(solarYear);
+    var g = getsumeiStarOf(h, setsuIndexOf(b, solarYear));
+
+    return {
+      key: 'kyusei',
+      name: '九星気学',
+      view: '年ごとの巡りと居場所',
+      summary: '暦を正式にたどると、本命星は「' + KYUSEI_NAME[h - 1] + '」、月命星は「' +
+               KYUSEI_NAME[g - 1] + '」と出ています。立春で年を、節入りで月を区切る昔ながらの' +
+               '数え方で、いまのあなたの置かれ方を映していきます。',
+      closing: '九つの星の巡りは止まらず、季節の節目ごとに次の座へ移っていきます。' +
+               'ここで見た巡りも先を決めつけるものではなく、いまを整える目安として軽く携えていただけたらと思います。',
+      items: [
+        { label: '本命星', value: KYUSEI_NAME[h - 1], note: KYUSEI_NOTE[h - 1] },
+        { label: '月命星', value: KYUSEI_NAME[g - 1],
+          note: '生まれた月を節入りで区切った巡りから見た星です。ふだんの過ごし方に出やすい面を映すとされています。' },
+        { label: '星の色', value: KYUSEI_IRO[h - 1],
+          note: '本命星に結び付けられた色です。身の回りに置くと落ち着きやすいとされています。' },
+        { label: '定位の方角', value: KYUSEI_HOUI[h - 1],
+          note: '九星の盤の上で本命星が本来座る場所です。方角の良し悪しを決めるものではありません。' }
+      ],
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
 
   function computeOne(key, input) {
     if (!supports(key)) { return null; }
-    if (key === 'sanmei') {
-      var b = parseDate(input && input.birthdate);
-      if (!b) { return null; }
-      return sanmeiOfficial(b);
-    }
+    var b = parseDate(input && input.birthdate);
+    if (!b) { return null; }
+    if (key === 'sanmei') { return sanmeiOfficial(b); }
+    if (key === 'kyusei') { return kyuseiOfficial(b); }
     return null;
   }
 
@@ -322,7 +410,11 @@
       termDayNo: termDayNo,
       risshunDayNo: risshunDayNo,
       tenStarOf: tenStarOf,
-      dayNumber: dayNumber
+      dayNumber: dayNumber,
+      solarYearOf: solarYearOf,
+      setsuIndexOf: setsuIndexOf,
+      honmeiStarOf: honmeiStarOf,
+      getsumeiStarOf: getsumeiStarOf
     }
   };
 });
