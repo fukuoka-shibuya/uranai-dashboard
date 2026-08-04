@@ -284,7 +284,7 @@
 <div id="title-screen" role="dialog" aria-modal="true" aria-labelledby="app-title">
   <span class="title-mark" aria-hidden="true"></span>
   <p id="app-title" class="app-title">藍色の運命占い</p>
-  <p class="app-subtitle">算命学を中心に、五つの見方から静かに読み解きます。</p>
+  <p class="app-subtitle">算命学を中心に、六つの占いから静かに読み解きます。</p>
   <button id="start-app" type="button">占いを始める</button>
 </div>
 
@@ -394,7 +394,8 @@
     <span class="badge">上位の読み物</span>
     <h2 id="overall-h">総合占い</h2>
     <p id="overall-lock" class="locked">個別の占いを2つ読み終えると、こちらが開きます。(現在 <span id="read-count">0</span> / 2)</p>
-    <p id="overall-open" class="locked hidden">総合占いが開きました。五つの見方を並べて読み解きます。</p>
+    <!-- Issue #34:解放時の告知文(旧 #overall-open)は置かない。総合占いは告知せず
+         静かに現れるだけにする(「こんなのあったっけ?」と思わせるくらい、の指示) -->
     <button id="read-overall" type="button" class="kin" disabled>総合占いを読む</button>
   </section>
 
@@ -426,8 +427,9 @@
   <div class="ad-card">
     <span class="ad-tag">広告(仮)</span>
     <h2 id="pseudo-ad-h">ここに広告が入る予定です</h2>
-    <p>試作版のため、実際の広告は表示されません。この表示を閉じると、総合占いを読めるようになります。以後、広告をお願いすることはありません。</p>
-    <button id="pseudo-ad-close" type="button" class="kin">閉じて総合占いへ</button>
+    <!-- Issue #34:広告内で総合占いの話をしない(解放の告知はせず、閉じたら静かに現れる) -->
+    <p>試作版のため、実際の広告は表示されません。</p>
+    <button id="pseudo-ad-close" type="button" class="kin">閉じる</button>
   </div>
 </div>
 
@@ -650,11 +652,12 @@
     document.getElementById('overall-section').classList.remove('hidden');
   }
 
+  /* Issue #34:解放時に告知文を出さない。案内(ロック文)を消してボタンが押せるように
+     なるだけ=総合占いは静かに現れる(利用者が自分で見つける) */
   function unlockOverall() {
     revealOverall();
     document.getElementById('read-overall').disabled = false;
     document.getElementById('overall-lock').classList.add('hidden');
-    document.getElementById('overall-open').classList.remove('hidden');
   }
 
   /* ---------- 総合占いの解放フロー(C5) ----------
@@ -678,6 +681,7 @@
   var adVisible = false;
   var elAd = document.getElementById('pseudo-ad');
   var elAdClose = document.getElementById('pseudo-ad-close');
+  var adReturnFocus = null;
 
   function showAd() {
     /* 別のタブで解放済みになっていたら、広告は出さずそのまま開く(再要求しない) */
@@ -686,6 +690,9 @@
       unlockOverall();
       return;
     }
+    /* Issue #34:閉じた後は広告を出す前にいた場所へフォーカスを返す
+       (総合占いのボタンへ飛ばして注意を引かない) */
+    adReturnFocus = document.activeElement;
     adVisible = true;
     elAd.classList.remove('hidden');
     document.body.classList.add('no-scroll');
@@ -699,8 +706,11 @@
     unlocked = true;
     persistUnlocked();
     unlockOverall();
-    /* 「閉じて総合占いへ」の言葉どおり、総合占いのボタンへ移る */
-    document.getElementById('read-overall').focus();
+    /* Issue #34:告知も誘導もせず、広告前にいた場所へ静かに戻る */
+    if (adReturnFocus && typeof adReturnFocus.focus === 'function') {
+      adReturnFocus.focus();
+    }
+    adReturnFocus = null;
   }
 
   elAdClose.addEventListener('click', closeAd);
