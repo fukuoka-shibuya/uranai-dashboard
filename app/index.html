@@ -911,9 +911,10 @@
       else { kept.push(latest[i]); }
     }
     profiles = kept;
-    writeStore(profiles);
-    render();
-    return removed ? { profile: removed, index: removedIndex } : null;
+    /* 書き込み失敗(プライベートモード等)を黙殺しない。呼び出し側が案内を分ける */
+    var saved = writeStore(profiles);
+    var rendered = render();
+    return removed ? { profile: removed, index: removedIndex, saved: saved, rendered: rendered } : null;
   }
 
   function renderList() {
@@ -954,9 +955,19 @@
           hideDeleteAllConfirm();
           var removed = removeById(p.id);
           if (removed) {
-            /* 非表示中の要素への書き込みは読み上げられないため、通知は say 側で行う */
-            say(removed.profile.nickname + ' さんを削除しました。');
-            offerUndo(removed);
+            if (!removed.rendered) {
+              /* 一覧を描けない事態では render() 側の案内(すべて削除への誘導)を
+                 上書きしない。一覧が見えない状態での取り消し提示も混乱のもとのため出さない */
+              clearUndo();
+            } else if (!removed.saved) {
+              /* 端末に書き込めなかったことを正直に伝える(画面上は消えるが開き直すと戻る) */
+              say(removed.profile.nickname + ' さんを一覧から消しましたが、この端末では保存機能を使えないようです。開き直すと元に戻ることがあります。');
+              offerUndo(removed);
+            } else {
+              /* 非表示中の要素への書き込みは読み上げられないため、通知は say 側で行う */
+              say(removed.profile.nickname + ' さんを削除しました。');
+              offerUndo(removed);
+            }
           } else {
             /* 別タブで先に消えていた場合など。無かったものは取り消せない */
             clearUndo();
@@ -972,6 +983,8 @@
     }
   }
 
+  /* 一覧を描けたら true、フォールバック表示になったら false を返す
+     (false のとき呼び出し側はここで出した案内を say で上書きしない) */
   function render() {
     while (elList.firstChild) { elList.removeChild(elList.firstChild); }
 
@@ -983,12 +996,13 @@
       say('保存した内容をうまく読み込めませんでした。「すべて削除」で消すことができます。');
       elEmpty.classList.add('hidden');
       elDeleteAll.classList.remove('hidden');
-      return;
+      return false;
     }
 
     elEmpty.classList.toggle('hidden', profiles.length > 0);
     if (profiles.length === 0) { confirmingDeleteAll = false; }
     updateDeleteAllVisibility();
+    return true;
   }
 
   document.getElementById('save-profile').addEventListener('click', function () {
@@ -1057,9 +1071,11 @@
     clearUndo();
     profiles = [];
     confirmingDeleteAll = false;
-    writeStore(profiles);
+    /* removeItem まで失敗する環境でも黙殺しない(1件削除の M10 対応と同じ扱い) */
+    var ok = writeStore(profiles);
     render();
-    say('すべて削除しました。');
+    say(ok ? 'すべて削除しました。'
+           : 'すべて一覧から消しましたが、この端末では保存機能を使えないようです。開き直すと元に戻ることがあります。');
   });
 
   /* 「元に戻す」ボタンは押すと消えるため、フォーカスの行き場を一覧側へ移す
