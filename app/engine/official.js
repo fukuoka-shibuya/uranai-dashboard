@@ -90,6 +90,10 @@
 
   var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
 
+  /* 総合占いを組む中核5占術。この5つがすべて AVAILABLE_KEYS にそろってはじめて
+     総合占いを正式計算で組める(1つでも欠けたら engine/index.js が仮計算へ戻す) */
+  var CORE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
+
   /* ============ 共通の小道具 ============ */
 
   function mod(n, m) { return ((n % m) + m) % m; }
@@ -459,7 +463,12 @@
 
   /* ============ 算命学(正式計算) ============ */
 
-  function sanmeiOfficial(b) {
+  /**
+   * 算命学の三つの柱と、そこから導く中心の星・本元の気。
+   * 結果画面(sanmeiOfficial)と総合占い(overallStancesOf)が同じ式を通るように、
+   * 計算はこの一か所に置く(同じ式を二重に書かない。台帳 OC42-M3 と同じ方針)。
+   */
+  function sanmeiCoreOf(b) {
     /* 年干支:立春で年が替わる。立春の当日は新しい年として扱う(日単位) */
     var solarYear = solarYearOf(b);
     var yearIdx = mod(solarYear - 1984, 60);
@@ -475,10 +484,26 @@
     /* 日干支:万年暦準拠の60日周期 */
     var dayIdx = mod(b.dayNo + DAY_KANSHI_OFFSET, 60);
     var dayKan = dayIdx % 10;
-    var dayShi = dayIdx % 12;
 
-    var centerStar = tenStarOf(dayKan, ZOKAN_HONKI[monthShi]);
-    var gogyo = GOGYO_NAME[KAN_GOGYO[dayKan]];
+    return {
+      yearIdx: yearIdx, yearKan: yearKan,
+      monthKan: monthKan, monthShi: monthShi,
+      dayIdx: dayIdx, dayKan: dayKan, dayShi: dayIdx % 12,
+      /* 中心の星は TEN_STAR の添字で返す(名前は表を引いて得る) */
+      centerStarIdx: TEN_STAR.indexOf(tenStarOf(dayKan, ZOKAN_HONKI[monthShi])),
+      /* 本元の気は日干の五行の添字(0=木 1=火 2=土 3=金 4=水) */
+      gogyoIdx: KAN_GOGYO[dayKan]
+    };
+  }
+
+  function sanmeiOfficial(b) {
+    var core = sanmeiCoreOf(b);
+    var yearIdx = core.yearIdx, yearKan = core.yearKan;
+    var monthKan = core.monthKan, monthShi = core.monthShi;
+    var dayIdx = core.dayIdx, dayKan = core.dayKan, dayShi = core.dayShi;
+
+    var centerStar = TEN_STAR[core.centerStarIdx];
+    var gogyo = GOGYO_NAME[core.gogyoIdx];
 
     var items = [
       { label: '日の干支', value: KAN[dayKan] + SHI[dayShi],
@@ -545,10 +570,17 @@
     return mod(start - 1 - setsuIdx, 9) + 1;
   }
 
-  function kyuseiOfficial(b) {
+  /** 本命星と月命星(ともに1〜9)。結果画面と総合占いが同じ式を通る */
+  function kyuseiStarsOf(b) {
     var solarYear = solarYearOf(b);
     var h = honmeiStarOf(solarYear);
-    var g = getsumeiStarOf(h, setsuIndexOf(b, solarYear));
+    return { honmei: h, getsumei: getsumeiStarOf(h, setsuIndexOf(b, solarYear)) };
+  }
+
+  function kyuseiOfficial(b) {
+    var stars = kyuseiStarsOf(b);
+    var h = stars.honmei;
+    var g = stars.getsumei;
 
     return {
       key: 'kyusei',
@@ -833,9 +865,223 @@
     };
   }
 
+  /* ============ 総合占い(正式計算) ============ */
+
+  /* 総合占いは個別占術の文の再掲・連結にしない。中核5占術の「正式計算が出した結果値
+     そのもの」(算命学=中心の星と本元の気/九星気学=本命星と月命星/数秘術=数の性質と
+     誕生数/西洋占星術=三区分とエレメント/宿曜=巡りの位置と宿の系統)を
+     「動き出し方」「人との間合い」の2軸へ写して数え、多数派を一致点・少数派を相違点として
+     文章を独自に組み立てる。写し先は、その値について個別画面で述べている説明文と向きが
+     食い違わないように選んである(下の各表のコメントが対応の根拠)。
+     文言は仮計算側と同じ表を持つ二重管理になる(台帳 OC35a-L1 と同じ扱い)。 */
+
+  var KANJI_KAZU = ['〇', '一', '二', '三', '四', '五'];
+
+  var OVERALL_AXES = [
+    {
+      key: 'ugoki',
+      label: '動き出し方',
+      cats: [
+        { value: '先へ動く流れ', phrase: '思い立ったら早めに一歩を出す' },
+        { value: '確かめる流れ', phrase: '腑に落ちるまで確かめてから腰を上げる' },
+        { value: '合わせる流れ', phrase: '周りの呼吸に合わせて歩幅を決める' }
+      ]
+    },
+    {
+      key: 'maai',
+      label: '人との間合い',
+      cats: [
+        { value: '近づく間合い', phrase: '近い距離で言葉を交わしながら深める' },
+        { value: '見渡す間合い', phrase: '少し離れた場所から全体を見渡す' },
+        { value: '変える間合い', phrase: '相手や場面ごとに距離を描き直す' }
+      ]
+    }
+  ];
+
+  /* 算命学:中心の星(十大主星)を動き出しに写す。添字は TEN_STAR の並び。
+     根拠は MAIN_STAR_NOTE の各文:
+     貫索=自分の間合いで続ける→確かめる/石門=人の輪で調子を合わせる→合わせる/
+     鳳閣=肩の力を抜いて楽しみに変える→合わせる/調舒=静かな場で細やかに言葉へ→確かめる/
+     禄存=手元のものを人へ差し出す→先へ動く/司禄=地道に積み重ねる→確かめる/
+     車騎=迷いを置かずまっすぐ動く→先へ動く/牽牛=任される役目を果たす→合わせる/
+     龍高=知らない場所へ出る→先へ動く/玉堂=学びを積み筋道を立てる→確かめる */
+  var SANMEI_UGOKI = [1, 2, 2, 1, 0, 1, 0, 2, 0, 1];
+
+  /* 算命学:本元の気(五行)を間合いに写す。添字は 0=木 1=火 2=土 3=金 4=水。
+     根拠は GOGYO_NOTE:木=上へ育てる(手をかける距離)→近づく/火=場を照らす→近づく/
+     土=足元を固める→見渡す/金=形を整える仕上げ→見渡す/水=流れに合わせる→変える */
+  var SANMEI_GOGYO_MAAI = [0, 0, 1, 1, 2];
+
+  /* 九星気学:本命星(1〜9)を動き出しに写す。根拠は KYUSEI_NOTE:
+     一白=流れに沿って動く→合わせる/二黒=手間のかかる役を引き受ける→確かめる/
+     三碧=思いついたことを先に口へ出す→先へ動く/四緑=人と人をつなぐ→合わせる/
+     五黄=中心に置かれて任される→先へ動く/六白=筋を通す→確かめる/
+     七赤=場を和ませる言葉→合わせる/八白=積み重ねが変わり目で形になる→確かめる/
+     九紫=目立つ場所へ押し出される→先へ動く */
+  var KYUSEI_UGOKI = [2, 1, 0, 2, 0, 1, 2, 1, 0];
+
+  /* 九星気学:月命星(1〜9)を間合いに写す。月命星は日々の過ごし方に出る星として
+     読むため、同じ KYUSEI_NOTE の性質を人との距離の取り方の側から読み替える:
+     一白=流れに沿う→変える/二黒=手間のかかる役を引き受ける→近づく/
+     三碧=先に口へ出す→近づく/四緑=人と人をつなぐ→変える/五黄=中心から任される→見渡す/
+     六白=筋を通す姿勢が伝わる→見渡す/七赤=場を和ませる言葉が届く→近づく/
+     八白=積み重ねが形になる→見渡す/九紫=目立つ場所へ押し出される→変える */
+  var KYUSEI_MAAI = [2, 0, 0, 2, 1, 1, 0, 1, 2];
+
+  /* 数秘術:誕生数を間合いに写す。根拠は LIFEPATH_NOTE(誕生数も同じ数の性質で読む):
+     1=自分で決めて進む→見渡す/2=相手の様子に合わせる→近づく/3=思いつきを形にして楽しむ→近づく/
+     4=手順を整えて積み上げる→見渡す/5=環境の変わり目で力が出る→変える/6=身近な人の世話→近づく/
+     7=一人で掘り下げる→見渡す/8=大きな流れをまとめる→見渡す/9=広く行き渡らせる→変える/
+     11=感じ取ったことをそのまま伝える→近づく/22=大きな形へまとめ上げる→見渡す。
+     誕生数は生まれた日(1〜31)を縮めた数なので、現れるのは 1〜9・11・22 のいずれか */
+  var SUUHI_BIRTH_MAAI = { 1: 1, 2: 0, 3: 0, 4: 1, 5: 2, 6: 0, 7: 1, 8: 1, 9: 2, 11: 0, 22: 1 };
+
+  /* 西洋占星術:エレメントを間合いに写す。添字は ELEMENT の並び(火地風水)。
+     根拠は ELEMENT_NOTE:火=熱を分けて場をあたためる→近づく/地=手で触れられる形にする→見渡す/
+     風=言葉にして人と分け合う→近づく/水=場の空気を受け取ってから動く→変える。
+     動き出しは三区分(MODE)がそのまま対応する(活動=先へ動く・不動=確かめる・柔軟=合わせる) */
+  var SEIYOU_ELEMENT_MAAI = [0, 1, 0, 2];
+
+  /* 宿曜:宿の系統(七科分宿)を間合いに写す。添字は SHUKU_KEITOU_NAME の並び。
+     根拠は SHUKU_KEITOU_NOTE(いずれも対人の場を述べた文):
+     安住=長く付き合う場で腰を据える→近づく/和善=相手に合わせて場をなだらかに→変える/
+     急速=その場の流れに素早く合わせる→変える/軽燥=目を配りながら間合いを測る→見渡す/
+     毒害=心を寄せた相手にまっすぐ向かう→近づく/猛悪=自分の歩幅を崩さず進む→見渡す/
+     剛柔=強さと柔らかさを場面で使い分ける→変える。
+     系統の名は経典の古い呼び名であって評価ではない(その断りは宿曜の結果側に置く) */
+  var SHUKU_KEITOU_MAAI = [0, 2, 2, 1, 0, 1, 2];
+
+  /** 中核5占術の正式な結果値を2軸の型(0/1/2)に写す */
+  function overallStancesOf(b) {
+    var core = sanmeiCoreOf(b);
+    var stars = kyuseiStarsOf(b);
+    var life = lifePathOf(b);
+    var birth = reduceKeepMaster(b.day);
+    var master = (life === 11 || life === 22 || life === 33);
+    var order = sunSignIndexOf(b);
+    var shuku = shukuIndexOf(b);
+
+    return [
+      { name: '算命学', ugoki: SANMEI_UGOKI[core.centerStarIdx], maai: SANMEI_GOGYO_MAAI[core.gogyoIdx] },
+      { name: '九星気学', ugoki: KYUSEI_UGOKI[stars.honmei - 1], maai: KYUSEI_MAAI[stars.getsumei - 1] },
+      /* 数秘術:「数の性質」の項目がそのまま動き出しを述べている(奇数=自分から先に動く→
+         先へ動く/偶数=周りとつり合いを取る→合わせる)。ゾロ目は「力の出方に波を持たせる」
+         という説明に合わせ、波が引くのを待ってから腰を上げる=確かめるに写す */
+      { name: '数秘術', ugoki: master ? 1 : (life % 2 === 1 ? 0 : 2), maai: SUUHI_BIRTH_MAAI[birth] },
+      { name: '西洋占星術', ugoki: order % 3, maai: SEIYOU_ELEMENT_MAAI[order % 4] },
+      /* 宿曜:動き出しは「巡りの位置」(二十七宿の輪の前段・中段・後段)から写す。
+         人との間合いは対人の見方である宿の系統から写す */
+      { name: '宿曜', ugoki: Math.floor(shuku / 9) % 3,
+        maai: SHUKU_KEITOU_MAAI[SHUKU_KEITOU_INDEX[shuku]] }
+    ];
+  }
+
+  /** 1軸ぶんの集計。最多の型(同数なら先頭側)と、それ以外の型ごとの内訳を返す */
+  function tallyAxis(stances, axisKey) {
+    var counts = [0, 0, 0];
+    var names = [[], [], []];
+    for (var i = 0; i < stances.length; i++) {
+      var c = stances[i][axisKey];
+      counts[c]++;
+      names[c].push(stances[i].name);
+    }
+    var top = 0;
+    for (var j = 1; j < 3; j++) { if (counts[j] > counts[top]) { top = j; } }
+    var minors = [];
+    for (var k = 0; k < 3; k++) {
+      if (k !== top && counts[k] > 0) { minors.push({ cat: k, count: counts[k], names: names[k] }); }
+    }
+    minors.sort(function (a, b) { return b.count - a.count || a.cat - b.cat; });
+    return { top: top, count: counts[top], names: names[top], minors: minors };
+  }
+
+  function overallOfficial(b) {
+    var stances = overallStancesOf(b);
+    var t0 = tallyAxis(stances, 'ugoki');
+    var t1 = tallyAxis(stances, 'maai');
+
+    /* 重なりが強い軸を「重なって見えるところ」、もう一方を「食い違って見えるところ」に使う */
+    var agreeIdx = (t1.count > t0.count) ? 1 : 0;
+    var agreeAxis = OVERALL_AXES[agreeIdx];
+    var agreeT = (agreeIdx === 0) ? t0 : t1;
+    var differAxis = OVERALL_AXES[1 - agreeIdx];
+    var differT = (agreeIdx === 0) ? t1 : t0;
+
+    function join(list) { return list.join('・'); }
+    var agreeCat = agreeAxis.cats[agreeT.top];
+
+    var agreeBody = [];
+    if (agreeT.count >= 3) {
+      agreeBody.push(agreeAxis.label + 'をめぐっては、' + join(agreeT.names) + 'の' +
+        KANJI_KAZU[agreeT.count] + 'つの見方が「' + agreeCat.phrase + '」という向きで重なっています。');
+      agreeBody.push('複数の見方をまたいで浮かび上がるこの重なりは、あなたの持ち味の芯に近い部分だと読み取れます。');
+    } else {
+      /* 5票が3型に割れて最多が2票のときは必ず (2,2,1) の分布になり、同数の組が
+         もう一つ存在する。「最も近くに寄っています」では実態とずれるため、
+         二手に分かれている事実をそのまま書く */
+      agreeBody.push(agreeAxis.label + 'をめぐっては、五つの見方が二つ・二つ・一つと別の向きに分かれており、そのうち' +
+        join(agreeT.names) + 'は「' + agreeCat.phrase + '」という向きで並んでいます。');
+      agreeBody.push('同じ数だけ別の向きへ寄る組もあるため、はっきりした芯というより、いくつかの小さなまとまりが並んでいる状態だと読み取れます。');
+    }
+
+    var differBody = [];
+    var differCat = differAxis.cats[differT.top];
+    if (differT.minors.length === 0) {
+      differBody.push('今回の入力では、' + differAxis.label + 'についても五つの見方の向きが珍しいほどそろっており、大きな食い違いは見当たりませんでした。');
+      differBody.push('それでも占術ごとに照らす場所は違うため、個別の読み解きにはそれぞれ別の景色が残っています。');
+    } else {
+      differBody.push('いっぽう' + differAxis.label + 'に目を移すと、見方ごとの違いが出ています。');
+      differBody.push(join(differT.names) + 'は「' + differCat.phrase + '」という向きに寄っていますが、' +
+        join(differT.minors[0].names) + 'は「' + differAxis.cats[differT.minors[0].cat].phrase + '」という向きです。');
+      if (differT.minors.length >= 2) {
+        differBody.push('さらに' + join(differT.minors[1].names) + 'からは「' +
+          differAxis.cats[differT.minors[1].cat].phrase + '」という向きも読み取れます。');
+      }
+      differBody.push('どれかが本当の姿というより、場面に応じて出る顔が入れ替わるのだと読み取れます。');
+    }
+
+    return {
+      key: 'overall',
+      name: '総合占い',
+      view: '五つの見方の重なり',
+      heading: '五つの見方を重ねて',
+      summary: '五つの読み解きを正式な計算でそろえたうえで、中心の星・本命星・数の性質・三区分・宿の系統といった' +
+               '結果そのものから向きを取り出し、一枚に重ねました。' +
+               'そろって同じ向きを指すところと、それぞれ別の向きを指すところが見えてきます。' +
+               'ここでは「動き出し方」と「人との間合い」の二つの軸から、その重なりと食い違いを眺めていきます。',
+      sections: [
+        { heading: '重なって見えるところ(一致点)', body: agreeBody },
+        { heading: '食い違って見えるところ(相違点)', body: differBody }
+      ],
+      /* ラベルは個別占術(算命学の「人との間合い」等)と重ねない。総合は多数派の
+         「寄り」を示すもので、個別の値と向きが違っても矛盾ではないため、名前でも区別する */
+      items: [
+        { label: '動き出しの寄り', value: OVERALL_AXES[0].cats[t0.top].value,
+          note: (t0.count === 2)
+            ? '五つの見方のうち' + KANJI_KAZU[t0.count] + 'つがわずかにこの向きへ寄っています。強い流れではないため、迷ったときの軽い目安にとどめていただけたらと思います。'
+            : '五つの見方のうち' + KANJI_KAZU[t0.count] + 'つがこの向きを指しており、迷ったときの最初の一歩の目安になると読み取れます。' },
+        { label: '間合いの寄り', value: OVERALL_AXES[1].cats[t1.top].value,
+          note: (t1.count === 2)
+            ? '人との距離の取り方は、' + KANJI_KAZU[t1.count] + 'つの見方がわずかにこの向きへ寄っている程度です。決め手ではなく、ゆるやかな手がかりとして携えていただけたらと思います。'
+            : '人との距離の取り方としては、' + KANJI_KAZU[t1.count] + 'つの見方がこの向きに寄っており、疲れたときに戻る足場になると読み取れます。' }
+      ],
+      closing: '総合の読み解きは、五つの見方の多数決で答えを一つに決めるためのものではありません。' +
+               '重なりは芯として、食い違いは幅として、どちらもあなたの持ち物と数えていただけたらと思います。',
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
+
+  /** 総合占いを正式計算で組めるか。中核5占術がすべて正式計算で実装済みのときだけ真 */
+  function supportsOverall() {
+    for (var i = 0; i < CORE_KEYS.length; i++) {
+      if (!supports(CORE_KEYS[i])) { return false; }
+    }
+    return true;
+  }
 
   function computeOne(key, input) {
     if (!supports(key)) { return null; }
@@ -849,20 +1095,22 @@
     return null;
   }
 
-  /* 全占術がそろうまでは一括計算・総合占いはこのファイルでは受け持たない
-     (engine/index.js が占術ごとに切り替え、残りは仮計算が受け持つ) */
+  /* 一括計算は engine/index.js が占術ごとに切り替えて行うため、このファイルでは持たない */
   function computeAll(input) { return null; }
 
   function computeOverall(input) {
-    /* 総合占いは中核5占術がすべて正式計算に切り替わってから実装する。
-       それまでは仮計算(provisional.js)側が受け持つ。仮計算を呼び出さないこと。 */
-    return null;
+    if (!supportsOverall()) { return null; }
+    var b = parseDate(input && input.birthdate);
+    if (!b) { return null; }
+    return overallOfficial(b);
   }
 
   return {
     mode: 'official',
     availableKeys: AVAILABLE_KEYS.slice(),
+    coreKeys: CORE_KEYS.slice(),
     supports: supports,
+    supportsOverall: supportsOverall,
     computeOne: computeOne,
     computeAll: computeAll,
     computeOverall: computeOverall,
@@ -880,6 +1128,12 @@
       getsumeiStarOf: getsumeiStarOf,
       reduceKeepMaster: reduceKeepMaster,
       lifePathOf: lifePathOf,
+      /* 総合占い(正式計算)の検証用。2軸への写しと集計を検査から直接確かめる */
+      sanmeiCoreOf: sanmeiCoreOf,
+      kyuseiStarsOf: kyuseiStarsOf,
+      overallStancesOf: overallStancesOf,
+      tallyAxis: tallyAxis,
+      overallAxes: OVERALL_AXES,
       sunLongitudeAtNoonJst: sunLongitudeAtNoonJst,
       sunSignIndexOf: sunSignIndexOf,
       /* 正午の前後を走査して替わり目の時刻を求める検査のために公開する(台帳 OC40a-M2) */

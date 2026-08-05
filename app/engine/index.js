@@ -35,14 +35,29 @@
     return provisional;
   }
 
-  /** key を渡すとその占術が仮計算かどうか。渡さないと「仮計算が1つでも残っているか」 */
+  /** 総合占いをどちらで組むか。
+      総合は中核5占術の計算値を束ねる上位の読み物なので、1つでも仮計算のままだと
+      仮と正式の値が混ざる。全部そろってから正式計算へ渡し、それまでは仮計算で
+      一貫させる(安全側)。official 側に総合の実装が無い場合も仮計算へ戻す */
+  function overallImpl() {
+    for (var i = 0; i < provisional.order.length; i++) {
+      if (implFor(provisional.order[i]) !== official) { return provisional; }
+    }
+    if (official && typeof official.supportsOverall === 'function' && official.supportsOverall()) {
+      return official;
+    }
+    return provisional;
+  }
+
+  /** key を渡すとその占術が仮計算かどうか。渡さないと「仮計算が1つでも残っているか」
+      (総合占いも数える。以前はここが恒 true だった=台帳 OC35a-L4) */
   function isProvisional(key) {
     if (key) { return implFor(key) === provisional; }
     var keys = provisional.order.concat(provisional.extraOrder || []);
     for (var i = 0; i < keys.length; i++) {
       if (implFor(keys[i]) === provisional) { return true; }
     }
-    return true; /* 総合占いが仮計算のうちは全体としても仮計算が残っている */
+    return overallImpl() === provisional;
   }
 
   /** 生年月日が読み取れる形かどうか。理由の文言も返す */
@@ -76,8 +91,9 @@
     validate: validate,
     computeOne: computeOne,
     computeAll: computeAll,
-    /* 総合占いは中核5占術がすべて正式計算になってから official 側を実装する。
-       それまでは仮計算が受け持つ(計算の由来は総合の結果自身が provisional で示す) */
-    computeOverall: function (input) { return provisional.computeOverall(input); }
+    /* 中核5占術がすべて正式計算に切り替わったので、総合占いも正式計算側で組む
+       (cycle-0043)。切替の実体は上の OFFICIAL_KEYS のままで、ここに別の設定は置かない */
+    overallIsOfficial: function () { return overallImpl() === official; },
+    computeOverall: function (input) { return overallImpl().computeOverall(input); }
   };
 });
