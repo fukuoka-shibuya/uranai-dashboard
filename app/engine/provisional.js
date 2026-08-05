@@ -643,7 +643,10 @@
     var differBody = [];
     var differCat = differAxis.cats[differT.top];
     if (differT.minors.length === 0) {
-      differBody.push('今回の入力では、' + differAxis.label + 'についても五つの見方の向きが珍しいほどそろっており、大きな食い違いは見当たりませんでした。');
+      /* official.js の同じ分岐と同じ理由で書き換え(禁止語 /当た(る|り)ま/ と
+         です・ます調の検査を通る形に統一する。仮計算では現在この分岐に到達しないが、
+         5占術のどれかが仮計算へ戻ったときの受け皿なので同じ文言に揃えておく) */
+      differBody.push('今回の入力では、' + differAxis.label + 'についても五つの見方の向きが珍しいほどそろっており、大きな食い違いは見えていません。');
       differBody.push('それでも占術ごとに照らす場所は違うため、個別の読み解きにはそれぞれ別の景色が残っています。');
     } else {
       differBody.push('いっぽう' + differAxis.label + 'に目を移すと、見方ごとの違いが出ています。');
