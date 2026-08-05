@@ -5,8 +5,8 @@
  * どの占術を正式計算へ切り替えるかは engine/index.js の OFFICIAL_KEYS 1か所で決めます。
  *
  * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)/数秘術(cycle-0038)/
- *          西洋占星術(cycle-0039)
- * 未実装 :宿曜/姓名判断(availableKeys に無い占術は
+ *          西洋占星術(cycle-0039)/宿曜(cycle-0042)
+ * 未実装 :姓名判断(availableKeys に無い占術は
  *          computeOne が null を返し、engine/index.js が自動的に仮計算へ戻します)
  *
  * ==== 算命学の採用方式(計算根拠。サイクル報告書にも明記)====
@@ -60,6 +60,25 @@
  *  - 星座が替わる日に生まれた方は、生まれた時刻によって隣の星座になり得る。
  *    この点は結果の文章でも開示する
  *  - エレメント(火地風水)・三区分(活動不動柔軟)は星座の並び順から決まる公知の対応
+ *
+ * ==== 宿曜の採用方式(計算根拠。サイクル報告書にも明記)====
+ *  - 本命宿: 宿曜経に伝わる標準の求め方に従い、(1) 生年月日を旧暦(太陰太陽暦)に直し、
+ *    (2) その旧暦月の一日(ついたち)に月が宿る「朔日宿」を表から取り、
+ *    (3) そこから「旧暦の日にち − 1」だけ二十七宿を進める。
+ *    朔日宿は 正月=室宿・二月=奎宿・三月=胃宿・四月=畢宿・五月=参宿・六月=鬼宿・
+ *    七月=張宿・八月=角宿・九月=氐宿・十月=心宿・十一月=斗宿・十二月=虚宿
+ *  - 月の実際の黄経を二十七等分して当てる方式(インド系の分割)もあるが、月は一日で
+ *    ほぼ一宿ぶん動くため、出生時刻を求めないこのアプリでは結果が定まらない。
+ *    日本で広く使われ、生年月日だけで定まる旧暦・朔日宿の方式を採用して開示する
+ *  - 旧暦の求め方: 朔(太陽と月の黄経が重なる瞬間)の日本時の暦日をその月の一日とし、
+ *    冬至を含む朔月を十一月として番号を数える。中気(太陽黄経が30度の倍数になる瞬間)を
+ *    一つも含まない朔月は閏月とし、直前の月と同じ番号を与える(天保暦と同じ定気法)
+ *  - 閏月生まれは、同じ番号の月として同じ朔日宿から数える(翌月へ送る流派もあるが、
+ *    閏月がその番号の月の一部であるという暦の数え方に合わせる)。結果の文章でも開示する
+ *  - 朔の時刻は Meeus『Astronomical Algorithms』第49章「月の位相」の級数で求める
+ *    (精度は数秒。公表された朔の時刻と照合済み)。日付は日本標準時で切る
+ *  - 宿の系統: 宿曜経の「七科分宿」(安住・和善・急速・軽燥・毒害・猛悪・剛柔)。
+ *    経典に伝わる古い呼び名で、人の善し悪しを表すものではないことを結果の文章で開示する
  * いずれも端末内で完結する計算のみで、外部APIは使いません。
  */
 (function (root, factory) {
@@ -69,7 +88,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou'];
+  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
 
   /* ============ 共通の小道具 ============ */
 
@@ -218,6 +237,159 @@
       if (b.dayNo >= termDayNo(ty, SETSU[i].mo, SETSU[i].deg)) { idx = i; } else { break; }
     }
     return idx;
+  }
+
+  /* ============ 朔(新月)と旧暦(宿曜が使う暦) ============ */
+
+  /**
+   * 朔(太陽と月の黄経が重なる瞬間)の力学時のユリウス日。
+   * Meeus『Astronomical Algorithms』第49章「月の位相」の級数を用いる。
+   * k は 2000年1月の朔を 0 とした通し番号で、整数のとき朔になる。
+   */
+  function newMoonJde(k) {
+    var T = k / 1236.85;
+    var T2 = T * T, T3 = T2 * T, T4 = T3 * T;
+    var jde = 2451550.09766 + 29.530588861 * k
+            + 0.00015437 * T2 - 0.000000150 * T3 + 0.00000000073 * T4;
+    var E = 1 - 0.002516 * T - 0.0000074 * T2;
+    /* M=太陽の平均近点角 Mp=月の平均近点角 F=月の緯度引数 O=月の昇交点黄経 */
+    var M = toRad(2.5534 + 29.10535670 * k - 0.0000014 * T2 - 0.00000011 * T3);
+    var Mp = toRad(201.5643 + 385.81693528 * k + 0.0107582 * T2
+                   + 0.00001238 * T3 - 0.000000058 * T4);
+    var F = toRad(160.7108 + 390.67050284 * k - 0.0016118 * T2
+                  - 0.00000227 * T3 + 0.000000011 * T4);
+    var O = toRad(124.7746 - 1.56375588 * k + 0.0020672 * T2 + 0.00000215 * T3);
+    var s = Math.sin;
+    jde += -0.40720 * s(Mp)
+         + 0.17241 * E * s(M)
+         + 0.01608 * s(2 * Mp)
+         + 0.01039 * s(2 * F)
+         + 0.00739 * E * s(Mp - M)
+         - 0.00514 * E * s(Mp + M)
+         + 0.00208 * E * E * s(2 * M)
+         - 0.00111 * s(Mp - 2 * F)
+         - 0.00057 * s(Mp + 2 * F)
+         + 0.00056 * E * s(2 * Mp + M)
+         - 0.00042 * s(3 * Mp)
+         + 0.00042 * E * s(M + 2 * F)
+         + 0.00038 * E * s(M - 2 * F)
+         - 0.00024 * E * s(2 * Mp - M)
+         - 0.00017 * s(O)
+         - 0.00007 * s(Mp + 2 * M)
+         + 0.00004 * s(2 * Mp - 2 * F)
+         + 0.00004 * s(3 * M)
+         + 0.00003 * s(Mp + M - 2 * F)
+         + 0.00003 * s(2 * Mp + 2 * F)
+         - 0.00003 * s(Mp + M + 2 * F)
+         + 0.00003 * s(Mp - M + 2 * F)
+         - 0.00002 * s(Mp - M - 2 * F)
+         - 0.00002 * s(3 * Mp + M)
+         + 0.00002 * s(4 * Mp);
+    /* 惑星による小さな揺らぎの補正(第49章の付加項) */
+    var A = [
+      [0.000325, 299.77 + 0.107408 * k - 0.009173 * T2],
+      [0.000165, 251.88 + 0.016321 * k],
+      [0.000164, 251.83 + 26.651886 * k],
+      [0.000126, 349.42 + 36.412478 * k],
+      [0.000110, 84.66 + 18.206239 * k],
+      [0.000062, 141.74 + 53.303771 * k],
+      [0.000060, 207.14 + 2.453732 * k],
+      [0.000056, 154.84 + 7.306860 * k],
+      [0.000047, 34.52 + 27.261239 * k],
+      [0.000042, 207.19 + 0.121824 * k],
+      [0.000040, 291.34 + 1.844379 * k],
+      [0.000037, 161.72 + 24.198154 * k],
+      [0.000035, 239.56 + 25.513099 * k],
+      [0.000023, 331.55 + 3.592518 * k]
+    ];
+    for (var i = 0; i < A.length; i++) { jde += A[i][0] * s(toRad(A[i][1])); }
+    return jde;
+  }
+
+  var newMoonCache = {};
+
+  /** k 番目の朔の瞬間を日本標準時の暦日に直した通日(=旧暦のその月の一日) */
+  function newMoonDayNo(k) {
+    if (Object.prototype.hasOwnProperty.call(newMoonCache, k)) { return newMoonCache[k]; }
+    var jde = newMoonJde(k);
+    var yearApprox = 2000 + (jde - 2451545.0) / 365.25;
+    var jdUt = jde - deltaTSec(yearApprox) / 86400;
+    var result = Math.floor((jdUt - 2440587.5) + 9 / 24);
+    newMoonCache[k] = result;
+    return result;
+  }
+
+  /** 通日 dayNo を含む朔月の番号。朔の当日はその月の一日として数える */
+  function newMoonIndexOnOrBefore(dayNo) {
+    /* 2000年1月の朔(k=0)は日本時 2000-01-07(通日10963)。周期からおおよその番号を
+       出したうえで、前後へ歩いて確定させる(略算の誤差に依存しない) */
+    var k = Math.round((dayNo - 10963) / 29.530588861);
+    while (newMoonDayNo(k) > dayNo) { k--; }
+    while (newMoonDayNo(k + 1) <= dayNo) { k++; }
+    return k;
+  }
+
+  var solsticeCache = {};
+
+  /** 冬至(太陽黄経270度)の日本時の暦日を通日で返す。旧暦の月の番号の基準になる */
+  function winterSolsticeDayNo(y) {
+    if (Object.prototype.hasOwnProperty.call(solsticeCache, y)) { return solsticeCache[y]; }
+    var dt = deltaTSec(y) / 86400;
+    var lo = jdOfUt(y, 12, 15, -9); /* 日本時 12月15日 0時 */
+    var hi = lo + 14;               /* 日本時 12月29日 0時 */
+    for (var i = 0; i < 50; i++) {
+      var mid = (lo + hi) / 2;
+      if (angleDiff(sunLongitude(mid + dt), 270) < 0) { lo = mid; } else { hi = mid; }
+    }
+    var jstMs = ((lo + hi) / 2 - 2440587.5) * 86400000 + 9 * 3600000;
+    var result = Math.floor(jstMs / 86400000);
+    solsticeCache[y] = result;
+    return result;
+  }
+
+  /** 通日 dayNo の日本時0時における太陽の視黄経(度) */
+  function sunLongitudeAtJstMidnight(dayNo) {
+    var jdUt = 2440587.5 + dayNo - 9 / 24;
+    return sunLongitude(jdUt + deltaTSec(1970 + dayNo / 365.25) / 86400);
+  }
+
+  /** 通日 [from, to) の間に中気(太陽黄経が30度の倍数になる瞬間)がいくつ入るか */
+  function chukiCountBetween(from, to) {
+    var a = sunLongitudeAtJstMidnight(from);
+    var span = norm360(sunLongitudeAtJstMidnight(to) - a);
+    return Math.floor((a + span) / 30) - Math.floor(a / 30);
+  }
+
+  /**
+   * 生年月日を旧暦(太陰太陽暦)に直す。{ month: 1〜12, day: 1〜30, leap: 閏月かどうか }
+   * 冬至を含む朔月を十一月とし、中気を一つも含まない朔月を閏月とする定気法。
+   */
+  function lunarDateOf(b) {
+    var k = newMoonIndexOnOrBefore(b.dayNo);
+    var day = b.dayNo - newMoonDayNo(k) + 1;
+
+    /* 生まれた朔月より前にある直近の冬至の朔月を「十一月」の基準に置く */
+    var wsYear = b.year;
+    var anchor = newMoonIndexOnOrBefore(winterSolsticeDayNo(wsYear));
+    if (anchor > k) {
+      wsYear = b.year - 1;
+      anchor = newMoonIndexOnOrBefore(winterSolsticeDayNo(wsYear));
+    }
+    var next = newMoonIndexOnOrBefore(winterSolsticeDayNo(wsYear + 1));
+
+    /* 冬至の月から次の冬至の月までが13朔月ある年には閏月が一つ入る。
+       中気を含まない最初の朔月がその閏月になる */
+    var leapIdx = -1;
+    if (next - anchor === 13) {
+      for (var i = anchor + 1; i < next; i++) {
+        if (chukiCountBetween(newMoonDayNo(i), newMoonDayNo(i + 1)) === 0) { leapIdx = i; break; }
+      }
+    }
+    var num = 11, leap = false;
+    for (var j = anchor + 1; j <= k; j++) {
+      if (j === leapIdx) { leap = true; } else { num = num % 12 + 1; leap = false; }
+    }
+    return { month: num, day: day, leap: leap };
   }
 
   /* ============ 干支・十大主星・天中殺の表 ============ */
@@ -571,6 +743,96 @@
     };
   }
 
+  /* ============ 宿曜(正式計算) ============ */
+
+  /* 二十七宿の並び(昴宿起点)。二十八宿から牛宿を除いた宿曜経の配列。
+     仮計算側と同じ表で、改稿時は provisional.js と同時に更新する(台帳 OC35a-L1 と同じ扱い) */
+  var SHUKU = ['昴宿', '畢宿', '觜宿', '参宿', '井宿', '鬼宿', '柳宿', '星宿', '張宿',
+               '翼宿', '軫宿', '角宿', '亢宿', '氐宿', '房宿', '心宿', '尾宿', '箕宿',
+               '斗宿', '女宿', '虚宿', '危宿', '室宿', '壁宿', '奎宿', '婁宿', '胃宿'];
+
+  /* 朔日宿:旧暦の各月の一日に月が宿るとされる宿(宿曜経の伝統的な表)。
+     添字0が正月。値は SHUKU の添字で、正月=室宿・二月=奎宿・三月=胃宿・四月=畢宿・
+     五月=参宿・六月=鬼宿・七月=張宿・八月=角宿・九月=氐宿・十月=心宿・
+     十一月=斗宿・十二月=虚宿 */
+  var SAKUJITSU_SHUKU = [22, 24, 26, 1, 3, 5, 8, 11, 13, 15, 18, 20];
+
+  /* 七科分宿(宿曜経に伝わる宿の系統)。経典の古い呼び名であり、人の善し悪しの評価では
+     ないことを結果の文章でも開示する。添字は SHUKU の添字 */
+  var SHUKU_KEITOU_NAME = ['安住', '和善', '急速', '軽燥', '毒害', '猛悪', '剛柔'];
+  var SHUKU_KEITOU_INDEX = (function () {
+    var members = [
+      [1, 9, 18, 23],       /* 安住:畢・翼・斗・壁 */
+      [2, 11, 14, 24],      /* 和善:觜・角・房・奎 */
+      [5, 10, 25, 26],      /* 急速:鬼・軫・婁・胃 */
+      [4, 12, 19, 20, 21],  /* 軽燥:井・亢・女・虚・危 */
+      [3, 6, 15, 16],       /* 毒害:参・柳・心・尾 */
+      [7, 8, 17, 22],       /* 猛悪:星・張・箕・室 */
+      [0, 13]               /* 剛柔:昴・氐 */
+    ];
+    var out = [];
+    for (var g = 0; g < members.length; g++) {
+      for (var i = 0; i < members[g].length; i++) { out[members[g][i]] = g; }
+    }
+    return out;
+  })();
+
+  /* 語り口(W8):宿曜の note は対人場面(人と/相手と)から入る */
+  var SHUKU_KEITOU_NOTE = [
+    '人と長く付き合う場では、腰を据えて場を落ち着かせる調子が出やすいと読み取れます。',
+    '人と向き合う場では、相手に合わせて場をなだらかにする調子が出やすいと読み取れます。',
+    '人の集まる場では、その場の流れに素早く合わせる調子が出やすいと読み取れます。',
+    '人と交わる場では、細かなところに目を配りながら間合いを測る調子が出やすいと読み取れます。',
+    '人と深く関わる場では、心を寄せた相手にまっすぐ向かう調子が出やすいと読み取れます。',
+    '人の中にあっても、自分の歩幅を崩さずに進む調子が出やすいと読み取れます。',
+    '人と接する場では、強さと柔らかさを場面で使い分ける調子が出やすいと読み取れます。'
+  ];
+
+  /** 本命宿の番号(0=昴宿〜26=胃宿)。旧暦の月の朔日宿から日にちのぶんだけ進める */
+  function shukuIndexOf(b) {
+    var lunar = lunarDateOf(b);
+    return mod(SAKUJITSU_SHUKU[lunar.month - 1] + lunar.day - 1, 27);
+  }
+
+  function lunarDateText(lunar) {
+    return '旧暦' + (lunar.leap ? '閏' : '') + lunar.month + '月' + lunar.day + '日';
+  }
+
+  /* 系統の名は経典の古い呼び名で、強い言葉を含むものがある。天中殺と同じく、
+     その項目の中で打ち消しを添える(結びの文だけに頼らない。台帳 OC42-M4) */
+  var KEITOU_DISCLAIMER = '系統の名は経典に伝わる古い呼び名で、人の善し悪しを表すものではありません。';
+
+  function sukuyoOfficial(b) {
+    var lunar = lunarDateOf(b);
+    /* 宿の割り当ては shukuIndexOf 1か所を通す(同じ式を二重に書かない。台帳 OC42-M3) */
+    var idx = shukuIndexOf(b);
+    var keitou = SHUKU_KEITOU_NAME[SHUKU_KEITOU_INDEX[idx]];
+
+    return {
+      key: 'sukuyo',
+      name: '宿曜',
+      view: '月の巡りと人との相性',
+      summary: '生まれた日を月の満ち欠けの暦に直すと' + lunarDateText(lunar) + 'にあたり、' +
+               'その月の一日の宿から数えると、月は' + SHUKU[idx] + 'に宿っていたと読み取れます。' +
+               keitou + 'の系統に置かれる宿として、人との間にどう調子が流れるかを眺めていきます。',
+      /* 系統の名の打ち消しは項目の note 側に置く(結びと同じ文を重ねない。wording の重複検査) */
+      closing: '宿は月の通り道を二十七に分けた古い区分です。' +
+               '人と向き合うときの静かな手がかりの一つとして、そばに置いていただけたらと思います。',
+      items: [
+        { label: '生まれの宿', value: SHUKU[idx],
+          note: '人との縁を読む起点として、月が二十七の宿のどこに置かれていたかを表す部分です。' },
+        { label: '旧暦の生まれ日', value: lunarDateText(lunar) +
+            (lunar.leap ? '(閏月は同じ番号の月として数えています)' : ''),
+          note: '人の生まれた日を月の満ち欠けの暦に直した日付です。宿曜はこの日付から宿を数えます。' },
+        { label: '宿の系統', value: keitou + 'の系統',
+          note: SHUKU_KEITOU_NOTE[SHUKU_KEITOU_INDEX[idx]] + KEITOU_DISCLAIMER },
+        { label: '巡りの位置', value: (idx + 1) + ' / 27',
+          note: '相手との巡り合わせを見る土台として、二十七の輪の中でどのあたりにいるかを示しています。' }
+      ],
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -583,6 +845,7 @@
     if (key === 'kyusei') { return kyuseiOfficial(b); }
     if (key === 'suuhi') { return suuhiOfficial(b); }
     if (key === 'seiyou') { return seiyouOfficial(b); }
+    if (key === 'sukuyo') { return sukuyoOfficial(b); }
     return null;
   }
 
@@ -622,7 +885,16 @@
       /* 正午の前後を走査して替わり目の時刻を求める検査のために公開する(台帳 OC40a-M2) */
       jdOfUt: jdOfUt,
       deltaTSec: deltaTSec,
-      signOrder: SIGN_ORDER.slice()
+      signOrder: SIGN_ORDER.slice(),
+      /* 宿曜(旧暦と朔)の検証用 */
+      newMoonJde: newMoonJde,
+      newMoonDayNo: newMoonDayNo,
+      newMoonIndexOnOrBefore: newMoonIndexOnOrBefore,
+      winterSolsticeDayNo: winterSolsticeDayNo,
+      lunarDateOf: lunarDateOf,
+      shukuIndexOf: shukuIndexOf,
+      shukuOrder: SHUKU.slice(),
+      sakujitsuShuku: SAKUJITSU_SHUKU.slice()
     }
   };
 });

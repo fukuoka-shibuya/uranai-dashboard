@@ -24,7 +24,7 @@
   /* 正式計算へ切り替え済みの占術。ここに足すことが「切り替え」のすべて。
      official.js 側に実装が無い占術を誤って足しても、下の implFor が
      supports() で確かめてから使うため、画面が止まることはない */
-  var OFFICIAL_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou'];
+  var OFFICIAL_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
 
   /** その占術で実際に使う実装を返す。正式計算が未実装なら仮計算へ戻す */
   function implFor(key) {
