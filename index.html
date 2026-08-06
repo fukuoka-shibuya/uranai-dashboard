@@ -317,6 +317,15 @@
         '種が正式です。残りは' + rest.join('・') +
         (rest.length === 1 ? 'で、この占いの結果にだけ' : 'で、これらの占いの結果にだけ') +
         '「現在は試作用の仮データです」と出ます。';
+      /* OC44(#44):「完成まであと何サイクルか」を、仮/正式の一語のすぐそばで読めるようにする。
+         数字の出どころは state/official-forecast.json 1か所で、正式化されればこの行は消える */
+      var fc = s.forecast || [];
+      if (fc.length > 0) {
+        note.textContent += '完成の見込み:' + fc.map(function (f) {
+          return f.name + 'はあと約' + f.cycles_left + 'サイクル';
+        }).join('・') + '(' + (fc[0].as_of || '—') + '時点の見立てで、進み具合により変わります)。';
+      }
+      if (s.forecast_error) { note.textContent += '完成の見込み:' + s.forecast_error + '。'; }
     }
     /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
        画面に見える文字は増やさない(オーナー指示は「仮か正式かどちらかを表示」) */

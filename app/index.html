@@ -177,6 +177,17 @@
   }
   .items dd b{display:block;font-size:15px;color:var(--ai-murasaki);font-weight:600;}
   .items dd span{display:block;font-size:13px;}
+  /* Issue #50:用語そのものの説明(about)は、その人の読み解き(note)より控えめに置く。
+     読む順は 値 → その言葉は何か → あなたの場合はどうか */
+  .items dd .about{color:var(--ko-sub);font-size:12px;}
+  /* Issue #50:その占いが何を読むものか。見出しのすぐ下に置いて最初に目へ入れる */
+  .reading{
+    margin:6px 0 12px;padding:8px 10px;
+    border-left:2px solid var(--ai-murasaki);
+    background:rgba(123,142,201,.10);
+    font-size:13px;line-height:1.9;
+  }
+  #overall-result .reading{border-left-color:var(--kin);background:rgba(216,180,95,.10);}
   #overall-result .items dd b{color:var(--kin);}
   #overall-result h4{font-size:13px;margin:12px 0 4px;color:var(--kin);}
   .provisional{
@@ -503,6 +514,9 @@
 
     box.appendChild(document.createElement('h3')).textContent = result.name + 'から見ると';
     box.appendChild(para(result.view + 'として読み解いています。'));
+    /* Issue #50:何を読むものかを最初に置く。これが無いと、読み手には
+       性格の話なのか今年の運勢の話なのかが分からないままになる */
+    if (result.reading) { box.appendChild(para(result.reading, 'reading')); }
     if (result.summary) { box.appendChild(para(result.summary)); }
 
     var dl = document.createElement('dl');
@@ -517,6 +531,13 @@
       var note = document.createElement('span');
       note.textContent = item.note;
       dd.appendChild(value);
+      /* Issue #50:項目名(「中心の星」など)が何を指すのかを、値の意味より先に置く */
+      if (item.about) {
+        var about = document.createElement('span');
+        about.className = 'about';
+        about.textContent = item.about;
+        dd.appendChild(about);
+      }
       dd.appendChild(note);
       dl.appendChild(dt);
       dl.appendChild(dd);
