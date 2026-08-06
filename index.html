@@ -51,6 +51,17 @@
   .loop-mark.loop-ok{color:#5b9bd5;}
   .loop-mark.loop-slow{color:var(--kin);}
   .loop-mark.loop-ng{color:var(--ng);}
+  /* OC47b(#47):報告書に書いた内容と中身の照合の結果。本文より前・ヘッダーの直後に置く。
+     食い違いがあるときだけ赤枠の警告として目立たせ、無いときは1行の控えめな確認だけを出す
+     (「照合できず」の件数もその1行に必ず書く=黙って合格に混ぜない)。
+     赤 --ng は色相およそ0度で、黄系禁止(OC15:色相35〜75度)に抵触しない。点滅なし。 */
+  #consistency{margin:0 0 14px;font-size:13px;}
+  #consistency.cc-quiet{color:var(--sub);}
+  #consistency.cc-warn{background:#2a1a1c;border:1px solid var(--ng);border-radius:12px;padding:12px 14px;}
+  #consistency.cc-warn .cc-head{color:var(--ng);font-weight:700;font-size:15px;margin:0 0 6px;}
+  #consistency ul{margin:6px 0 0;padding-left:20px;}
+  #consistency li{margin:0 0 4px;}
+  #consistency .cc-sub{color:var(--sub);margin:8px 0 0;}
   section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px;}
   h2{font-size:15px;margin:0 0 10px;color:var(--ai);display:flex;gap:8px;align-items:baseline;}
   h2 .no{color:var(--kin);font-size:12px;font-variant-numeric:tabular-nums;flex:none;}
@@ -132,6 +143,8 @@
     <div class="meta">試作アプリ本体(スマホでそのまま開けます・閲覧用の仮公開):
       <a id="app-link" href="https://fukuoka-shibuya.github.io/uranai-dashboard/app/" rel="noopener">fukuoka-shibuya.github.io/uranai-dashboard/app/</a></div>
   </header>
+  <!-- OC47b(#47):報告書と中身の食い違いの警告帯。本文(#body)より前に置くこと -->
+  <div id="consistency"></div>
   <div id="body"></div>
   <p class="sub" id="fallback"></p>
 
@@ -392,6 +405,66 @@
   }
   renderLoopStatus();
   setInterval(renderLoopStatus, 60000);
+
+  /* OC47b(オーナーコメント #47・2026-08-06):
+       「毎サイクル、報告書に書いた内容が実際の中身と一致しているか自動で検査する仕組みを
+         作ってください。食い違いが見つかったら報告書の先頭に警告を出してください。」
+
+     照合そのものは dashboard/cross-check.js が毎ビルド行い、結果は cycle.json の
+     consistency に入る。ここは出すだけ。出し方は3つ。
+       食い違いあり …… 赤枠の警告(何が食い違っているかを1件ずつ並べる)
+       食い違いなし …… 1行の確認だけ(照合できずの件数もここに必ず書く)
+       記録が無い   …… 「照合の記録がありません」(古い報告書。合格を騙らせない) */
+  function renderConsistency() {
+    var el = document.getElementById('consistency');
+    if (!el) return;
+    var c = d && d.consistency;
+    /* 項目が0件のときや、照合そのものが倒れたときに「0項目のうち0項目が一致しました」と
+       穏やかに出すと、照合機構の全損が平常時と見分けられない(監査 M5)。
+       前のサイクルの結果が残ったまま載っている場合も一致を騙らせない(監査 M7)。 */
+    if (!c || typeof c !== 'object' || !Array.isArray(c.checks) || c.checks.length === 0 || c.error) {
+      el.className = 'cc-quiet';
+      el.textContent = '報告書と中身の照合:' +
+        (c && c.error ? '照合を実行できませんでした(この報告書の記載は確かめられていません)。'
+                      : 'この報告書には照合の記録がありません。');
+      return;
+    }
+    if (String(c.cycle_id || '') !== String(d.cycle_id || '')) {
+      el.className = 'cc-warn';
+      el.innerHTML = '<p class="cc-head">⚠ 照合の記録がこの報告書のものではありません</p>' +
+        '<p>照合したのは ' + esc(c.cycle_id || '不明') + ' の報告書で、いま表示しているのは ' +
+        esc(d.cycle_id || '不明') + ' です。この報告書の記載は確かめられていません。</p>';
+      return;
+    }
+    var bad = c.checks.filter(function (x) { return x && x.level === 'mismatch'; });
+    var unv = c.checks.filter(function (x) { return x && x.level === 'unverified'; });
+    var total = c.checks.length;
+    var unvLine = unv.length === 0 ? '' :
+      '照合できなかった項目が' + unv.length + '件あります(一致とは数えていません):' +
+      unv.map(function (x) { return esc(x.title) + ' — ' + esc(x.detail); }).join(' / ');
+    /* 「照合」と「見張り」を一括りに数えると実際より強い主張になる(監査 R4・M1)。
+       guard は報告書が実体から自動で導かれている欄で、値そのものは必ず一致する。
+       内訳を添えて、何項目が本当の突き合わせなのかを読めるようにする。 */
+    var guard = c.checks.filter(function (x) { return x && x.kind === 'guard'; }).length;
+    var kindLine = guard > 0 ?
+      'うち' + guard + '項目は、報告書の数字が実体から自動で導かれていること自体の見張りです。' : '';
+    if (bad.length === 0) {
+      el.className = 'cc-quiet';
+      el.innerHTML = '報告書と中身の照合:' + total + '項目のうち' +
+        (total - unv.length) + '項目が一致しました。' +
+        (kindLine || unvLine ? '<span class="cc-sub">' + kindLine + unvLine + '</span>' : '');
+      return;
+    }
+    el.className = 'cc-warn';
+    el.innerHTML = '<p class="cc-head">⚠ この報告書の記載と中身が食い違っています(' +
+      bad.length + '件)</p>' +
+      '<p>下の内容は実際の中身と合っていません。読むときはご注意ください。</p><ul>' +
+      bad.map(function (x) {
+        return '<li><b>' + esc(x.title) + '</b><br>' + esc(x.detail) + '</li>';
+      }).join('') + '</ul>' +
+      (unvLine ? '<p class="cc-sub">' + unvLine + '</p>' : '');
+  }
+  renderConsistency();
 
   var sections = [];
   function add(title, html) { sections.push({ title: title, html: html }); }
