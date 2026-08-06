@@ -180,6 +180,11 @@
   /* Issue #50:用語そのものの説明(about)は、その人の読み解き(note)より控えめに置く。
      読む順は 値 → その言葉は何か → あなたの場合はどうか */
   .items dd .about{color:var(--ko-sub);font-size:12px;}
+  /* Issue #51:見出しは平易な言い換えを主役にし、占いでの呼び名は小さく従へ回す */
+  .items dt .term{
+    display:block;font-size:11px;font-weight:400;
+    color:var(--ko-sub);margin-top:2px;
+  }
   /* Issue #50:その占いが何を読むものか。見出しのすぐ下に置いて最初に目へ入れる */
   .reading{
     margin:6px 0 12px;padding:8px 10px;
@@ -524,7 +529,15 @@
     for (var i = 0; i < result.items.length; i++) {
       var item = result.items[i];
       var dt = document.createElement('dt');
-      dt.textContent = item.label;
+      /* Issue #51:見出しは平易な言い換え(plain)を主役にする。占いでの呼び名(term)は
+         「占いの言葉では〜」の一行へ落として残す。plain が無い実装でも label で出る */
+      dt.textContent = item.plain || item.label;
+      if (item.term) {
+        var term = document.createElement('span');
+        term.className = 'term';
+        term.textContent = '占いの言葉では「' + item.term + '」といいます';
+        dt.appendChild(term);
+      }
       var dd = document.createElement('dd');
       var value = document.createElement('b');
       value.textContent = item.value;
