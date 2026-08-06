@@ -22,7 +22,22 @@
   }
   .page{max-width:1000px;margin:0 auto;padding:24px 18px 64px;}
   header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px;}
-  h1{font-size:21px;margin:0 0 6px;}
+  /* OC43(#43):タイトル行は「題名 — 状態の丸 — 仮/正式」の横並び。仮/正式のバッジだけ
+     margin-left:auto で行の一番右へ寄せる。幅が足りない画面では折り返す(横スクロール禁止) */
+  h1{font-size:21px;margin:0 0 6px;display:flex;flex-wrap:wrap;align-items:baseline;}
+  h1 .hdr-title{flex:1 1 auto;min-width:0;}
+  /* OC43(#43・2026-08-06 オーナー指示「報告書のタイトルの一番右に仮か正式かどちらかを表示」):
+     占いの計算が仮データのままか正式計算かを1語で示す。値は cycle.js の divination_status で、
+     build.js が app/engine の実体(OFFICIAL_KEYS ほか)から毎ビルド自動導出する=手入力しない。
+     色は「仮」=紫系(--kin)・「正式」=緑(--ok)。黄色系(OC15)は使わない。点滅なし。 */
+  .hdr-official{
+    margin-left:auto;flex:none;align-self:flex-start;
+    font-size:13px;font-weight:700;line-height:1.6;
+    border:1px solid var(--kin);color:var(--kin);
+    border-radius:999px;padding:1px 14px;
+  }
+  .hdr-official.is-official{border-color:var(--ok);color:var(--ok);}
+  .hdr-official-note{color:var(--sub);font-size:13px;}
   /* OC28(#28):更新時刻の常設表示。ヘッダーの一番上・右端の一定の場所に、
      本文と違う色(紫系 #b9a3e3=黄系禁止 OC15 非抵触)で少しだけ太く出す(過度な強調はしない) */
   .hdr-updated{text-align:right;font-size:13px;font-weight:600;color:var(--kin);margin:0 0 2px;}
@@ -107,8 +122,12 @@
     <!-- OC28(#28):更新時刻をいつも同じ場所(ヘッダー右上)に表示する。
          h1 より前に置くこと(OC27 検査は h1 の直後の要素に稼働マークがある前提) -->
     <div class="hdr-updated" id="hdr-updated">更新時刻 —</div>
-    <h1>占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></h1>
+    <h1><span class="hdr-title">占いアプリ常設AIループ — サイクル報告<span class="pill" id="hdr-status">—</span></span><span
+      class="hdr-official" id="hdr-official">—</span></h1>
     <div class="meta"><span id="loop-status" class="loop-mark">—</span></div>
+    <!-- OC43(#43):タイトル右端のバッジ(仮/正式)の内訳。バッジは1語しか出せないため、
+         「いくつが正式で、残りは何か」はここで読めるようにする -->
+    <div class="meta hdr-official-note" id="hdr-official-note">—</div>
     <div class="meta" id="hdr-meta">読み込み中…</div>
     <div class="meta">試作アプリ本体(スマホでそのまま開けます・閲覧用の仮公開):
       <a id="app-link" href="https://fukuoka-shibuya.github.io/uranai-dashboard/app/" rel="noopener">fukuoka-shibuya.github.io/uranai-dashboard/app/</a></div>
@@ -267,6 +286,42 @@
     function two(n) { return (n < 10 ? '0' : '') + n; }
     el.textContent = '更新時刻 ' + u.getFullYear() + '/' + (u.getMonth() + 1) + '/' + u.getDate() +
       ' ' + u.getHours() + ':' + two(u.getMinutes());
+  })();
+
+  /* OC43(#43・2026-08-06 オーナー指示):タイトル行の一番右に「仮」か「正式」を出す。
+     値は build.js が app/engine の実体から導いた divination_status で、ここでは組み立て直さない
+     (報告書側にもう一つ判定を持つと、アプリを直したときに食い違う)。
+     この欄を持たない古い報告書(以前に公開した cycle.js)では、どちらかを騙らずに「—」のまま
+     残し、判定できないことを内訳の行で伝える=安全側。 */
+  (function () {
+    var el = document.getElementById('hdr-official');
+    var note = document.getElementById('hdr-official-note');
+    var s = d.divination_status;
+    if (!s || (s.label !== '仮' && s.label !== '正式')) {
+      el.textContent = '—';
+      note.textContent = '占いの計算:この報告書からは判定できません(仮/正式の記録が無い古い版です)。';
+      el.setAttribute('title', note.textContent);
+      el.setAttribute('aria-label', note.textContent);
+      return;
+    }
+    el.textContent = s.label;
+    el.className = 'hdr-official' + (s.label === '正式' ? ' is-official' : '');
+    var rest = s.remaining || [];
+    if (s.error) {
+      note.textContent = '占いの計算:' + s.error + '(分からないので安全側の「仮」を出しています)';
+    } else if (s.label === '正式') {
+      note.textContent = '占いの計算:' + s.total_count + '種すべて正式です(「試作用の仮データ」の表示はありません)。';
+    } else {
+      /* 残りが2つ以上のときに「この占い」と単数で書くと文がねじれる(監査 L2) */
+      note.textContent = '占いの計算:' + s.total_count + '種のうち' + s.official_count +
+        '種が正式です。残りは' + rest.join('・') +
+        (rest.length === 1 ? 'で、この占いの結果にだけ' : 'で、これらの占いの結果にだけ') +
+        '「現在は試作用の仮データです」と出ます。';
+    }
+    /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
+       画面に見える文字は増やさない(オーナー指示は「仮か正式かどちらかを表示」) */
+    el.setAttribute('title', note.textContent);
+    el.setAttribute('aria-label', note.textContent);
   })();
 
   /* OC27(#27)+OC41(#41):ループ稼働マーク。閲覧端末の時計との差だけで判定する
