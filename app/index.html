@@ -384,7 +384,8 @@
 
   <!-- 3. 総合占い:プルダウンに含めず、別領域・上位機能として分離。
        Issue #31:個別の占いを2つ読み終えるまでは欄ごと隠し、存在を意識させない
-       (2件読了で現れ、仮広告を経て解放される。解放済みの端末では起動時から表示) -->
+       (2件読了で現れ、仮広告を経て解放される)。Issue #42:解放済みの端末でも、
+       起動のたびに2件読み終えるまでは隠す(解放の印は広告を出さないためだけに使う) -->
   <section id="overall-section" class="hidden" aria-labelledby="overall-h">
     <span class="badge">上位の読み物</span>
     <h2 id="overall-h">総合占い</h2>
@@ -634,15 +635,20 @@
       readSet[key] = true;
       readCount++;
       document.getElementById('read-count').textContent = String(readCount);
-      /* Issue #31:2件読了ではじめて総合占いの欄を見えるようにする(それまで隠す) */
-      if (readCount >= 2) { revealOverall(); }
-      if (readCount >= 2 && !unlocked) { adPending = true; }
+      /* Issue #31:2件読了ではじめて総合占いの欄を見えるようにする(それまで隠す)。
+         Issue #42:解放済みの端末でも、この起動で2件読み終えるまでは隠したままにする。
+         解放の印が残っている端末では仮広告を出さず、開いた状態で静かに現れる */
+      if (readCount >= 2) {
+        if (unlocked) { unlockOverall(); }
+        else { revealOverall(); adPending = true; }
+      }
     }
   });
 
   /* 読了の案内は文言を差し替えるのではなく段落ごと入れ替える。
      #read-count を消してしまうと、以後の読了数の更新ができなくなるため。 */
-  /* Issue #31:総合占いの欄は2件読了(または解放済み)まで欄ごと隠しておく */
+  /* Issue #31・#42:総合占いの欄は、その起動で個別2件を読み終えるまで欄ごと隠しておく
+     (解放済みかどうかでは判断しない。解放の印は広告を出すかどうかにだけ使う) */
   function revealOverall() {
     document.getElementById('overall-section').classList.remove('hidden');
   }
@@ -659,8 +665,9 @@
      個別2件読了 → 仮広告を1回表示 → 閉じると解放。解放後は二度と広告を出さない。
      解放状態として端末に残すのは個人情報を含まない印(値 "1")だけで、
      名前・生年月日は含めない。プロフィール保存の同意(save-consent)とは
-     別扱いとする。localStorage が使えない環境では、この画面を開いている間だけ
-     解放を保つ(リロード後は再び2件読了と広告が必要になる)。 */
+     別扱いとする。Issue #42 以降、どの端末でも欄が現れる条件は「その起動で個別2件を
+     読み終えること」で、印が決めるのは仮広告を出すかどうかだけ。localStorage が
+     使えない環境では印を残せないため、開き直すと2件読了に加えて広告1回がまた必要になる。 */
   var UNLOCK_KEY = 'uranai.unlock.v1';
 
   function readUnlocked() {
@@ -718,8 +725,11 @@
     if (e.key === 'Tab') { e.preventDefault(); elAdClose.focus(); }
   });
 
-  /* 解放済みの端末では、起動直後から総合占いを開いた状態にする(広告は出さない) */
-  if (unlocked) { unlockOverall(); }
+  /* Issue #42(2026-08-06 オーナー指示):解放済みの端末でも起動直後には総合占いを見せない。
+     ここで以前 unlockOverall() を呼んでいたため、一度でも解放した端末(オーナーのスマート
+     フォン)では「占いを行っていないのに総合占いが見える」状態になっていた。解放の印
+     (unlocked)は仮広告を二度と出さないためだけに使い、欄が現れる条件は Issue #31 の
+     「個別の占いを2つ読み終えること」に一本化する。読了後は広告なしで開いた状態で現れる。 */
 
   /* ---------- 総合占いの本文(C6) ----------
      一致点・相違点の読み物はエンジン側(computeOverall)が組み立てる。
