@@ -365,6 +365,39 @@
         }
       }
     }
+    /* OC57(#57〜#60・2026-08-07 オーナー指示):「進捗(どの占術の何欄まで済んだか)を
+       報告書に出すこと」「報告書に反復率を出すこと」。数字は build.js の yomiStatus() が
+       画面に出ている note そのものを走査して数えたもので、ここでは数え直さない(#45)。
+       この欄を持たない古い報告書では何も足さない(0/326 を騙らない)。 */
+    var w = d.yomi_status;
+    if (w && typeof w === 'object') {
+      if (w.error) {
+        note.textContent += '結果文の書き直し:' + w.error + '。';
+      } else if (typeof w.texts_done === 'number' && typeof w.texts_total === 'number') {
+        var NAMES = { sanmei: '算命学', kyusei: '九星気学', suuhi: '数秘術',
+                      seiyou: '西洋占星術', sukuyo: '宿曜', seimei: '姓名判断' };
+        var bd = w.by_divination || {}, parts = [], dk;
+        for (dk in NAMES) {
+          if (Object.prototype.hasOwnProperty.call(bd, dk)) {
+            parts.push(NAMES[dk] + (bd[dk].fields_done || 0) + '/' + (bd[dk].fields_total || 0) + '欄');
+          }
+        }
+        note.textContent += '結果文の書き直し(画面に出ている文を数えたもの。上の算命学の' +
+          '二文字の読みはこの内数で、そちらは表に入った本数=画面へつなぐのは切替のとき):' +
+          w.texts_done + '/' + w.texts_total + '本・' +
+          w.fields_done + '/' + w.fields_total + '欄(' + parts.join('・') + ')。' +
+          '読みを載せられないので表示をやめる欄' + w.fields_dropped + '。';
+        var wr = w.repetition || {};
+        if (wr.measured) {
+          note.textContent += '書き直した文の反復率:平均' + wr.average_pct + '%・最大' + wr.max_pct +
+            '%(上限は平均' + wr.limit_average_pct + '%・最大' + wr.limit_max_pct + '%)。' +
+            '同じ文' + wr.duplicate_count + '件・丸ごとの使い回し' + wr.long_run_count + 'か所。';
+        } else {
+          note.textContent += '書き直した文の反復率:まだ1本も無いので測っていません' +
+            '(上限は平均' + wr.limit_average_pct + '%・最大' + wr.limit_max_pct + '%)。';
+        }
+      }
+    }
     /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
        画面に見える文字は増やさない(オーナー指示は「仮か正式かどちらかを表示」) */
     el.setAttribute('title', note.textContent);

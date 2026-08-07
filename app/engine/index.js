@@ -466,6 +466,114 @@
     return { ok: true, message: '' };
   }
 
+  /* ============ 個別占い6つの結果文の書き直し(オーナーコメント #57〜#60・工程1の器) ============
+
+     オーナーコメント #57〜#60(2026-08-07・4通に分けて届いた)のご指示:
+       「個別占い6つ(算命学・九星気学・数秘術・西洋占星術・宿曜・姓名判断)の結果文を
+         書き直すこと。総合占いは対象外。結果画面の欄の多くが仕組みの断り書きで
+         占められていて、実際の読みも各1〜2行しかなく抽象語で終わっている。
+         基準1=読みを持たない欄は表示しない(九星気学の色・方角ほか)。
+         基準2=一つの読みを4つの部品で書く(用語の言い換え・どんな場面で出るか・
+         どんな場面では向かないか・だからどうするとよいか)。
+         基準3=抽象語で終わらせない。同じ言い回しの反復を検査項目に入れ報告書に出す。
+         進捗(どの占術の何欄まで済んだか)と全体の見込みサイクル数も報告書に出す。」
+
+     決めごと・工程表・欄ごとの処遇は docs/kobetsu-yomi-plan.md にある。
+     算命学の3つの干支欄(180本)だけは先に届いたご指示 #55 の工程で書くので、
+     決めごとは docs/sanmei-kanshi-plan.md が持つ(この表では yomi として数える)。
+
+     この区画は工程1で置いた「器」で、判定の道具と欄の処遇表だけがある。
+     computeOne はここを呼んでいないので、画面も結果値もこの区画によっては変わらない
+     (tests/yomi.spec.js の YOMI1-4 が毎サイクル表明する)。 */
+
+  /* 個別占い6つの欄の処遇。plan は 'yomi'(値ごとの読みを書いて残す)か
+     'drop'(読みを載せられないので欄ごと表示しない)の2つだけ。
+     どの欄がいくつの値を取るかはここに書かない=実体を数えて出す(#45)。
+     この表は「決めごと」であって測った値ではないので、実在する欄の顔ぶれと
+     ちょうど一致することを YOMI1-1 が engine の走査で毎サイクル突き合わせる。 */
+  var YOMI_PLAN = [
+    /* 算命学:6欄すべて残す。3つの干支欄は #55 の工程2〜4で 60本ずつ書く */
+    { key: 'sanmei', label: '日の干支', plan: 'yomi' },
+    { key: 'sanmei', label: '中心の星', plan: 'yomi' },
+    { key: 'sanmei', label: '年の干支', plan: 'yomi' },
+    { key: 'sanmei', label: '月の干支', plan: 'yomi' },
+    { key: 'sanmei', label: '本元の気', plan: 'yomi' },
+    { key: 'sanmei', label: '天中殺の組', plan: 'yomi' },
+    /* 九星気学:色と方角はご指示 #58 が名指しで削除を指定した欄 */
+    { key: 'kyusei', label: '本命星', plan: 'yomi' },
+    { key: 'kyusei', label: '月命星', plan: 'yomi' },
+    { key: 'kyusei', label: '星の色', plan: 'drop' },
+    { key: 'kyusei', label: '定位の方角', plan: 'drop' },
+    /* 数秘術:4欄とも値ごとに文が分かれているので全部残す */
+    { key: 'suuhi', label: 'ライフパスナンバー', plan: 'yomi' },
+    { key: 'suuhi', label: '誕生数', plan: 'yomi' },
+    { key: 'suuhi', label: '数の性質', plan: 'yomi' },
+    { key: 'suuhi', label: '数の重なり', plan: 'yomi' },
+    /* 西洋占星術:4欄とも残す */
+    { key: 'seiyou', label: '太陽星座', plan: 'yomi' },
+    { key: 'seiyou', label: 'エレメント', plan: 'yomi' },
+    { key: 'seiyou', label: '三区分', plan: 'yomi' },
+    { key: 'seiyou', label: '向かい合う星座', plan: 'yomi' },
+    /* 宿曜:「旧暦の生まれ日」は値が三百通り以上あって読みを書けず、
+       「巡りの位置」は相手の生まれた日を受け取っていないので読めない=どちらも
+       ご指示 #58 の「他の占術にも同種の欄があれば同様に扱う」に当たる */
+    { key: 'sukuyo', label: '生まれの宿', plan: 'yomi' },
+    { key: 'sukuyo', label: '旧暦の生まれ日', plan: 'drop' },
+    { key: 'sukuyo', label: '宿の系統', plan: 'yomi' },
+    { key: 'sukuyo', label: '巡りの位置', plan: 'drop' },
+    /* 姓名判断:4欄とも残す。正式化(#54)が済むと値の顔ぶれが動きうるので順は最後 */
+    { key: 'seimei', label: '総画', plan: 'yomi' },
+    { key: 'seimei', label: '画の型', plan: 'yomi' },
+    { key: 'seimei', label: '頭字の画', plan: 'yomi' },
+    { key: 'seimei', label: '結字の画', plan: 'yomi' }
+  ];
+
+  /* 4つの部品の見分け方(ご指示 #58 の基準2)。見本(#59)から取った目印で、
+     文言そのものではなく「その部品があるか」を見る。
+       term   その値が何を指すかをふつうの言葉で言い直している
+              = 最初の一文の中に値そのものの語が出る(見本「石門星は、…を指します。」)
+       scene  どんな場面でそれが出るか = 場面を表す語がある
+       unfit  どんな場面では向かないか = 「逆に」で切り返している(見本は2本ともこの形)
+       advice だからどうするとよいか = 最後の一文に勧めの言い方がある
+     宿曜だけは語り口の決まり(W8)で note の先頭が「人」か「相手」なので、
+     term は「先頭が値の語」ではなく「最初の一文の中に値の語がある」で見る。 */
+  var YOMI_SCENE = /場面|とき|ところ|時期|ばかり/;
+  var YOMI_ADVICE = /向いて|よさそう|してみる|するとよい|ほうが|してみて/;
+
+  function yomiSentences(text) {
+    var parts = String(text || '').split('。'), out = [], i;
+    for (i = 0; i < parts.length; i++) {
+      if (parts[i].length > 0) { out.push(parts[i]); }
+    }
+    return out;
+  }
+
+  function yomiPartsOf(text, value) {
+    var body = String(text || '');
+    var sentences = yomiSentences(body);
+    var first = sentences.length > 0 ? sentences[0] : '';
+    var last = sentences.length > 0 ? sentences[sentences.length - 1] : '';
+    return {
+      term: value ? first.indexOf(String(value)) >= 0 : false,
+      scene: YOMI_SCENE.test(body),
+      unfit: body.indexOf('逆に') >= 0,
+      advice: YOMI_ADVICE.test(last)
+    };
+  }
+
+  /* ご指示の基準3「抽象語で終わらせない」は語の一覧では押さえきれない
+     (禁じた語を避けたまま抽象的に書けるため)。そこで長さの線を1つ置く。
+     お示しいただいた見本2本はどちらも 190 字前後で、いまの note は 27〜44 字。
+     140 字はその間に引いた線で、実測ではなく見立て(docs/kobetsu-yomi-plan.md の7節)。 */
+  var YOMI_MIN_LENGTH = 140;
+
+  /* その1本が「書けた」と数えられるか。4つの部品がそろい、長さの線を越えたとき */
+  function yomiIsDone(text, value) {
+    var p = yomiPartsOf(text, value);
+    return p.term && p.scene && p.unfit && p.advice &&
+           String(text || '').length >= YOMI_MIN_LENGTH;
+  }
+
   function computeOne(key, input) { return withGuide(key, implFor(key).computeOne(key, input)); }
 
   function computeAll(input) {
@@ -512,6 +620,18 @@
       for (v in t[label]) { if (own(t[label], v)) { out.push(v); } }
       return out;
     },
+    /* cycle-0070(#57〜#60)。結果文の書き直しの欄の処遇表と、1本が書けたかの見分け方。
+       検査も報告書もここを引く=判定を2か所に持たない */
+    yomiPlan: function () {
+      var out = [], i;
+      for (i = 0; i < YOMI_PLAN.length; i++) {
+        out.push({ key: YOMI_PLAN[i].key, label: YOMI_PLAN[i].label, plan: YOMI_PLAN[i].plan });
+      }
+      return out;
+    },
+    yomiPartsOf: yomiPartsOf,
+    yomiIsDone: yomiIsDone,
+    yomiMinLength: function () { return YOMI_MIN_LENGTH; },
     /* 中核5占術がすべて正式計算に切り替わったので、総合占いも正式計算側で組む
        (cycle-0043)。切替の実体は上の OFFICIAL_KEYS のままで、ここに別の設定は置かない */
     overallIsOfficial: function () { return overallImpl() === official; },
