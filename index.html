@@ -340,6 +340,31 @@
       }
       if (s.forecast_error) { note.textContent += '完成の見込み:' + s.forecast_error + '。'; }
     }
+    /* OC55(#55・2026-08-07 オーナー指示):「報告書に進捗(何本済み/180)を出すこと」
+       「反復率を検査項目に入れ、報告書に出すこと」。数字は build.js が official.js の
+       表そのものを数えて入れた sanmei_yomi で、ここでは数え直さない(手入力にしない=#45)。
+       この欄を持たない古い報告書では何も足さない(0/180 を騙らない)。 */
+    var y = d.sanmei_yomi;
+    if (y && typeof y === 'object') {
+      if (y.error) {
+        note.textContent += '算命学の二文字の読み:' + y.error + '。';
+      } else if (typeof y.done === 'number' && typeof y.total === 'number') {
+        var bf = y.by_field || {};
+        note.textContent += '算命学の二文字の読み:' + y.done + '/' + y.total + '本' +
+          '(生まれ持った芯' + (bf.day || 0) + '・周りから見えやすい面' + (bf.year || 0) +
+          '・ふだんの暮らしぶり' + (bf.month || 0) + ')。';
+        var r = y.repetition || {};
+        if (r.measured) {
+          note.textContent += '言い回しの反復率:平均' + r.average_pct + '%・最大' + r.max_pct +
+            '%(上限は平均' + r.limit_average_pct + '%・最大' + r.limit_max_pct + '%)。' +
+            '同じ文' + r.duplicate_count + '件・丸ごとの使い回し(20文字以上そのまま重なる区間)' +
+            r.long_run_count + 'か所。';
+        } else {
+          note.textContent += '言い回しの反復率:まだ1本も無いので測っていません' +
+            '(上限は平均' + r.limit_average_pct + '%・最大' + r.limit_max_pct + '%)。';
+        }
+      }
+    }
     /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
        画面に見える文字は増やさない(オーナー指示は「仮か正式かどちらかを表示」) */
     el.setAttribute('title', note.textContent);

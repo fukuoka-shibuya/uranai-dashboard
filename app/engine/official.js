@@ -535,6 +535,186 @@
     '前の一字はどの読み解きにも使っておらず、この二文字そのものに別々の意味を当ててもいません。' +
     '二文字そのものを読むところではなく、上の一文へつなぐところと見ます。';
 
+  /* ============ 算命学:二文字ごとの読み(オーナーコメント #55・工程1の器) ============
+
+     オーナーコメント #55(2026-08-07)のご指示:
+       「日の干支・年の干支・月の干支の3欄すべてに、その干支自体の読みを用意する。
+         60通り×3欄=180本。読みを載せられない欄は表示しない。表示する欄には
+         必ず読みを載せる。仕組みの断り書き(何通りある・この欄では読み解いていない・
+         この一字は使っていない)は全廃する。3欄はそれぞれ役割が違うので書く角度を
+         変えること。180本を機械的に量産すると同じ言い回しの繰り返しになるので、
+         反復率を検査項目に入れ、報告書に出すこと。進捗(何本済み/180)も出すこと。」
+
+     工程表・読みの導き方・反復率の決めごとは docs/sanmei-kanshi-plan.md にある。
+     この区画は工程1で置いた「器」で、まだ1本も入っていない。computeOne はこの
+     区画のどこも呼んでいないので、画面も結果値もこの区画によっては変わらない
+     (tests/sanmei.spec.js の SANMEI1-4 が毎サイクル表明する)。切替は工程5で、
+     そのとき上の DAY_KANSHI_NOTE / 年の干支の文 / MONTH_KANSHI_NOTE を落として
+     items の note をこの表から引く形へ変える。 */
+
+  /* 60通りの二文字。添字 0〜59 は六十干支の並びそのもので、実装の各所
+     (dayIdx・yearIdx)と同じ数え方をする=表の鍵を別に手で並べない */
+  var KANSHI_KEYS = (function () {
+    var list = [];
+    for (var i = 0; i < 60; i++) { list.push(KAN[i % 10] + SHI[i % 12]); }
+    return list;
+  })();
+
+  /* 読みを置く3欄。#55 のご指示どおり欄ごとに書く角度が違う
+       day   = 生まれ持った芯 / year = 周りから見えやすい面 / month = ふだんの暮らしぶり */
+  var KANSHI_FIELDS = ['day', 'year', 'month'];
+
+  /* 二文字ごとの読みの表。工程2〜4でここへ 60×3=180 本を入れていく。
+     いまは空で、進捗は「この表を数える」形でしか報告書に出さない(#45) */
+  var KANSHI_YOMI = { day: {}, year: {}, month: {} };
+
+  /* 反復率の決めごと(docs/sanmei-kanshi-plan.md の5節)。閾値をここ1か所に置き、
+     検査も報告書も同じ値を引く=文書と検査で別々の数を持たない */
+  var KANSHI_GRAM = 4;          /* 「同じ言い回し」とみなす文字の連なりの長さ */
+  var KANSHI_RUN_LIMIT = 20;    /* これ以上そのまま同じなら丸ごとの使い回しとみなす */
+  var KANSHI_LIMITS = { average: 0.40, max: 0.70 };
+
+  /* 表を引く。無い二文字・無い欄には値を作らず null を返す(姓名判断の kanaStrokesOf と
+     同じ安全側)。空文字を返してはいけない=「読みが無い」のか「空の読みがある」のかを
+     呼ぶ側が見分けられなくなり、#55 の「読みを載せられない欄は表示しない」が実装できない */
+  function kanshiYomiOf(field, kanshi) {
+    if (!Object.prototype.hasOwnProperty.call(KANSHI_YOMI, field)) { return null; }
+    var table = KANSHI_YOMI[field];
+    if (!table || !Object.prototype.hasOwnProperty.call(table, kanshi)) { return null; }
+    var text = table[kanshi];
+    return (typeof text === 'string' && text.length > 0) ? text : null;
+  }
+
+  /* 二文字ごとの読みを書くときの手がかり(docs/sanmei-kanshi-plan.md の4節)。
+     原典が手元に無いので、実装がすでに持っている根拠だけから組み立てる。
+     idx は六十干支の添字(0〜59)。返す5つは
+       kan_ki   前の一字の気   KAN_GOGYO(0=木 1=火 2=土 3=金 4=水)
+       kan_yang 前の一字の陰陽 添字の偶奇(1=陽 0=陰)
+       shi_ki   後ろの一字の気 蔵干の本気を KAN_GOGYO に通したもの
+       season   後ろの一字の季節 0=春 1=夏 2=秋 3=冬(寅から数える=実装の
+                monthShi = mod(2 + setsuIdx, 12) と同じ数え方)
+       place    季節の中の位置 0=初め 1=中 2=終わり
+     この5つの組が60通りと1対1であることは SANMEI1-1 が数えて確かめる */
+  function kanshiTraitsOf(idx) {
+    var k = mod(idx, 10), s = mod(idx, 12);
+    var fromTora = mod(s - 2, 12);
+    return {
+      kan_ki: KAN_GOGYO[k],
+      kan_yang: (k % 2 === 0) ? 1 : 0,
+      shi_ki: KAN_GOGYO[ZOKAN_HONKI[s]],
+      season: Math.floor(fromTora / 3),
+      place: fromTora % 3
+    };
+  }
+
+  /* 進捗。報告書の「何本済み/180」はこの数え方だけを出どころにする */
+  function kanshiYomiProgress() {
+    var byField = {}, done = 0, f, i;
+    for (f = 0; f < KANSHI_FIELDS.length; f++) {
+      var n = 0;
+      for (i = 0; i < KANSHI_KEYS.length; i++) {
+        if (kanshiYomiOf(KANSHI_FIELDS[f], KANSHI_KEYS[i]) !== null) { n++; }
+      }
+      byField[KANSHI_FIELDS[f]] = n;
+      done += n;
+    }
+    return { done: done, total: KANSHI_FIELDS.length * KANSHI_KEYS.length, by_field: byField };
+  }
+
+  function kanshiGramsOf(text, n) {
+    var set = {}, i;
+    for (i = 0; i + n <= text.length; i++) { set[text.slice(i, i + n)] = true; }
+    return set;
+  }
+
+  /* 反復率。書けた読みだけを母集団にし、欄をまたいで1つに混ぜて測る
+     (同じ二文字の3欄が互いに似てくる形も捕まえたいため)。
+     1本の反復率 = その本に出る4文字の連なりのうち「他の本にも出るもの」の割合。
+     全体の反復率はその平均。1本も無いうちは測れないので measured:false を返す
+     (0% と書くと「重複なし」に読めてしまう) */
+  function kanshiRepetitionOf(texts) {
+    var k, key;
+    var count = texts.length;
+    if (count === 0) {
+      return { measured: false, count: 0, average: null, max: null, worst: '',
+               duplicates: [], long_runs: [], long_run_count: 0, limits: KANSHI_LIMITS };
+    }
+
+    /* どの4連が何本に出るかを先に数える */
+    var seen = {};
+    for (k = 0; k < count; k++) {
+      var g = kanshiGramsOf(texts[k].text, KANSHI_GRAM);
+      for (key in g) {
+        if (Object.prototype.hasOwnProperty.call(g, key)) { seen[key] = (seen[key] || 0) + 1; }
+      }
+    }
+    var sum = 0, max = 0, worst = '';
+    for (k = 0; k < count; k++) {
+      var grams = kanshiGramsOf(texts[k].text, KANSHI_GRAM), total = 0, shared = 0;
+      for (key in grams) {
+        if (!Object.prototype.hasOwnProperty.call(grams, key)) { continue; }
+        total++;
+        if (seen[key] > 1) { shared++; }
+      }
+      var ratio = (total === 0) ? 0 : shared / total;
+      sum += ratio;
+      if (ratio > max) { max = ratio; worst = texts[k].at; }
+    }
+
+    /* 完全一致(同じ文が2本以上ある) */
+    var byText = {}, duplicates = [];
+    for (k = 0; k < count; k++) {
+      if (Object.prototype.hasOwnProperty.call(byText, texts[k].text)) {
+        duplicates.push(byText[texts[k].text] + ' と ' + texts[k].at);
+      } else { byText[texts[k].text] = texts[k].at; }
+    }
+
+    /* 丸ごとの使い回し(KANSHI_RUN_LIMIT 文字以上がそのまま同じ)。
+       総当たりで最長共通部分を求める代わりに、その長さの窓が2本以上に出るかを見る
+       (同じことを判定でき、本数が増えても重くならない)。
+       ただし**窓の数をそのまま件数にしない**:26文字が重なっていると20文字の窓は
+       7つ取れるので、1か所の使い回しが7件に化けて報告書の数が意味と食い違う
+       (cycle-0069 の監査 M5)。窓が連続している区間を1か所へ畳んでから数える。 */
+    var runs = {}, longRuns = [], longRunCount = 0;
+    for (k = 0; k < count; k++) {
+      var g2 = kanshiGramsOf(texts[k].text, KANSHI_RUN_LIMIT);
+      for (key in g2) {
+        if (Object.prototype.hasOwnProperty.call(g2, key)) { runs[key] = (runs[key] || 0) + 1; }
+      }
+    }
+    for (k = 0; k < count; k++) {
+      var body = texts[k].text, prevShared = false;
+      for (var p = 0; p + KANSHI_RUN_LIMIT <= body.length; p++) {
+        var win = body.slice(p, p + KANSHI_RUN_LIMIT);
+        var shared = runs[win] > 1;
+        /* 区間の始まりだけを1件として数える(続きは同じ1か所) */
+        if (shared && !prevShared) {
+          longRunCount++;
+          /* 見本は先頭5件だけ載せる。全部は載せないので件数を別に返す(黙って切り詰めない) */
+          if (longRuns.length < 5) { longRuns.push(texts[k].at + ':' + win); }
+        }
+        prevShared = shared;
+      }
+    }
+
+    return { measured: true, count: count, average: sum / count, max: max, worst: worst,
+             duplicates: duplicates, long_runs: longRuns, long_run_count: longRunCount,
+             limits: KANSHI_LIMITS };
+  }
+
+  /* 表に入っている読みを集めて上の測り方へ渡す。検査は見本を kanshiRepetitionOf へ
+     直接渡して同じ関数を通す=測り方を検査側に書き写さない */
+  function kanshiRepetition() {
+    var texts = [], f, i;
+    for (f = 0; f < KANSHI_FIELDS.length; f++) {
+      for (i = 0; i < KANSHI_KEYS.length; i++) {
+        var t = kanshiYomiOf(KANSHI_FIELDS[f], KANSHI_KEYS[i]);
+        if (t !== null) { texts.push({ at: KANSHI_FIELDS[f] + '/' + KANSHI_KEYS[i], text: t }); }
+      }
+    }
+    return kanshiRepetitionOf(texts);
+  }
+
   /**
    * 算命学の三つの柱と、そこから導く中心の星・本元の気。
    * 結果画面(sanmeiOfficial)と総合占い(overallStancesOf)が同じ式を通るように、
@@ -1602,6 +1782,18 @@
          呼ばれず、いまはここからだけ触れる(tests/seimei.spec.js の SEIMEI2-*) */
       seimeiCharsOf: seimeiCharsOf,
       kanaStrokesOf: kanaStrokesOf,
+      /* 算命学の二文字ごとの読み(#55・工程1の器)の検証用。切替はしていないので
+         computeOne からは呼ばれず、いまはここからだけ触れる(tests/sanmei.spec.js) */
+      kanshiKeys: KANSHI_KEYS.slice(),
+      kanshiFields: KANSHI_FIELDS.slice(),
+      kanshiYomiOf: kanshiYomiOf,
+      kanshiYomiProgress: kanshiYomiProgress,
+      kanshiRepetition: kanshiRepetition,
+      kanshiRepetitionOf: kanshiRepetitionOf,
+      kanshiLimits: { average: KANSHI_LIMITS.average, max: KANSHI_LIMITS.max },
+      /* 4節の5つの手がかり。読みを書くときの根拠で、検査 SANMEI1-1 が
+         「60通りと1対1」であることをこの関数の出力から数える */
+      kanshiTraitsOf: kanshiTraitsOf,
       kanaStrokes: (function () {
         var copy = {};
         for (var k in KANA_STROKES) {
