@@ -65,6 +65,11 @@
   section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px;}
   h2{font-size:15px;margin:0 0 10px;color:var(--ai);display:flex;gap:8px;align-items:baseline;}
   h2 .no{color:var(--kin);font-size:12px;font-variant-numeric:tabular-nums;flex:none;}
+  /* OC61(#61):見出しに件数を出す。畳んだ状態でも数だけは読めるようにするため。
+     色は紫系 --kin(黄系禁止 OC15 非抵触)。点滅・アニメーションは使わない */
+  h2 .cnt{color:var(--kin);font-size:12px;font-weight:700;flex:none;
+    border:1px solid var(--kin);border-radius:999px;padding:1px 8px;
+    font-variant-numeric:tabular-nums;}
   ul{margin:0;padding-left:1.2em;}
   li{margin:0 0 4px;}
   p{margin:0 0 8px;}
@@ -547,7 +552,9 @@
   renderConsistency();
 
   var sections = [];
-  function add(title, html) { sections.push({ title: title, html: html }); }
+  /* badge は見出しの右に出す短い添え字(OC61 の件数。畳んでいても読めるようにするため)。
+     欄の並び順・題名の判定(OPEN_DEFAULT や検査の見出し照合)には使わない */
+  function add(title, html, badge) { sections.push({ title: title, html: html, badge: badge || '' }); }
 
   /* 1: いまの状況ひと目まとめ(OC8:いま何をしていて何が完成したか+PDCAの現在地。
         OC11:「今やっていること」と「今からやりたいこと(次にやる順)」をラベルで分離)
@@ -584,16 +591,44 @@
   /* 2: 溜まっている作業(OC10:未対応の作業をトップ付近に常設。
         #23(2026-08-03)の指示で2番目へ繰り上げ、内容を普通の言葉で書く)
      契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
-     漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。 */
+     漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。
+
+     OC61(#61・2026-08-07):「何個のタスクが溜まっているか表示して下さい」。
+     件数はここで数えず、build.js の pendingWorkCount が毎ビルド導出した pending_count を
+     読むだけにする(#45:数を手入力しない/画面側にもう一つ数え方を持たない)。
+     読み取れないときは数を作らず、その旨を出す。見出しの右にも同じ数を添えるので、
+     欄を畳んだままでも件数だけは読める。 */
+  var pc = d.pending_count;
+  var pcOk = !!pc && typeof pc.total === 'number';
+  /* 台帳(queue/backlog.json)側の未完了の数。これも手入力ではなく queue_summary から読む
+     (数え方は cross-check.js の countQueues 1か所)。この欄の行数と一致しないことがある
+     =いくつかのタスクをまとめて1行にしている行が混じるため。片方だけ出すと、下の
+     「完了した作業」欄に出る台帳の数と食い違って見えるので、両方を並べて理由を添える */
+  var qs = d.queue_summary;
+  var qsOk = !!qs && typeof qs.todo === 'number' && typeof qs.in_progress === 'number';
   add('溜まっている作業(これから対応する予定)',
+    (pcOk
+      ? '<p class="bigline"><b>いま溜まっている作業:' + esc(pc.total) + '件</b> ' +
+        '<span class="sub">(未着手 ' + esc(pc.todo) + '件・対応中 ' + esc(pc.in_progress) + '件)</span></p>' +
+        '<p class="sub">この欄に並んでいる行の数です。' +
+        (qsOk ? '作業台帳のほうで数えると未完了は ' + esc(qs.todo + qs.in_progress) +
+          '件で、いくつかのタスクをまとめて1行にしている行があるため、数が一致しないことがあります。' : '') +
+        '</p>'
+      : '<p class="sub">溜まっている作業の件数を読み取れませんでした' +
+        (pc && pc.error ? '(' + esc(pc.error) + ')' : '') + '。</p>') +
     '<p class="sub">まだ終わっていない作業の一覧です(上にあるものほど先にやります)。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
     ((d.pending_work && d.pending_work.length)
       ? table(['ID', 'どんな作業か', '状態', 'いつ・どう進めるか'],
           d.pending_work.map(function (t) {
-            var cls = t.status === '対応中' ? 'kin' : 'sub';
+            /* 状態には「対応中(半分done)」のような但し書きが付く。ここを完全一致にすると
+               1行目の「対応中 N件」(build.js の pendingWorkCount は書き出しで見分ける)と
+               表で色が付く行の数が食い違う=同じ欄の中に数え方が2つある形になる。
+               書き出しでそろえること(cycle-0076 の点検役 M1) */
+            var cls = /^対応中/.test(String(t.status || '')) ? 'kin' : 'sub';
             return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
           }))
-      : '<p class="sub">該当なし(溜まっている作業はありません)</p>'));
+      : '<p class="sub">該当なし(溜まっている作業はありません)</p>'),
+    pcOk ? (pc.total + '件') : '—');
 
   /* 3: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
   add('対応できなかったこと・保留(別枠)',
@@ -721,7 +756,9 @@
   document.getElementById('body').innerHTML = sections.map(function (s, i) {
     var open = OPEN_DEFAULT.indexOf(s.title) !== -1;
     return '<section><details' + (open ? ' open' : '') + '><summary><h2><span class="no">' +
-      (i + 1) + '</span>' + esc(s.title) + '<span class="fold-hint"></span></h2></summary>' +
+      (i + 1) + '</span>' + esc(s.title) +
+      (s.badge ? '<span class="cnt">' + esc(s.badge) + '</span>' : '') +
+      '<span class="fold-hint"></span></h2></summary>' +
       s.html + '</details></section>';
   }).join('');
 })();
