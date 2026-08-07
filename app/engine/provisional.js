@@ -120,6 +120,14 @@
     '周りの様子を見てから合わせて動く型です。呼吸を合わせる巧さが出ると見ます。'
   ];
 
+  /* 生まれた日の二文字の欄に置く書き分けの文(cycle-0062・台帳 OC58-2 の #4)。
+     official.js の同名の定数と一字一句同じにすること(OC62-5 が突き合わせる) */
+  var DAY_KANSHI_NOTE =
+    'ここに出た二文字は、下の二つの読み解きのもとになります。' +
+    '持って生まれた気の向きはこの二文字だけで決まり、下の「持って生まれた気の向き」に書いてあります。' +
+    'いちばん出しやすい動き方も、この二文字を手がかりの一つにして決まり、下の「その人の芯にある動き方」に書いてあります。' +
+    '二文字そのものに意味を読み取るのではなく、そこから広げていくための出発点と見ます。';
+
   function sanmei(b) {
     var idx = mod(b.dayNo - KANSHI_BASE, 60);
     var kanIdx = idx % 10;
@@ -130,8 +138,8 @@
         /* Issue #51(2026-08-06 オーナー指示):欄そのものの言い直しをやめ、その値が
            読み手にとって何を意味するかを述べる形へ書き替えた。official.js 側と同時に更新する
            (台帳 OC35a-L1 の二重管理) */
-        { label: '日の干支', value: KAN[kanIdx] + SHI[shiIdx],
-          note: '生まれた日を昔の暦の言い方に置きかえた二文字です。あなたの持ち味を読むとき、ここを出発点にすると見ます。' },
+        /* cycle-0062(台帳 OC58-2 の #4):書き分け。official.js と同じ文にする */
+        { label: '日の干支', value: KAN[kanIdx] + SHI[shiIdx], note: DAY_KANSHI_NOTE },
         { label: '中心の星', value: MAIN_STAR[kanIdx], note: MAIN_STAR_NOTE[kanIdx] },
         { label: '本元の気', value: gogyo, note: GOGYO_NOTE[gogyo] },
         { label: '気の配り方', value: ['広く浅く', '内から外へ', '一点に集めて', '身近な範囲へ'][idx % 4],
