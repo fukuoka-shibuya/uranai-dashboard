@@ -359,6 +359,28 @@
             '%(上限は平均' + r.limit_average_pct + '%・最大' + r.limit_max_pct + '%)。' +
             '同じ文' + r.duplicate_count + '件・丸ごとの使い回し(20文字以上そのまま重なる区間)' +
             r.long_run_count + 'か所。';
+          /* cycle-0075(台帳 SANMEI-3b と点検役の指摘):混ぜて測る数だけでは見えない形が
+             あるので、欄ごとの数と、同じ二文字で欄をまたぐ組だけの数も併記する。
+             元の数え方(本数が増えるだけで上がるため線を掛けていない数)もここに出す。
+             どれも build.js が実体から導いた値で、無い報告書では何も足さない */
+          var bfr = r.by_field;
+          if (bfr && bfr.day && bfr.year && bfr.month) {
+            note.textContent += '欄ごとに測ると生まれ持った芯' + bfr.day.average_pct +
+              '%・周りから見えやすい面' + bfr.year.average_pct +
+              '%・ふだんの暮らしぶり' + bfr.month.average_pct +
+              '%(3欄を混ぜると欄の内側の似かよりが薄まるため別に出しています)。';
+          }
+          var sk = r.same_key;
+          if (sk && sk.measured) {
+            note.textContent += '同じ二文字で欄をまたぐ組(' + sk.count + '組)は平均' +
+              sk.average_pct + '%・最大' + sk.max_pct + '%(上限は平均' +
+              sk.limit_average_pct + '%・最大' + sk.limit_max_pct + '%)。';
+          }
+          if (typeof r.population_average_pct === 'number') {
+            note.textContent += '元の数え方(その文の言い回しのうち他の文にも出るものの割合)は平均' +
+              r.population_average_pct + '%・最大' + r.population_max_pct +
+              '%。この数は本数が増えるだけで上がるため上限は設けていません。';
+          }
         } else {
           note.textContent += '言い回しの反復率:まだ1本も無いので測っていません' +
             '(上限は平均' + r.limit_average_pct + '%・最大' + r.limit_max_pct + '%)。';
