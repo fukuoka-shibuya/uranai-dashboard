@@ -6,8 +6,11 @@
  *
  * 切替済み:算命学(cycle-0036)/九星気学(cycle-0037)/数秘術(cycle-0038)/
  *          西洋占星術(cycle-0039)/宿曜(cycle-0042)
- * 未実装 :姓名判断(availableKeys に無い占術は
- *          computeOne が null を返し、engine/index.js が自動的に仮計算へ戻します)
+ * 作りかけ:姓名判断(cycle-0067 の工程1で数え方の規則を決め、cycle-0068 の工程2で
+ *          このファイルへ「かなの画数表」と数え方 R1・R2・R4 の骨組みだけを置きました。
+ *          AVAILABLE_KEYS にはまだ足していないので computeOne は null を返し、
+ *          engine/index.js が自動的に仮計算へ戻します=画面はまだ変わりません。
+ *          切替は工程6)
  *
  * ==== 算命学の採用方式(計算根拠。サイクル報告書にも明記)====
  *  - 日干支: 万年暦準拠の60日周期。1970年1月1日=辛巳を起点に置く
@@ -81,6 +84,19 @@
  *    経典に伝わる古い呼び名で、人の善し悪しを表すものではない。cycle-0057(Issue #51)から
  *    画面へはこの名を出さず、付き合い方を述べた平易な言い換え(SHUKU_KEITOU_PLAIN)を出す。
  *    分類そのものは変えていないため、どの宿がどの型に属するかは不変
+ *
+ * ==== 姓名判断の採用方式(工程2の時点。決めごとの原本は docs/seimei-dictionary-plan.md 7節)====
+ *  - 数え方の規則 R1〜R10 と、値を決めるときの作業規則 V1〜V3 は同文書の 7-2 節が原本。
+ *    このファイルはそのうち R1・R2・R4 だけを実装する(工程2の範囲)
+ *  - R1: 数える前に NFKC 正規化をかける。「同じ字の別の書き方」(半角カナ・結合濁点・
+ *    互換漢字)を一つにそろえるだけで、旧字体を新字体へ読み替えることはしない(R3)
+ *  - R2: 空白は数えない
+ *  - R4: かな・長音記号は KANA_STROKES の表の値。濁点は +2 画・半濁点は +1 画
+ *  - R5(漢字3000字の表)は工程4、R6・R7(表に無い文字の扱いと画面の案内)は工程5・工程3。
+ *    そのため kanaStrokesOf は表に無い文字に対して「値を作らず null を返す」。
+ *    仮計算(provisional.js)がここで使っている文字コード由来の換算値
+ *    (codePointAt % 27 + 3)は根拠が無いため、正式計算へは持ち込まない(7-3 節の案3を不採用)
+ *  - R9: 吉凶・五格(天格・人格・地格・外格・総格)は出さない。この区画にも表を置かない
  * いずれも端末内で完結する計算のみで、外部APIは使いません。
  */
 (function (root, factory) {
@@ -1395,6 +1411,115 @@
     };
   }
 
+  /* ============ 追加占術:姓名判断(正式計算・工程2の骨組み) ============
+   *
+   * 工程2は「骨組みだけを作る」工程で、画面は1文字も変わりません。
+   * seimei は AVAILABLE_KEYS に無いので supports('seimei') は偽のままで、
+   * computeOne は null を返し、engine/index.js が仮計算へ戻します(切替は工程6)。
+   *
+   * ここに置くのは docs/seimei-dictionary-plan.md 7-2 節の R1・R2・R4 だけです。
+   *
+   * 【この表は仮計算(provisional.js)にも同じものがあります】
+   * 仮計算と正式計算はコード上分離する(CLAUDE.md の絶対条件)ため、工程2では
+   * provisional.js から表を取り上げず、同じ内容をこちらにも持ちます。二重管理が
+   * 黙って食い違うことだけは避けたいので、tests/seimei.spec.js の SEIMEI2-1 が
+   * 両ファイルの表を1字1値まで突き合わせます(片方だけ直すと必ず落ちる)。
+   * 工程6で seimei を正式計算へ切り替えたあと、仮計算側の表を落とします。
+   *
+   * 【値の出典はまだありません(未確認)】
+   * 表の値そのものは仮計算から引き継いだもので、実装コメントは「一般的な画数表の
+   * とおり」としか述べておらず、どの表かが分かりません(7-4 節の宿題)。工程3で
+   * V1(1字につき2通りで突き合わせる)をかなにも適用して確かめます。
+   */
+
+  /* R4:かな・長音記号の画数表(115字=ひらがな57・カタカナ57・長音記号1)。
+     濁点・半濁点の付いた字は表に持たず、下の kanaStrokesOf が
+     「もとの字 + 濁点2画 / 半濁点1画」で組み立てる */
+  var KANA_STROKES = {
+    'あ': 3, 'い': 2, 'う': 2, 'え': 2, 'お': 3,
+    'か': 3, 'き': 4, 'く': 1, 'け': 3, 'こ': 2,
+    'さ': 3, 'し': 1, 'す': 2, 'せ': 3, 'そ': 1,
+    'た': 4, 'ち': 2, 'つ': 1, 'て': 1, 'と': 2,
+    'な': 4, 'に': 3, 'ぬ': 2, 'ね': 2, 'の': 1,
+    'は': 3, 'ひ': 1, 'ふ': 4, 'へ': 1, 'ほ': 4,
+    'ま': 3, 'み': 2, 'む': 3, 'め': 2, 'も': 3,
+    'や': 3, 'ゆ': 2, 'よ': 2,
+    'ら': 2, 'り': 2, 'る': 1, 'れ': 2, 'ろ': 1,
+    'わ': 2, 'ゐ': 1, 'ゑ': 1, 'を': 3, 'ん': 1,
+    'ぁ': 3, 'ぃ': 2, 'ぅ': 2, 'ぇ': 2, 'ぉ': 3,
+    'ゃ': 3, 'ゅ': 2, 'ょ': 2, 'っ': 1,
+    'ア': 2, 'イ': 2, 'ウ': 3, 'エ': 3, 'オ': 3,
+    'カ': 2, 'キ': 3, 'ク': 2, 'ケ': 3, 'コ': 2,
+    'サ': 3, 'シ': 3, 'ス': 2, 'セ': 2, 'ソ': 2,
+    'タ': 3, 'チ': 3, 'ツ': 3, 'テ': 3, 'ト': 2,
+    'ナ': 2, 'ニ': 2, 'ヌ': 2, 'ネ': 4, 'ノ': 1,
+    'ハ': 2, 'ヒ': 2, 'フ': 1, 'ヘ': 1, 'ホ': 4,
+    'マ': 2, 'ミ': 3, 'ム': 2, 'メ': 2, 'モ': 3,
+    'ヤ': 2, 'ユ': 2, 'ヨ': 3,
+    'ラ': 2, 'リ': 2, 'ル': 2, 'レ': 1, 'ロ': 3,
+    'ワ': 2, 'ヰ': 3, 'ヱ': 3, 'ヲ': 3, 'ン': 2,
+    'ァ': 2, 'ィ': 2, 'ゥ': 3, 'ェ': 3, 'ォ': 3,
+    'ャ': 2, 'ュ': 2, 'ョ': 3, 'ッ': 3,
+    'ー': 1
+  };
+
+  /* 分けて書いたときの濁点・半濁点(NFD で切り出される結合文字)の符号位置 */
+  var COMBINING_DAKUTEN = 0x3099;
+  var COMBINING_HANDAKUTEN = 0x309A;
+  /* R4 の加算値。濁点は2画・半濁点は1画 */
+  var DAKUTEN_STROKES = 2;
+  var HANDAKUTEN_STROKES = 1;
+
+  /** R1・R2:名前を数える文字の並びに直す。
+   *  R1 = 先に NFKC 正規化をかけて「同じ字の別の書き方」をそろえる
+   *       (半角カナ「ｶ」→「カ」、「か+結合濁点」→「が」、互換漢字→統合先の字)。
+   *       旧字体を新字体へ読み替えることはしない(R3。NFKC はその置き換えをしない)
+   *  R2 = 空白は数えない
+   *  サロゲートペアの字は1文字として扱う。
+   *  @param {string} name 占いたい名前
+   *  @returns {string[]} 数える対象の文字の並び
+   */
+  function seimeiCharsOf(name) {
+    var out = [];
+    var text = String(name || '');
+    if (typeof text.normalize === 'function') { text = text.normalize('NFKC'); }
+    for (var i = 0; i < text.length;) {
+      var cp = text.codePointAt(i);
+      var ch = String.fromCodePoint(cp);
+      i += ch.length;
+      if (/\s/.test(ch)) { continue; }
+      out.push(ch);
+    }
+    return out;
+  }
+
+  /** R4:かな1文字ぶんの画数。
+   *  表にそのまま載っていればその値、濁点・半濁点つきの字は
+   *  「もとの字 + 2画 / + 1画」で組み立てる。
+   *  かな以外(漢字・ラテン文字・記号など)は **値を作らず null を返す**。
+   *  漢字の表は工程4(R5)、表に無い文字の画面での扱いは工程3・工程5(R6・R7)。
+   *  @param {string} ch 1文字(呼ぶ側で NFKC 済みであることを前提とする)
+   *  @returns {number|null} 画数。この表で数えられない文字は null
+   */
+  function kanaStrokesOf(ch) {
+    var s = String(ch == null ? '' : ch);
+    if (s === '') { return null; }
+    if (Object.prototype.hasOwnProperty.call(KANA_STROKES, s)) { return KANA_STROKES[s]; }
+    if (typeof s.normalize !== 'function') { return null; }
+    var parts = s.normalize('NFD');
+    if (parts.length <= 1) { return null; }
+    var base = parts.charAt(0);
+    if (!Object.prototype.hasOwnProperty.call(KANA_STROKES, base)) { return null; }
+    var extra = 0;
+    for (var i = 1; i < parts.length; i++) {
+      var code = parts.charCodeAt(i);
+      if (code === COMBINING_DAKUTEN) { extra += DAKUTEN_STROKES; }
+      else if (code === COMBINING_HANDAKUTEN) { extra += HANDAKUTEN_STROKES; }
+      else { return null; }  /* 知らない結合文字が付いていたら値を作らない */
+    }
+    return KANA_STROKES[base] + extra;
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -1472,7 +1597,18 @@
       lunarDateOf: lunarDateOf,
       shukuIndexOf: shukuIndexOf,
       shukuOrder: SHUKU.slice(),
-      sakujitsuShuku: SAKUJITSU_SHUKU.slice()
+      sakujitsuShuku: SAKUJITSU_SHUKU.slice(),
+      /* 姓名判断(工程2の骨組み)の検証用。切替はしていないので computeOne からは
+         呼ばれず、いまはここからだけ触れる(tests/seimei.spec.js の SEIMEI2-*) */
+      seimeiCharsOf: seimeiCharsOf,
+      kanaStrokesOf: kanaStrokesOf,
+      kanaStrokes: (function () {
+        var copy = {};
+        for (var k in KANA_STROKES) {
+          if (Object.prototype.hasOwnProperty.call(KANA_STROKES, k)) { copy[k] = KANA_STROKES[k]; }
+        }
+        return copy;
+      })()
     }
   };
 });
