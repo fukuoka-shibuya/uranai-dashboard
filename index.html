@@ -724,8 +724,43 @@
       ? list(d.human_decisions)
       : '<p class="nowork">今日はあなたの作業はありません。</p>');
 
-  /* 15: お知らせ(OC7:対応不要の連絡はこちらに分離) */
-  add('お知らせ(確認だけ・対応は不要)', list(d.notices));
+  /* 15: お知らせ(OC7:対応不要の連絡はこちらに分離)
+     LOOP-1(#65):ループの回し方の現状も、この欄の中に表として出す。
+     値は build.js の loopControlStatus() が実体から読み取ったものをそのまま並べるだけで、
+     画面の側は数を持たない(#45。#61 の件数と同じ作り)。 */
+  var lc = d.loop_control;
+  var lcHtml = '';
+  if (lc) {
+    var lcNum = function (v, unit) {
+      return (typeof v === 'number' && isFinite(v))
+        ? (String(v) + unit) : '<span class="ng">読み取れませんでした</span>';
+    };
+    var lcYesNo = function (v, yes, no) {
+      if (v === true) return yes;
+      if (v === false) return '<span class="ng">' + no + '</span>';
+      return '<span class="ng">読み取れませんでした</span>';
+    };
+    var lcRows = [
+      ['サイクルを始める合図', lcYesNo(lc.turn_taking,
+        '決まった時刻ではなく、ほかのループと順番を譲り合って決めています',
+        '決まった時刻で動いています')],
+      ['作業中の心拍', lcYesNo(lc.heartbeat_while_working,
+        lcNum(lc.heartbeat_interval_seconds, '秒') + 'ごとに打ち続けています(占いを作っている最中も止まりません)',
+        '作業中は打っていません')],
+      ['止まりと見なす条件', '最後の心拍から' + lcNum(lc.stale_minutes, '分') + 'が過ぎたときだけ'],
+      ['同時に走ってよいループの数', lcNum(lc.max_concurrent_loops, '本')],
+      ['相手が落ちたと見なすまで', lcNum(lc.peer_stale_minutes, '分')],
+      ['順番待ち中に空きを見に行く間隔', lcNum(lc.turn_poll_seconds, '秒')],
+      ['最後の心拍', lc.last_heartbeat
+        ? (esc(lc.last_heartbeat) + '(そのときの状態:' + esc(lc.heartbeat_status || '不明') + ')')
+        : '<span class="ng">読み取れませんでした</span>'],
+    ];
+    lcHtml = '<p style="margin-top:8px"><b class="sub" id="loop-control-title">ループの回し方(いまの設定)</b></p>' +
+      table(['項目', 'いまの設定'], lcRows) +
+      ((lc.notes && lc.notes.length) ? list(lc.notes) : '') +
+      (lc.error ? '<p class="ng">' + esc(lc.error) + '</p>' : '');
+  }
+  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml);
 
   /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
