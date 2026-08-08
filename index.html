@@ -695,8 +695,22 @@
     (d.tests.executed ? '<span class="ok">実行済(' + esc(d.tests.executed_at) + ')</span>' : '<span class="ng">未実行</span>') +
     ' — 合格 <b class="ok">' + esc(d.tests.passed) + '</b> / 失敗 <b class="' + (d.tests.failed ? 'ng' : 'ok') + '">' +
     esc(d.tests.failed) + '</b>(' + esc(d.tests.duration) + ')</p>' +
-    table(['ケース', '結果'], d.tests.cases.map(function (c) {
-      return [esc(c.name), c.result === 'pass' ? '<span class="ok">合格</span>' : '<span class="ng">失敗</span>'];
+    /* cycle-0095(点検役 M1):判定は `c.result === 'pass'` の1本だけだったが、
+       cycle-0068 以降 `result` に 'pass' を入れたケースが1件も無く(いまの形は
+       {name, passed, failed, note})、**全行が赤い「失敗」で描かれていた。**
+       同じ欄の上の段落は「合格 595 / 失敗 0」と出ているので、公開画面が
+       自分と食い違ったまま27サイクル公開され続けたことになる。
+       判定は**失敗の件数**から出し、件数と実行の記録も列として出す
+       (書いてあるのに画面に出ない欄を作らない)。古い形(result:'pass')も
+       読めるように、件数が無いときだけ従来の判定へ落とす。 */
+    table(['ケース', '合格', '失敗', '結果', '実行の記録'], d.tests.cases.map(function (c) {
+      var hasCount = (typeof c.failed === 'number');
+      var ok = hasCount ? (c.failed === 0) : (c.result === 'pass');
+      return [esc(c.name),
+              esc(typeof c.passed === 'number' ? c.passed : '—'),
+              esc(hasCount ? c.failed : '—'),
+              ok ? '<span class="ok">合格</span>' : '<span class="ng">失敗</span>',
+              esc(c.note || c.result || '')];
     })) +
     /* R1b: 実行時刻はツール(tools/run-tests.js)がシステム実時計で自動記録し、
        build.js がその記録をここへ写す。手入力の時刻ではない。 */
