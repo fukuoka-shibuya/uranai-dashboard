@@ -413,7 +413,10 @@
           '二文字の読みはこの内数で、そちらは表に入った本数=画面へつなぐのは切替のとき):' +
           w.texts_done + '/' + w.texts_total + '本・' +
           w.fields_done + '/' + w.fields_total + '欄(' + parts.join('・') + ')。' +
-          '読みを載せられないので表示をやめる欄' + w.fields_dropped + '。';
+          '読みを載せられないので表示をやめる欄' + w.fields_dropped +
+          '(うち画面から外し終えたのは' +
+          (w.fields_removed === null || w.fields_removed === undefined ? '読み取れませんでした' :
+           w.fields_removed + '欄') + ')。';
         var wr = w.repetition || {};
         if (wr.measured) {
           note.textContent += '書き直した文の反復率:平均' + wr.average_pct + '%・最大' + wr.max_pct +

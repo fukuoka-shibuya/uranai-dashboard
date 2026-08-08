@@ -223,26 +223,14 @@
            値によらず一定なので about の役目で、note は読みだけを持つ */
         about: '生まれた月を昔の暦の月の変わり目で区切り直し、その月に九つの星の並びの真ん中へ来る星を示したものです。生まれた年の星に合わせて決まります。ふだんの過ごし方に出やすい面を見るところです。'
       },
-      /* cycle-0061(台帳 OC58-2 の #6・#7):この二欄の値(白・黒・碧…/北・南西…)は
-         7通り・9通りに分かれるのに、「あなたの場合」の文は1通りしか無かった。
-         色ごと・方角ごとの意味の原典は手元に無く、書き起こせば #45 の
-         「確かめられないことを断定として書く」に当たる(方角の吉凶はとくに断定に近い)。
-         そこで cycle-0059 の宿曜と同じ書き分けを取る=about の側でこの欄が何を示す
-         ものかを言い切り、note では読み解きの行き先(生まれた年から見た自分の星)を
-         画面の見出しの言葉で名指しする。行き先を選べるのは、値がどちらも
-         本命星の添字だけで決まり(KYUSEI_IRO[h-1] / KYUSEI_HOUI[h-1])、
-         その本命星の欄が9通りに分かれる読み解きを実際に持っているため */
-      '星の色': {
-        plain: '星に結び付いた色', term: '',
-        /* 「どの星かを見分ける目印」とは書けない。KYUSEI_IRO は白が三つの星
-           (一白・六白・八白)に重なるので、色から星は一意に決まらない
-           (cycle-0061 の監査 R3。OC61-2 が色7通り・星9通りと表明している) */
-        about: '九つの星それぞれに昔から結び付けられている色で、星の呼び名の中にも入っています。同じ色が複数の星に重なることもあり、このアプリでは色そのものを別に読み解いてはいません。'
-      },
-      '定位の方角': {
-        plain: 'もともとの居場所の方角', term: '',
-        about: '九つの星を並べた図の上で、その星がもともと置かれるとされる場所の方角です。このアプリでは向きの良し悪しを占う材料にはしていません。'
-      }
+      /* cycle-0092(台帳 YOMI-7a):ここにあった「星の色」「定位の方角」の用語の説明も、
+         欄そのものを落としたので消した。**欄を消して説明だけ残さない**=GUIDE は
+         画面に出る項目の表なので、画面に無い項目の説明が残っていると、
+         次に誰かが表を読んだときに「まだある欄」と読める(二重管理の逆向きの事故)。
+         2欄の about に書いてあった断り(同じ色が複数の星に重なる/向きの良し悪しは
+         占わない)は、その欄が無くなったので言う相手もいない=移し先は要らない
+         (宿曜の「人の善し悪しではありません」を about へ移した cycle-0088 とは
+         逆の形で、あちらは欄が残るので移す先が必要だった) */
     },
     suuhi: {
       'ライフパスナンバー': {
@@ -348,13 +336,16 @@
         plain: '画数を一けたに縮めた数', term: '画の型',
         about: '名前ぜんぶの画数を一けたになるまで足し縮め、一から九のどれに当たるかで見るものです。'
       },
+      /* cycle-0091(台帳 YOMI-6b):値を「◯画」から偶奇の言い換えへそろえたので、
+         about も「奇数か偶数かで見る」ことを言い切る形にした。画数そのものの
+         多い少ないを読まないことまで about で述べる(自己完結) */
       '頭字の画': {
         plain: 'はじめの一字の画数', term: '',
-        about: '名前のいちばん初めの一字が持つ画数で、出だしの印象を見る手がかりにします。'
+        about: '名前のいちばん初めの一字の画数が、奇数か偶数かで出だしの印象を見るところです。画数そのものの多い少ないを良し悪しとしては数えていません。'
       },
       '結字の画': {
         plain: '終わりの一字の画数', term: '',
-        about: '名前の最後に置かれた一字の画数で、結びの印象を読むところです。'
+        about: '名前の最後に置かれた一字の画数が、奇数か偶数かで結びの印象を読むところです。画数そのものの多い少ないを良し悪しとしては数えていません。'
       }
     }
   };
@@ -588,6 +579,29 @@
         '七の型': '七の型は、名前ぜんぶの画数を畳むと七になる名前で、七日ごとに区切りを引くように、一人で深く調べる時間の似合う型です。資料を読み込む時期や、静かな場所で腕を磨くところで、名前の帯びる集中が実を結びやすいようです。にぎやかな輪の中で即座に言葉を返す役では逆に、答えを選ぶ間が長く見えるかもしれません。調べものに潜る前に、切り上げの合図を先に仕込んでおくのが向いていると映ります。',
         '八の型': '八の型は、画数の合計をひと桁へ縮めると八が出る名前で、八方へ道が延びるように、大きな流れをまとめる役回りがなじみます。人手と段取りを組み合わせる場面や、離れたところの話をつなぐときに、この名の広さが力を貸すでしょう。逆に、手もとの細かな仕上げだけが続く時期には、手応えの薄く感じられることがあります。まとめ役に就いた日は、細部をひとつ選んで自分の手で仕上げるほうが足場が保てると映ります。',
         '九の型': '九の型は、名前の画数を畳みきると九まで満ちる名前で、九つの升を満たすように、行き渡らせて締めくくる動きが似合う型です。配りものの最後のひと巡りを見届ける場面や、催しの後片づけを引き取るときに、名前の持つ律義さが頼られるようです。合図と同時に飛び出す役では逆に、支度の長さが目立ちそうです。締めくくった日は、次へ渡す覚え書きを一枚だけ書き残すとよさそうだと映ります。'
+      },
+      /* cycle-0091(台帳 YOMI-6b):頭字の画・結字の画の4本。値は同じ回で
+         「◯画」(29通り)から偶奇の言い換え(奇数/偶数)へそろえた=計算から
+         出る材料(偶奇)と値の顔ぶれが1対1になったので、値ごとの読みが書ける。
+         **何から組み立てたか**:計算から出るのは「最初(最後)の一字の画数の偶奇」
+         まで。各本の1文目の見立て(奇数=外へ開く/偶数=整えて入る・閉じる)は
+         cycle-0048 から旧 note が持っていた言い換えの芯を引き継いだもので、
+         場面・向かない場面・勧めはこちらの当てはめである(姓名判断の結び
+         closing で開示する)。
+         **値の文字(奇数/偶数)は両実装で同じになる**ので合流点のここへ置く
+         (画の型と同じ扱い。正式化で画数の数え方が変わると、どの名前がどちらに
+         なるかは動くが、値の文字そのものは動かない)。
+         **2欄は値の文字が同じ**なので、同じ名前で頭字も結字も奇数、という画面が
+         ありうる=書く角度を分ける(下の SEIMEI_ANGLE。頭字=出だし・入り方/
+         結字=結び・締めくくり方)。
+         語り口(W8):姓名判断の note は「〜と映ります。」で結ぶ */
+      '頭字の画': {
+        '奇数': '最初の一字の画数が奇数の名前は、外へ向かって開く出だしを誘う響きです。初対面のあいさつを自分から切り出すときや、集まりの口火を切る場面で、この名の勢いが後押しになりそうです。逆に、相手の話をまず黙って聞き取る役どころでは、言葉が先に出てしまうところがあります。話し始める前にひと呼吸だけ置くほうが、開いた出だしが場をほぐす力になると映ります。',
+        '偶数': '画数が偶数の一字で始まる名前は、そっと整えて入る出だしがなじむ響きです。席の空気を確かめてから話に加わるときや、支度を先にそろえて始める場面で、この名の落ち着きが頼りになるようです。逆に、その場ですぐ口を開く役が続くところでは、様子見が長く見えるかもしれません。加わる前に、最初のひと言だけ手もとで用意しておくのが向いていると映ります。'
+      },
+      '結字の画': {
+        '奇数': '終わりの一字の画数が奇数の名前は、余韻を残して締めくくる結びを誘う響きです。別れぎわにもうひと言添えるときや、催しのあとを次の約束へつなぐ場面で、この名の残り香が働きやすいようです。逆に、その日のうちにきっぱり手じまいする用件では、後を引く形になることがあります。締めの言葉を先にひとつ決めておくほうが、余韻が心地よい長さで収まると映ります。',
+        '偶数': '画数が偶数の一字で終わる名前は、静かにそろえて閉じる結びがなじむ響きです。使った道具を元へ戻して席を立つときや、頼まれごとを報告まで届けて締めくくる場面で、この名の几帳面さが頼られるようです。逆に、余白を残したまま次へ渡す進め方が求められるところでは、閉じ方が固く見えることもあるでしょう。閉じる前にやり残しをひとつ書き出してみると、そろえた結びが次の足がかりになると映ります。'
       }
     }
   };
@@ -672,7 +686,18 @@
      'drop'(読みを載せられないので欄ごと表示しない)の2つだけ。
      どの欄がいくつの値を取るかはここに書かない=実体を数えて出す(#45)。
      この表は「決めごと」であって測った値ではないので、実在する欄の顔ぶれと
-     ちょうど一致することを YOMI1-1 が engine の走査で毎サイクル突き合わせる。 */
+     ちょうど一致することを YOMI1-1 が engine の走査で毎サイクル突き合わせる。
+
+     **removed(cycle-0092・台帳 YOMI-7a で足した)**:drop と決めた欄を実際に
+     画面から落としたサイクルの番号。**決めごと(plan)と実際の削除(removed)を
+     分けて持つ**のは、削除が占術ごとに複数のサイクルへ分かれるためである
+     (#52 の境目=欄の削除は items の構成が変わるので1サイクル1占術)。
+     この欄があることで YOMI1-1 は次の両方を見られる:
+       plan:'drop' + removed 有り … その欄が**画面に無い**こと(消し忘れが落ちる)
+       plan:'drop' + removed 無し … その欄が**まだ画面にある**こと(先走った申告が落ちる)
+     どちらの向きも見るので、「消したのに書き足し忘れた」も「書き足したのに
+     消していない」も通らない(片側だけの照合は根拠の無い行を捕まえられない
+     =#62 で学んだこと)。 */
   var YOMI_PLAN = [
     /* 算命学:6欄すべて残す。3つの干支欄は #55 の工程2〜4で 60本ずつ書く */
     { key: 'sanmei', label: '日の干支', plan: 'yomi' },
@@ -681,11 +706,16 @@
     { key: 'sanmei', label: '月の干支', plan: 'yomi' },
     { key: 'sanmei', label: '本元の気', plan: 'yomi' },
     { key: 'sanmei', label: '天中殺の組', plan: 'yomi' },
-    /* 九星気学:色と方角はご指示 #58 が名指しで削除を指定した欄 */
+    /* 九星気学:色と方角はご指示 #58 が名指しで削除を指定した欄。
+       **cycle-0092(台帳 YOMI-7a)で実際に画面から落とした。**行はここに残す=
+       処遇表は「決めごとの記録」なので、落とした欄も drop として残しておかないと
+       「そんな欄はもともと無かった」形になり、ご指示のどれに応えたのかが消える。
+       落としたあとは YOMI1-1 が **drop の欄が画面に無いこと**を毎サイクル見る
+       (それまでは「表にある欄は画面にある」を見ていた=向きが裏返った) */
     { key: 'kyusei', label: '本命星', plan: 'yomi' },
     { key: 'kyusei', label: '月命星', plan: 'yomi' },
-    { key: 'kyusei', label: '星の色', plan: 'drop' },
-    { key: 'kyusei', label: '定位の方角', plan: 'drop' },
+    { key: 'kyusei', label: '星の色', plan: 'drop', removed: 'cycle-0092' },
+    { key: 'kyusei', label: '定位の方角', plan: 'drop', removed: 'cycle-0092' },
     /* 数秘術:4欄とも値ごとに文が分かれているので全部残す */
     { key: 'suuhi', label: 'ライフパスナンバー', plan: 'yomi' },
     { key: 'suuhi', label: '誕生数', plan: 'yomi' },
@@ -714,7 +744,9 @@
        頭字・結字は値29通りに対して計算から出る材料が偶奇と大小しか無く、
        値の粒度が材料より細かい=**値の粒度を材料へそろえてから**(偶奇の
        言い換えを値にしてから)書く。値を変えるのは計算に触る作業なので
-       この回では行わず、台帳 YOMI-6b として単独の回に分けた(材料不足)。 */
+       cycle-0090 では行わず、台帳 YOMI-6b として単独の回に分けた(材料不足)。
+       **YOMI-6b は cycle-0091 で完了**=値を奇数/偶数の2値へそろえ、
+       2欄×2値の4本を書いた(読みは VALUE_NOTE.seimei・角度は SEIMEI_ANGLE)。 */
     { key: 'seimei', label: '総画', plan: 'drop' },
     { key: 'seimei', label: '画の型', plan: 'yomi' },
     { key: 'seimei', label: '頭字の画', plan: 'yomi' },
@@ -1100,18 +1132,17 @@
              max: max, worst: worst, limits: official.util.kanshiSameKeyLimits };
   }
 
-  /* ============ 姓名判断「画の型」9本(cycle-0090・台帳 YOMI-6)を引く道具 ============
+  /* ============ 姓名判断13本(cycle-0090 YOMI-6・cycle-0091 YOMI-6b)を引く道具 ============
 
-     読みそのものは上の VALUE_NOTE.seimei 1か所にある。ここに置くのは引き方と
-     一覧で、tests/yomi.spec.js の YOMI6-* が同じここを呼ぶ(検査の側に同じ判定を
-     書き写さない。cycle-0085〜0089 と同じ作り)。
+     読みそのものは上の VALUE_NOTE.seimei 1か所にある(画の型9+頭字2+結字2)。
+     ここに置くのは引き方と一覧で、tests/yomi.spec.js の YOMI6-* が同じここを呼ぶ
+     (検査の側に同じ判定を書き写さない。cycle-0085〜0089 と同じ作り)。
 
-     **書く角度の表(◯◯_ANGLE)はこの占術にはまだ置いていない**=角度の表は
-     「同じ画面に並ぶ欄どうしが同じ値を取りうるときに、同じ話を二度読ませない」
-     ためのもので(九星・数秘・西洋・宿曜)、いま書けている欄は「画の型」1つだけ
-     であり、その値(一の型〜九の型)は姓名判断の他の欄の値(◯画)と文字が
-     重ならない。頭字・結字を書く回(台帳 YOMI-6b)で、偶奇の言い換えどうしが
-     重なるかを見てから決める。 */
+     **書く角度の表(SEIMEI_ANGLE)は cycle-0091(YOMI-6b)で置いた**=頭字の画と
+     結字の画は値の文字(奇数/偶数)がそっくり同じで、同じ名前で両方が奇数という
+     画面がありうる(九星の本命星・月命星と同じ形)。画の型を表に載せないのは、
+     その値(一の型〜九の型)が奇数/偶数と文字が重ならないため=この理由づけは
+     手で書かず、YOMI6b-1 が値の集合を突き合わせて確かめる。 */
 
   /** 姓名判断で読みを持つ欄の顔ぶれ(VALUE_NOTE の受け口そのもの) */
   function seimeiYomiFields() {
@@ -1140,7 +1171,7 @@
     return own(t[field], value) ? t[field][value] : null;
   }
 
-  /** 9本を [{ at, value, text }] で返す。繰り返しも言い切りもここを通る */
+  /** 13本を [{ at, value, text }] で返す。繰り返しも言い切りもここを通る */
   function seimeiYomiTexts() {
     var out = [], fields = seimeiYomiFields(), f, i;
     for (f = 0; f < fields.length; f++) {
@@ -1151,6 +1182,113 @@
       }
     }
     return out;
+  }
+
+  /* 頭字の画・結字の画の書く角度(cycle-0091・台帳 YOMI-6b)。
+     2欄は値の文字(奇数/偶数)が同じなので、角度を分けないと同じ名前で
+     同じ話を二度読むことになる(cycle-0085 の申し送り)。
+     **must / avoid の語は書いた4本を走査して顔ぶれを出してから決めた**
+     (書き写しで作らない=障害19)。avoid はもう一方の must にそろえてある。 */
+  var SEIMEI_ANGLE = {
+    '頭字の画': {
+      must: ['出だし', '入り'],
+      avoid: ['結び', '締めくく'],
+      desc: '名前の出だしの印象=物事への入り方'
+    },
+    '結字の画': {
+      must: ['結び', '締めくく'],
+      avoid: ['出だし', '入り'],
+      desc: '名前の結びの印象=締めくくり方'
+    }
+  };
+
+  function seimeiAngleOf(field) {
+    var a = SEIMEI_ANGLE[field];
+    if (!a) { return null; }
+    return { must: a.must.slice(), avoid: a.avoid.slice(), desc: a.desc };
+  }
+
+  /** 角度の表を守っているか。pick を渡すと差し替えた読みで試せる(反証用)。
+      西洋の seiyouAngleProblems と同じ形(判定を書き写さないため、いずれ芯を
+      共有するのが筋だが、欄の引き方が占術ごとに違うのでまず同じ形をなぞる) */
+  function seimeiAngleProblems(yomiOf) {
+    var problems = [], f, i, k;
+    var pick = yomiOf || seimeiYomiOf;
+    var fields = [], label;
+    for (label in SEIMEI_ANGLE) { if (own(SEIMEI_ANGLE, label)) { fields.push(label); } }
+    for (f = 0; f < fields.length; f++) {
+      var angle = SEIMEI_ANGLE[fields[f]];
+      var keys = seimeiYomiKeys(fields[f]);
+      for (i = 0; i < keys.length; i++) {
+        var text = pick(fields[f], keys[i]);
+        if (text === null || text === undefined) { continue; }
+        var at = fields[f] + '/' + keys[i];
+        var hit = false;
+        for (k = 0; k < angle.must.length; k++) {
+          if (text.indexOf(angle.must[k]) >= 0) { hit = true; }
+        }
+        if (!hit) {
+          problems.push(at + ': この欄の角度(' + angle.desc + ')の言い回しが1つも無い');
+        }
+        for (k = 0; k < angle.avoid.length; k++) {
+          if (text.indexOf(angle.avoid[k]) >= 0) {
+            problems.push(at + ': 別の欄の角度の語「' + angle.avoid[k] + '」が入っている');
+          }
+        }
+      }
+    }
+    return problems;
+  }
+
+  /** 同じ画面に並ぶ姓名判断の note の重なり。**画面に実際に出ている note を読む**
+      (総画の名指しの文も含める=宿曜の shukuSameScreenOverlap と同じ扱い)。
+      名前は全数走査ができないので、画面の顔ぶれ(画の型9×頭字2×結字2=36通り)を
+      **作って**測る=頭字・結字の字を偶奇で選び、間に「ー」(1画)を足して総画を
+      どの畳み値へも動かせる(3文字あれば36通りすべて実在する名前になる)。
+      作った名前が狙いの組になっていることは値を突き合わせて確かめ、
+      ならなければ数を作らず問題として返す。 */
+  function seimeiSameScreenOverlap() {
+    var kataNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    var heads = { '奇数': 'あ', '偶数': 'い' };   /* あ=3画(奇)・い=2画(偶) */
+    var tails = { '奇数': 'し', '偶数': 'い' };   /* し=1画(奇)・い=2画(偶) */
+    var screens = [], problems = [];
+    var hp, tp, kata, k, name, one, i, byLabel, texts;
+    for (hp in heads) {
+      for (tp in tails) {
+        for (kata = 1; kata <= 9; kata++) {
+          /* 間へ「ー」を k 本挟んで総画の畳み値を kata へ合わせる */
+          for (k = 0; k < 9; k++) {
+            name = heads[hp] + new Array(k + 1).join('ー') + tails[tp];
+            one = computeOne('seimei', { seimeiName: name });
+            byLabel = {};
+            for (i = 0; i < one.items.length; i++) { byLabel[one.items[i].label] = one.items[i]; }
+            if (byLabel['画の型'].value === kataNames[kata - 1] + 'の型') { break; }
+            one = null;
+          }
+          if (!one) { problems.push(hp + '/' + tp + '/' + kata + ': 画面を作れなかった'); continue; }
+          if (byLabel['頭字の画'].value !== hp || byLabel['結字の画'].value !== tp) {
+            problems.push(name + ': 狙いの偶奇にならなかった'); continue;
+          }
+          texts = [];
+          for (i = 0; i < one.items.length; i++) {
+            if (one.items[i].note) {
+              texts.push({ at: one.items[i].label, text: one.items[i].note });
+            }
+          }
+          screens.push({ name: name, texts: texts });
+        }
+      }
+    }
+    if (problems.length > 0) { return { measured: false, problems: problems }; }
+    var sum = 0, max = 0, worst = '';
+    for (i = 0; i < screens.length; i++) {
+      var m = official.util.kanshiPairOverlapOf(screens[i].texts);
+      sum += (m.average === null) ? 0 : m.average;
+      if (m.max > max) { max = m.max; worst = screens[i].name + ' の画面(' + m.worst + ')'; }
+    }
+    return { measured: true, count: screens.length, average: sum / screens.length,
+             max: max, worst: worst, problems: [],
+             limits: official.util.kanshiSameKeyLimits };
   }
 
   function computeOne(key, input) { return withGuide(key, implFor(key).computeOne(key, input)); }
@@ -1204,7 +1342,10 @@
     yomiPlan: function () {
       var out = [], i;
       for (i = 0; i < YOMI_PLAN.length; i++) {
-        out.push({ key: YOMI_PLAN[i].key, label: YOMI_PLAN[i].label, plan: YOMI_PLAN[i].plan });
+        /* removed(実際に画面から落としたサイクル)も写す。無い欄では undefined に
+           なるので、受け手は「有る/無い」で見分ける(cycle-0092・台帳 YOMI-7a) */
+        out.push({ key: YOMI_PLAN[i].key, label: YOMI_PLAN[i].label, plan: YOMI_PLAN[i].plan,
+                   removed: YOMI_PLAN[i].removed });
       }
       return out;
     },
@@ -1236,6 +1377,9 @@
     seimeiYomiKeys: seimeiYomiKeys,
     seimeiYomiOf: seimeiYomiOf,
     seimeiYomiTexts: seimeiYomiTexts,
+    seimeiAngleOf: seimeiAngleOf,
+    seimeiAngleProblems: seimeiAngleProblems,
+    seimeiSameScreenOverlap: seimeiSameScreenOverlap,
     /* 中核5占術がすべて正式計算に切り替わったので、総合占いも正式計算側で組む
        (cycle-0043)。切替の実体は上の OFFICIAL_KEYS のままで、ここに別の設定は置かない */
     overallIsOfficial: function () { return overallImpl() === official; },
