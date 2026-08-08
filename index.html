@@ -644,12 +644,21 @@
         #23 の指示で「溜まっている作業」より下へ移動。長くなるため初期表示では畳まれる=OC22)
      契約:queue/owner-comments.json の全コメントを owner_directives に漏れなく載せる。
      状態は「完了/対応中/保留/対象外」のいずれか(キュー側 done→完了、third_party→対象外)。
-     整合は tests/dashboard.spec.js の OC9 検査が毎サイクル確認する。 */
+     整合は tests/dashboard.spec.js の OC9 検査が毎サイクル確認する。
+
+     ORDER-1(オーナーコメント #64・2026-08-08):「オーナー指示の対応状況(コメントの要約一覧)を
+     最新のほうから見えるように上下を逆にして1番が一番下で」。cycle-0083 の時点で64件まで
+     増えており、昇順のままだと最新のご指示を見るのに一番下までたどることになる
+     (件数はここに書き写さず、実際の行数は下の owner_directives から出る)。
+     **並べ替えるのは画面に出す時だけ**で、データ(owner_directives)は昇順のまま置く
+     =OC9 の照合は番号で引いているので影響しない。slice() で写しを作ってから並べ替える
+     (元の配列をその場で並べ替えると、あとで同じ配列を読む別の欄の並びまで変わる)。
+     降順であることは tests/dashboard.spec.js の ORDER1-1(反証 ORDER1-1b)が見張る。 */
   add('オーナー指示の対応状況(コメントの要約一覧)',
-    '<p class="sub">コメント欄からいただいた指示の要約と、それぞれの対応状況です。詳しい対応内容は各サイクルの報告書に記録されています。</p>' +
+    '<p class="sub">コメント欄からいただいた指示の要約と、それぞれの対応状況です。新しいご指示ほど上に並べています(#1 が一番下)。詳しい対応内容は各サイクルの報告書に記録されています。</p>' +
     ((d.owner_directives || []).length
       ? table(['#', '指示の要約', '状態', '対応内容'],
-          d.owner_directives.map(function (o) {
+          d.owner_directives.slice().sort(function (a, b) { return Number(b.no) - Number(a.no); }).map(function (o) {
             var cls = o.status === '完了' ? 'ok' : (o.status === '対応中' ? 'kin' : 'sub');
             return ['#' + esc(o.no), esc(o.summary), '<span class="' + cls + '">' + esc(o.status) + '</span>', esc(o.note)];
           }))
