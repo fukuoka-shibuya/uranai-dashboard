@@ -2,7 +2,7 @@
 window.DASHBOARD_DATA = {
   "cycle_id": "cycle-0096",
   "cycle_label": "オーナー指示 #67「一旦休止してください。再開の際はこちらから知らせます。」を受けて、**休止に入りました**。監督プログラムは1行も変えず、状態を「WAITING」にする既存の仕組みを使っています(サイクルの間隔が約6時間へ広がり、コメントの確認だけが動きます)。再開のご指示(コメント)が届き次第、作業を再開します。この回では占い本文・アプリ・検査には一切触れていません。",
-  "generated_at": "2026-08-10T06:33:02+09:00",
+  "generated_at": "2026-08-10T12:48:00+09:00",
   "status": "OK",
   "overall": {
     "phase": "開発順序1〜7は完了。オーナー指示 #67(2026-08-09)により**休止中**=再開のご指示(コメント)を待っています",
@@ -1011,30 +1011,9 @@ window.DASHBOARD_DATA = {
     "executed": true,
     "passed": 595,
     "failed": 0,
-    "duration": "3つのスイートを分けて測りました。計算の照合(official)=100件合格・0件失敗(07:04:25〜07:11:44)。文章と用語と総合=325件合格・0件失敗・87件スキップ(07:08:14〜07:11:23)。画面の流れ=170件合格・0件失敗(07:04:29〜07:08:54)。合わせて595件合格・0件失敗・87件スキップで、いずれも終了コード0です。",
-    "executed_at": "2026-08-09T07:13:18+09:00",
+    "duration": "回復の回(8/10 12時台)に3つのスイートを分けて測り直しました。計算の照合(official)=100件合格・0件失敗(12:39:51〜12:47:10)。文章と用語と総合=325件合格・0件失敗・87件スキップ(12:39:53〜12:43:05)。画面の流れ=170件合格・0件失敗(12:39:54〜12:44:18)。合わせて595件合格・0件失敗・87件スキップで、いずれも終了コード0です。6時台のセッションが走らせた3本は記録が残らないまま終わったため(障害26)、この欄はこの測り直しの実測だけを書いています。",
+    "executed_at": "2026-08-10T12:47:10+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-08-09T07:06:27+09:00",
-        "finished_at": "2026-08-09T07:06:29+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC47-3d",
-        "exit_code": 1
-      },
-      {
-        "started_at": "2026-08-09T07:07:28+09:00",
-        "finished_at": "2026-08-09T07:07:30+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC47-3",
-        "exit_code": 0
-      },
-      {
-        "started_at": "2026-08-09T07:04:34+09:00",
-        "finished_at": "2026-08-09T07:07:45+09:00",
-        "duration_seconds": 191,
-        "command": "npx playwright test tests/engine.spec.js tests/wording.spec.js tests/overall.spec.js tests/seimei.spec.js tests/sanmei.spec.js tests/yomi.spec.js",
-        "exit_code": 1
-      },
       {
         "started_at": "2026-08-09T07:08:07+09:00",
         "finished_at": "2026-08-09T07:08:10+09:00",
@@ -1069,6 +1048,27 @@ window.DASHBOARD_DATA = {
         "duration_seconds": 38,
         "command": "npx playwright test tests/dashboard.spec.js",
         "exit_code": 0
+      },
+      {
+        "started_at": "2026-08-10T12:39:53+09:00",
+        "finished_at": "2026-08-10T12:43:05+09:00",
+        "duration_seconds": 193,
+        "command": "npx playwright test tests/engine.spec.js tests/wording.spec.js tests/overall.spec.js tests/seimei.spec.js tests/sanmei.spec.js tests/yomi.spec.js",
+        "exit_code": 0
+      },
+      {
+        "started_at": "2026-08-10T12:39:54+09:00",
+        "finished_at": "2026-08-10T12:44:18+09:00",
+        "duration_seconds": 264,
+        "command": "npx playwright test tests/smoke.spec.js tests/input.spec.js tests/storage.spec.js tests/unlock.spec.js tests/final.spec.js tests/standalone.spec.js tests/title.spec.js tests/result.spec.js tests/picker.spec.js",
+        "exit_code": 0
+      },
+      {
+        "started_at": "2026-08-10T12:39:51+09:00",
+        "finished_at": "2026-08-10T12:47:10+09:00",
+        "duration_seconds": 439,
+        "command": "npx playwright test tests/official.spec.js",
+        "exit_code": 0
       }
     ],
     "cases": [
@@ -1076,27 +1076,27 @@ window.DASHBOARD_DATA = {
         "name": "計算の照合(official)",
         "passed": 100,
         "failed": 0,
-        "note": "07:04:25〜07:11:44・exit 0"
+        "note": "12:39:51〜12:47:10・exit 0"
       },
       {
         "name": "文章と用語と総合",
         "passed": 325,
         "failed": 0,
-        "note": "07:08:14〜07:11:23・exit 0(87件スキップ)"
+        "note": "12:39:53〜12:43:05・exit 0(87件スキップ)"
       },
       {
         "name": "画面の流れ",
         "passed": 170,
         "failed": 0,
-        "note": "07:04:29〜07:08:54・exit 0"
+        "note": "12:39:54〜12:44:18・exit 0"
       }
     ],
-    "result": "cycle-0095 の実測。3スイート595件合格・0件失敗・87件スキップ(いずれも exit 0)。走らせた本数11本=記録11本で一致。詳細は上の欄と実行の自動記録。"
+    "result": "cycle-0096(回復の回・8/10 12時台)の実測。3スイート595件合格・0件失敗・87件スキップ(いずれも exit 0)。前回(cycle-0095)と同数=この回は占い本文・アプリ・検査に触れていないため。走らせた本数3本=記録3本で一致(ビルド前に数えました)。"
   },
   "failures": [
     {
-      "title": "今回、作業の失敗はありませんでした(権限拒否は1件)",
-      "detail": "この回は休止の処理と日報の作成だけで、占い本文・アプリ・検査には触れていません。サイクル冒頭の検証で使おうとした道具が1件権限拒否になりましたが(下の「権限で拒否した操作」欄)、別の道具で同じ照合を行い目的を達しています。テストは終了処理としていつもどおり全部走らせ、結果はテスト欄のとおりです。"
+      "title": "休止処理の回(8/10 6時台)がテストの完了待ちのままセッション切れになり、コミット0件で終わりました(次の回で回復済み)",
+      "detail": "休止の処理と日報の作成は8/10 6時台のセッションで済んでいましたが、終了処理の3スイートを裏で走らせたまま「完了通知が届き次第続行します」とだけ記して手を止め、そのままセッションが尽きました(監督プログラムの記録では NOWORK 1回目)。3スイートの実行記録は state/test-runs.json に1本も残っておらず(走らせた3本に対し記録0本)、コミットも作られませんでした。CLAUDE.md の「待ちで終わらない」の条項が挙げる形の再発です(6回目)。この欄には当初「テストは終了処理としていつもどおり全部走らせ、結果はテスト欄のとおりです」と書かれていましたが、これは実測が終わる前の先走りの記載だったため、回復の回(8/10 12時台)で本文ごと訂正しました。回復の回では3スイートを走らせ直し、実測を確かめてからテスト欄を書き直し、終了処理を最後まで行っています。なお8/10 3時台〜5時台の6回のサイクル起動は、利用枠の上限(月の利用上限)により作業を始められずに終わっています(logs/failures.log に記録あり。人間の操作は不要=枠が戻れば自動で再開します)。"
     }
   ],
   "unverified": [
@@ -1110,6 +1110,14 @@ window.DASHBOARD_DATA = {
     {
       "action": "PowerShell ツールで git の記録と報告書データの照合を実行する操作",
       "reason": "サイクル冒頭の終了処理検証(Issue #14)のために使おうとしましたが、この環境では PowerShell ツールそのものが権限で拒否されます(既知。2026-08-10 06:30)。Bash の git log と検索ツールで同じ照合を行い、目的を達しました。logs/denied-actions.log にも記録済みです。"
+    },
+    {
+      "action": "Monitor ツールでテスト実行記録の増加を監視する操作(6時台のセッション)",
+      "reason": "3スイートの完了待ちの間、待ちに入らず完了を検知するために使おうとしましたが権限で拒否されました(2026-08-10 06:38)。このあとセッションが完了待ちのまま尽きたことが、この回がコミット0件で終わった経緯の一部です(障害26)。logs/denied-actions.log に記録済みです。"
+    },
+    {
+      "action": "PowerShell ツールで node を実行し実測記録と報告書のテスト欄を照合する操作(12時台の回復セッション)",
+      "reason": "回復判定(Issue #14)のために使おうとしましたが、この環境では PowerShell からの node 実行が権限で拒否されます(既知。2026-08-10 12:38)。Bash の node で同じ照合を行い、目的を達しました。logs/denied-actions.log にも記録済みです。"
     }
   ],
   "usage": {
@@ -1118,7 +1126,7 @@ window.DASHBOARD_DATA = {
     "subagents_used": [
       "今回は起動していません。休止指示への対応で、占い本文・アプリ・検査に触れる作業が無かったためです(点検役の次の起動は、再開後の工程15=YOMI-8 の2回目)。"
     ],
-    "estimate_note": "サイクルの冒頭で終了処理の検証(Issue #14。git の記録の先頭が cycle-0095 で存在し、報告書のデータも cycle-0095 で一致、作りかけ無し)を行い、オーナーコメントを確認したところ、#67(休止指示)が新着でした。オーナーのご指示は何よりも優先する決まりのとおり、この回は休止の処理と日報の作成だけを行っています。"
+    "estimate_note": "サイクルの冒頭で終了処理の検証(Issue #14。git の記録の先頭が cycle-0095 で存在し、報告書のデータも cycle-0095 で一致、作りかけ無し)を行い、オーナーコメントを確認したところ、#67(休止指示)が新着でした。オーナーのご指示は何よりも優先する決まりのとおり、この回は休止の処理と日報の作成だけを行っています。ただし6時台のセッションは終了処理の3スイートを走らせたまま完了待ちで尽き、コミットが残りませんでした(障害26)。12時台のセッション(12:35 開始)が回復処理としてスイートの実測からコミットまでを完遂しています。"
   },
   "human_decisions": [],
   "notices": [
@@ -1140,6 +1148,11 @@ window.DASHBOARD_DATA = {
     }
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-10 12時台",
+      "event": "cycle-0096 の終わりそこないを回復しました(コミットまで完遂)",
+      "detail": "休止移行(cycle-0096)の作業内容そのものは6時台のセッションで済んでいましたが、終了処理の3スイートを裏で走らせたまま完了待ちの形でセッションが切れ、実行記録もコミットも残っていませんでした(報告書のデータ・状態・日報が未コミットのまま残置)。サイクル冒頭の検証(#14)でこれを見つけ、休止中の例外(作りかけの回復)として、3スイートの実測→テスト欄の書き直し→再ビルド→報告書スイート→コミットを行いました。新しい作業には着手していません(休止のご指示 #67 のとおり)。"
+    },
     {
       "time": "2026-08-10 6時台",
       "event": "オーナー指示 #67 を受けて休止に入りました(cycle-0096・台帳 OC67)",
@@ -1892,13 +1905,13 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-10T06:32:19+09:00",
+    "last_heartbeat": "2026-08-10T12:47:21+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
   },
   "consistency": {
-    "checked_at": "2026-08-10T06:33:02+09:00",
+    "checked_at": "2026-08-10T12:48:00+09:00",
     "cycle_id": "cycle-0096",
     "checks": [
       {
@@ -1982,14 +1995,14 @@ window.DASHBOARD_DATA = {
         "id": "C11",
         "kind": "cross",
         "title": "テストの記載が、そのサイクルで測った実測を指しているか",
-        "level": "mismatch",
-        "detail": "報告書のテスト欄が、前のサイクル(cycle-0095)とまったく同じ文のままです。今回の実測に書き替えてください"
+        "level": "ok",
+        "detail": "一致しています"
       }
     ],
     "cross_count": 10,
     "guard_count": 2,
-    "ok_count": 10,
-    "mismatch_count": 1,
+    "ok_count": 11,
+    "mismatch_count": 0,
     "unverified_count": 1,
     "total_count": 12
   }
