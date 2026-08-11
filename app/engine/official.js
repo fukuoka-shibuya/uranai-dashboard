@@ -2844,6 +2844,71 @@
     return KANA_STROKES[base] + extra;
   }
 
+  /* ---- 工程3の決めごと(cycle-0098・docs/seimei-dictionary-plan.md 9節) ----
+   *
+   * ここに置くのは「決めた文言」と「決めた範囲」だけで、computeOne はまだ
+   * どれも呼ばない(画面へつなぐのは工程5・工程6)。文言をコードに置くのは、
+   * 決めた文を BANNED・JARGON_SCREEN・語り口の決まりへ実際に通して固定する
+   * ため(tests/seimei.spec.js の SEIMEI3-1。文書に書くだけでは検査が掛からない)。
+   *
+   * 【記号の画数の決め方=(あ)その記号そのものの筆画数として数える】
+   * (い)「直前の字と同じ画数で数える」は採らない。理由は3つ(9節)。
+   *  1. (い)は繰り返しの記号(々ゝゞヽヾ)にしか意味が無く、〆・小さいかな
+   *     (ゕゖヵヶゎヮ)には当てられない=1つの範囲に2つの決め方が混ざる。
+   *  2. (い)は書かれた記号を別の字として読み替えて数える形で、R3(入力された
+   *     字体そのままで数える)を選んだ理由と同じ理由で採れない。
+   *  3. 直前の字に依存する値は1字1値の表(R5・R8 の実装の形)に収まらず、
+   *     頭字の欄で記号が先頭に来る入力では値が定義できない穴も生む。
+   * 値そのものは工程4で V1(2通りの突き合わせ)を掛けてから表へ入れる。
+   * 小さいかなは対応するふつうの字と同じ画数(表の か・け・カ・ケ・わ・ワ と
+   * 突き合わせられる)、ゞ・ヾ は ゝ・ヽ+濁点2画(NFD 分解で kanaStrokesOf が
+   * 自動で組み立てる。ゞ=U+309D+U+3099 であることは SEIMEI3-2 が実測)。
+   *
+   * 【範囲の是正=10字→12字】工程1(7-1節)の一覧に「ゎ・ヮ」(小さい「わ」)が
+   * 漏れていた。KANA_STROKES にも無く NFKC でも変わらないので、3行の表の
+   * ままだと必ず R6(表に無い文字)に落ちる=「々」を足したときと同じ設計漏れ。
+   * 同じ性格の字(表に無い小さいかな)なのでここへ足す(9節)。 */
+
+  /* R10:数え方の開示文(工程6で結び=closing へ)。事実の開示なので言い切りでよい
+     (「現在は試作用の仮データです。」と同じ扱い)。占いの読みではないので
+     「〜と映ります。」では結ばない */
+  var SEIMEI_STROKE_DISCLOSURE =
+    '画数は、入力された字の形のままを数えたものです。' +
+    '姓名判断の数え方は流派によって分かれるため、特定の流派の結果とは一致しません。';
+
+  /* R7:入力はあるが1字も数えられないときの案内(工程6で画面へ)。
+     未入力の案内(「占いたい名前」を入れていただくと、姓名判断を読み解けます。)とは
+     別の文にする=入力した人に「入れ忘れた」と読ませない(7-3節の困りごと1)。
+     このときは占いの読みが無いので、読み終えたものには数えない(9節の決定。
+     画面側の検査は工程6) */
+  var SEIMEI_NONE_COUNTED_NOTICE =
+    '入れていただいた名前の文字は、いまの画数の表に無いため、画数を数えられませんでした。' +
+    'ひらがな・カタカナや、ふだん使われている漢字でしたら数えられます。';
+
+  /* R6:一部の文字を数えなかったときの案内(工程5で summary へ)。
+     実際に数えなかった字があるときだけ出す(YOMI-N5 と同じ出し分け)。
+     どの字を数えなかったかを名指しで出す=読み手が画数の小ささを誤解しない */
+  function seimeiUncountedNoticeOf(chars) {
+    var seen = {};
+    var uniq = [];
+    var list = chars || [];
+    for (var i = 0; i < list.length; i++) {
+      var ch = String(list[i]);
+      if (ch === '' || Object.prototype.hasOwnProperty.call(seen, ch)) { continue; }
+      seen[ch] = true;
+      uniq.push(ch);
+    }
+    if (uniq.length === 0) { return ''; }
+    var quoted = [];
+    for (var j = 0; j < uniq.length; j++) { quoted.push('「' + uniq[j] + '」'); }
+    return quoted.join('') + 'は画数の表に無い文字のため、数に入れていません。';
+  }
+
+  /* 7-1節の4行目(日本語の表記記号)の範囲。工程3で ゎ・ヮ を足して12字。
+     値はまだ決めない(工程4で V1 を掛けてから表へ入れる)ので、いまは
+     12字とも kanaStrokesOf が null を返す=R6 側に倒れている(SEIMEI3-2 が実測) */
+  var SEIMEI_SYMBOL_RANGE = ['々', 'ゝ', 'ゞ', 'ヽ', 'ヾ', '〆', 'ゕ', 'ゖ', 'ヵ', 'ヶ', 'ゎ', 'ヮ'];
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -3024,7 +3089,13 @@
           if (Object.prototype.hasOwnProperty.call(KANA_STROKES, k)) { copy[k] = KANA_STROKES[k]; }
         }
         return copy;
-      })()
+      })(),
+      /* 工程3の決めごと(cycle-0098)。検査 SEIMEI3-* がここを引き、
+         文言を検査の側へ書き写さない */
+      seimeiStrokeDisclosure: SEIMEI_STROKE_DISCLOSURE,
+      seimeiNoneCountedNotice: SEIMEI_NONE_COUNTED_NOTICE,
+      seimeiUncountedNoticeOf: seimeiUncountedNoticeOf,
+      seimeiSymbolRange: SEIMEI_SYMBOL_RANGE.slice()
     }
   };
 });
