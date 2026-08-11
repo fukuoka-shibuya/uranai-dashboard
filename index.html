@@ -428,6 +428,22 @@
         }
       }
     }
+    /* SEIMEI-4(cycle-0100):姓名判断の漢字表の進み具合。数字は build.js の
+       seimeiKanjiStatus() が実装の表と対象字の一覧から毎ビルド導出したもので、
+       ここでは数え直さない(#45)。この欄を持たない古い報告書では何も足さない。
+       読めなかったときは数を作らず「読み取れませんでした」の文を出す(#55 と同じ) */
+    var sk2 = d.seimei_kanji;
+    if (sk2 && typeof sk2 === 'object' && !sk2.not_started) {
+      if (sk2.error) {
+        note.textContent += '姓名判断の漢字表:' + sk2.error + '。';
+      } else if (typeof sk2.entered === 'number') {
+        note.textContent += '姓名判断の漢字表(工程4・投入中):' + sk2.entered + '字/実効' +
+          sk2.denominator_effective + '字体(一覧の全' + sk2.denominator_total +
+          '字体のうち' + sk2.folded_count + '字体は書き方の統合で別の字として引かれないため分母から除く)。' +
+          '保留' + sk2.pending_count + '字=漢字「' + sk2.pending_kanji + '」(外部の2つの資料どうしで' +
+          '画数が食い違う字)とかな「' + sk2.pending_other + '」。';
+      }
+    }
     /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
        画面に見える文字は増やさない(オーナー指示は「仮か正式かどちらかを表示」) */
     el.setAttribute('title', note.textContent);
