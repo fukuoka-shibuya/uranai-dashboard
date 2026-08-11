@@ -3194,17 +3194,18 @@
    * 工程5の1回目(cycle-0109)で52字を決着して本表へ移した(決着前の54件の
    * 凍結写し=一覧ファイルの pending_ledger、決着の記録=同 pending_resolution。
    * 保留と決着の合併が凍結台帳とちょうど一致することを検査 SEIMEI5 が毎回見る)。
-   * 残るのは2件だけ:
-   * ・厩=own 12(厂2+既10=表の既10 と一貫)/ref_wikt 13(⿸厂旣=旣11 の形)/
-   *   ref_jitenon 14 と三者三様で、どの字形の形かを決める材料が無い
-   *   (wikt は⿸厂旣と⿸厂既の2形を併記し、jitenon の14はどちらの内訳とも
-   *   合わない)。根拠の無いまま多数決で決めない=保留継続(決着は工程5の2回目
-   *   以降で追加の材料を得てから。得られなければ表に無い字として扱う=R6)。
-   * ・かなの「ヰ」(9-5節)=current は KANA_STROKES のいまの値で、保留のあいだ
-   *   黙って動かさない(検査 SEIMEI4-2 が突き合わせる。台帳 SEIMEI-L3)。
-   *   外部2出典は4画で一致しており決着の材料はあるが、値を動かすと仮計算
-   *   (現行画面)の結果値が動くため、ひらがな側(ゐ)の出典確認と束ねて
-   *   工程5の2回目で決着し、適用は結果値が変わる回(工程6)に行う。 */
+   * 残るのは2件だけ。工程5の2回目(cycle-0110)でどちらも処遇を決め、
+   * 凍結台帳とこの表は1字も動かさず、決定は一覧ファイルの post_freeze_decisions
+   * (凍結後の決定欄)へ記録した(検査 SEIMEI5-3 が毎回見る):
+   * ・厩=own 12(厂2+既10)/ref_wikt 13(⿸厂旣の形)/ref_jitenon 14 の三者三様に、
+   *   追加材料として実測した Unihan(U+53A9)の総画 11 を足しても四者四様。
+   *   根拠の無いまま多数決で決めない=決着を作らず「表に無い字」(R6)として扱う。
+   *   この表にも本表にも入れないので kanjiStrokesOf は null のまま。
+   * ・かなの「ヰ」(9-5節)=外部2出典とも4画で「4」に決着したが、値を動かすと
+   *   仮計算(現行画面)の結果値が動くため未適用(current=3 のまま。決めたが
+   *   未適用の札は post_freeze_decisions にある)。適用は結果値が変わる回=工程6。
+   *   保留のあいだ current を黙って動かさない縛りは従来どおり SEIMEI4-2 が
+   *   突き合わせる(台帳 SEIMEI-L3)。 */
   var SEIMEI_PENDING = {
     '厩': { own: 12, ref_wikt: 13, ref_jitenon: 14 },
     'ヰ': { current: 3, note: 'かな表3画(出典未確認)に対し外部2出典とも4画(9-5節)。保留中は現行値を動かさない' }
@@ -3283,6 +3284,44 @@
     var quoted = [];
     for (var j = 0; j < uniq.length; j++) { quoted.push('「' + uniq[j] + '」'); }
     return quoted.join('') + 'は画数の表に無い文字のため、数に入れていません。';
+  }
+
+  /** 工程5の2回目(cycle-0110):1文字ぶんの画数の引き順の1か所への固定(10-3節)。
+   *  かな(濁点・半濁点の組み立ては kanaStrokesOf の中)→漢字→どちらにも
+   *  無ければ null(R6=数えない。値を作らない)。
+   *  @param {string} ch 1文字(NFKC 済み前提=seimeiCharsOf が R1 を先に掛ける)
+   *  @returns {number|null}
+   */
+  function seimeiStrokeOf(ch) {
+    var k = kanaStrokesOf(ch);
+    if (k !== null) { return k; }
+    return kanjiStrokesOf(ch);
+  }
+
+  /** 工程5の2回目(cycle-0110):画数の合計の芯。V4=null(表に無い字)を合計へ
+   *  そのまま足さない=合計は「数えた字だけの和」。1字も数えられなければ
+   *  total は null(0 と区別する。0 を返すと「画数が0」と「数えられなかった」が
+   *  見分けられず、R7 の案内の出し分けが実装できない)。
+   *  seimei() 本体と summary への組み込み(配線)は切替の回=工程6で行う(9-2節)。
+   *  @param {string} name 占いたい名前(そのままの入力)
+   *  @returns {{counted: Array<{c: string, strokes: number}>, uncounted: string[], total: number|null}}
+   */
+  function seimeiCountOf(name) {
+    var chars = seimeiCharsOf(name);
+    var counted = [];
+    var uncounted = [];
+    var total = 0;
+    for (var i = 0; i < chars.length; i++) {
+      var n = seimeiStrokeOf(chars[i]);
+      if (n === null) { uncounted.push(chars[i]); continue; }
+      counted.push({ c: chars[i], strokes: n });
+      total += n;
+    }
+    return {
+      counted: counted,
+      uncounted: uncounted,
+      total: counted.length === 0 ? null : total
+    };
   }
 
   /* 7-1節の4行目(日本語の表記記号)の範囲。工程3で ゎ・ヮ を足して12字。
@@ -3476,6 +3515,8 @@
       seimeiStrokeDisclosure: SEIMEI_STROKE_DISCLOSURE,
       seimeiNoneCountedNotice: SEIMEI_NONE_COUNTED_NOTICE,
       seimeiUncountedNoticeOf: seimeiUncountedNoticeOf,
+      seimeiStrokeOf: seimeiStrokeOf,
+      seimeiCountOf: seimeiCountOf,
       seimeiSymbolRange: SEIMEI_SYMBOL_RANGE.slice(),
       /* 工程4(cycle-0100 から投入中):漢字の画数表と保留表。検査 SEIMEI4-2 と
          報告書の生成側の seimeiKanjiStatus() がここを引き、表を書き写さない */
