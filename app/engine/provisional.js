@@ -452,8 +452,10 @@
     'ー': 1
   };
 
-  /** 1文字ぶんの画数(試作用)。同じ文字なら常に同じ値を返す */
-  function charStrokes(ch) {
+  /** かなとして表から数えられるなら画数、そうでなければ null(YOMI-N5)。
+      null かどうかが「簡易換算を実際に使ったか」の判定になる。
+      値を作らず null を返すのは kanaStrokesOf(official.js)と同じ約束 */
+  function kanaStrokesOrNull(ch) {
     if (Object.prototype.hasOwnProperty.call(KANA_STROKES, ch)) { return KANA_STROKES[ch]; }
     /* が・ぱ 等は「もとの字+濁点/半濁点」に分けてから数える */
     if (typeof ch.normalize === 'function') {
@@ -471,6 +473,13 @@
         }
       }
     }
+    return null;
+  }
+
+  /** 1文字ぶんの画数(試作用)。同じ文字なら常に同じ値を返す */
+  function charStrokes(ch) {
+    var kana = kanaStrokesOrNull(ch);
+    if (kana !== null) { return kana; }
     /* かな以外(漢字・英数など)の試作用の換算値。3〜29画の範囲に収める */
     return (ch.codePointAt(0) % 27) + 3;
   }
@@ -506,8 +515,10 @@
 
     var total = 0;
     var strokes = [];
+    var converted = 0;  /* 簡易換算(かな以外)で数えた文字の数(YOMI-N5) */
     for (var i = 0; i < chars.length; i++) {
       var s = charStrokes(chars[i]);
+      if (kanaStrokesOrNull(chars[i]) === null) { converted += 1; }
       strokes.push(s);
       total += s;
     }
@@ -519,8 +530,13 @@
       key: 'seimei',
       name: '姓名判断',
       view: '名前の画数から見た印象',
+      /* 簡易換算の断りは、実際に簡易換算を使った(かな以外の文字がある)ときだけ出す。
+         全字がかなの名前では一度も使っていない断りを読ませない(YOMI-N5・cycle-0097。
+         cycle-0095 の点検役 N5=ご指示 #58 が嫌った「仕組みの断り書き」に近い形が
+         summary に残っていた)。画数の値そのものはどちらの場合も不変 */
       summary: '「' + chars.join('') + '」という名前を画数に置きかえると、合わせて' + total +
-               '画になります。かな以外の文字は試作用の簡易換算で数えています。' +
+               '画になります。' +
+               (converted > 0 ? 'かな以外の文字は試作用の簡易換算で数えています。' : '') +
                '画の重なりから、名前がまとう雰囲気を眺めていきます。',
       closing: '姓名判断が見ているのは、名前という持ち物の一つの側面にすぎません。' +
                '呼ばれて心地よい響きであることをいちばんに数えて、軽やかに受け取っていただけたらと思います。',
@@ -785,6 +801,7 @@
     computeOverall: computeOverall,
     /* 検証と再利用のために公開する純粋関数 */
     util: { parseDate: parseDate, digitRoot: digitRoot, honmei: honmei, sunSign: sunSign,
-            charStrokes: charStrokes, seimeiChars: seimeiChars }
+            charStrokes: charStrokes, seimeiChars: seimeiChars,
+            kanaStrokesOrNull: kanaStrokesOrNull }
   };
 });

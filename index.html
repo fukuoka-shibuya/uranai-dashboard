@@ -720,7 +720,16 @@
           return [esc(r.started_at), esc(r.finished_at),
             '<span class="mono">' + esc(r.command) + '</span>',
             r.exit_code === 0 ? '<span class="ok">正常終了</span>' : '<span class="ng">終了コード ' + esc(r.exit_code) + '</span>'];
-        }))
+        })) +
+        /* YOMI-N6(cycle-0097):表を直近8件に切ったことを黙らない。値は build.js が
+           記録の台帳から毎ビルド数える(手入力しない=#45)。切っていない回は出さない */
+        ((d.tests.recorded_runs_omitted && d.tests.recorded_runs_omitted.omitted > 0)
+          ? '<p class="sub">自動記録の台帳には全' + esc(d.tests.recorded_runs_omitted.log_total) +
+            '件が残っており、この表はそのうち直近' + d.tests.recorded_runs.length +
+            '件です。表に出ていない' + esc(d.tests.recorded_runs_omitted.omitted) +
+            '件のうち、終了コードが0でなかった実行は' + esc(d.tests.recorded_runs_omitted.omitted_failed) +
+            '件です。</p>'
+          : '')
       : ''));
 
   /* 11 */ add('失敗・未確認の正直な記録',
