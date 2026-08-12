@@ -437,11 +437,21 @@
       if (sk2.error) {
         note.textContent += '姓名判断の漢字表:' + sk2.error + '。';
       } else if (typeof sk2.entered === 'number') {
-        note.textContent += '姓名判断の漢字表(工程4・投入中):' + sk2.entered + '字/実効' +
+        /* cycle-0113(工程7の監査・中2):「工程4・投入中」の固定句は工程の完了後に
+           自己矛盾になる(行の頭は「7種すべて正式」と言う)ので、進み具合を語らず
+           実数だけを述べる。保留の字の節は「無いのに空の「」を出す」形だったので、
+           有るときだけ・有る側だけ出す。厩は post_freeze_decisions で「表に無い字と
+           してあつかう」に決着済み=「保留」と呼ばない */
+        note.textContent += '姓名判断の漢字表:' + sk2.entered + '字を投入済み/実効' +
           sk2.denominator_effective + '字体(一覧の全' + sk2.denominator_total +
-          '字体のうち' + sk2.folded_count + '字体は書き方の統合で別の字として引かれないため分母から除く)。' +
-          '保留' + sk2.pending_count + '字=漢字「' + sk2.pending_kanji + '」(外部の2つの資料どうしで' +
-          '画数が食い違う字)とかな「' + sk2.pending_other + '」。';
+          '字体のうち' + sk2.folded_count + '字体は書き方の統合で別の字として引かれないため分母から除く)。';
+        if (sk2.pending_count > 0) {
+          var pkParts = [];
+          if (sk2.pending_kanji) { pkParts.push('漢字「' + sk2.pending_kanji + '」'); }
+          if (sk2.pending_other) { pkParts.push('かな・記号「' + sk2.pending_other + '」'); }
+          note.textContent += '画数の値を持たない字が' + sk2.pending_count + '字=' +
+            pkParts.join('と') + '(資料どうしで画数が食い違うため値を作らず、表に無い字としてあつかいます)。';
+        }
       }
     }
     /* バッジは1語しか出せないため、読み上げと指し示しには内訳を添える(監査 L3)。
