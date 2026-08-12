@@ -3214,7 +3214,8 @@
   /** R5:漢字1文字ぶんの画数。表に無い字は値を作らず null を返す
    *  (かなの kanaStrokesOf と同じ約束。保留中の字も null)。
    *  呼ぶ側で NFKC 済みであることを前提とする(seimeiCharsOf が R1 を先に掛ける)。
-   *  かな→漢字→どちらにも無ければ数えない、の順の1か所への固定は工程5(10-3節)。
+   *  かな→記号→漢字→どこにも無ければ数えない、の順の1か所への固定は
+   *  seimeiStrokeOf(工程5。記号は工程5の3回目で間に入った=22節)。
    *  @param {string} ch 1文字
    *  @returns {number|null} 画数。この表で数えられない文字は null
    */
@@ -3286,8 +3287,65 @@
     return quoted.join('') + 'は画数の表に無い文字のため、数に入れていません。';
   }
 
+  /* ---- 工程5の3回目(SEIMEI-5c・cycle-0111):記号の画数表(22節) ----
+   *
+   * 7-1節の4行目(日本語の表記記号12字)のうち、V1(自分の導出+独立した外部
+   * 出典2件との突き合わせ)がそろった8字だけをここへ入れる。値は自分の導出
+   * そのもので、外部値は検算相手(V2)。字ごとの根拠と出どころは一覧ファイル
+   * (seimei-kanji-list の symbol_rows)に記録し、検査(SEIMEI3-2・SEIMEI5c-1)が
+   * 表とその記録の一致を毎サイクル突き合わせる。
+   * ・々=3(記号そのものの筆画数=工程3の(あ)方式。外部2出典とも3で一致。
+   *   「前の字の画数で数える」流派もあるが、(い)方式は工程3で不採用と
+   *   決めてある=R3 と同じ理由。決め方が流派で分かれることは R10 で開示)
+   * ・〆=2(外部2出典とも2で一致。1出典だけ部首の帳簿の形(丿部+0画)から
+   *   総画1とするものがあり、食い違いとして22節に開示=三者一致は崩れない)
+   * ・小さいかな6字(ゕゖヵヶゎヮ)=対応するふつうの字と同じ画数(工程3の
+   *   決定)。値はかなの表の参照そのもの=「同じ字の画数」という規則を
+   *   そのまま実装する(基の字の値が動けば一緒に動き、規則は崩れない)
+   * ・ゝ・ヽは入れない(保留)=own は1だが、画数を載せる外部出典が1件しか
+   *   見つからず V1 の2出典がそろわない(22節)。ゞ・ヾ は ゝ・ヽ+濁点2画の
+   *   自動組み立てなので、ゝ・ヽが決まるまで同じく null(=R6 側に倒れた
+   *   まま。根拠の無い値を無理に作らない) */
+  var SEIMEI_SYMBOL_STROKES = {
+    '々': 3,
+    '〆': 2,
+    'ゕ': KANA_STROKES['か'],
+    'ゖ': KANA_STROKES['け'],
+    'ヵ': KANA_STROKES['カ'],
+    'ヶ': KANA_STROKES['ケ'],
+    'ゎ': KANA_STROKES['わ'],
+    'ヮ': KANA_STROKES['ワ']
+  };
+
+  /** 記号1文字ぶんの画数。表に無い記号は値を作らず null を返す
+   *  (かな・漢字と同じ約束。保留中のゝゞヽヾも null)。
+   *  NFD の枝は、ゝ・ヽが決着して表へ入った回に ゞ・ヾ が+濁点2画で
+   *  自動で組み上がるための形(いまは base のゝ・ヽが表に無いので null)。
+   *  @param {string} ch 1文字(NFKC 済み前提)
+   *  @returns {number|null}
+   */
+  function symbolStrokesOf(ch) {
+    var s = String(ch == null ? '' : ch);
+    if (s === '') { return null; }
+    if (Object.prototype.hasOwnProperty.call(SEIMEI_SYMBOL_STROKES, s)) { return SEIMEI_SYMBOL_STROKES[s]; }
+    if (typeof s.normalize !== 'function') { return null; }
+    var parts = s.normalize('NFD');
+    if (parts.length <= 1) { return null; }
+    var base = parts.charAt(0);
+    if (!Object.prototype.hasOwnProperty.call(SEIMEI_SYMBOL_STROKES, base)) { return null; }
+    var extra = 0;
+    for (var i = 1; i < parts.length; i++) {
+      var code = parts.charCodeAt(i);
+      if (code === COMBINING_DAKUTEN) { extra += DAKUTEN_STROKES; }
+      else if (code === COMBINING_HANDAKUTEN) { extra += HANDAKUTEN_STROKES; }
+      else { return null; }  /* 知らない結合文字が付いていたら値を作らない */
+    }
+    return SEIMEI_SYMBOL_STROKES[base] + extra;
+  }
+
   /** 工程5の2回目(cycle-0110):1文字ぶんの画数の引き順の1か所への固定(10-3節)。
-   *  かな(濁点・半濁点の組み立ては kanaStrokesOf の中)→漢字→どちらにも
+   *  かな(濁点・半濁点の組み立ては kanaStrokesOf の中)→記号(工程5の3回目で
+   *  追加。かなの表とキーは重ならないので順は安全)→漢字→どこにも
    *  無ければ null(R6=数えない。値を作らない)。
    *  @param {string} ch 1文字(NFKC 済み前提=seimeiCharsOf が R1 を先に掛ける)
    *  @returns {number|null}
@@ -3295,6 +3353,8 @@
   function seimeiStrokeOf(ch) {
     var k = kanaStrokesOf(ch);
     if (k !== null) { return k; }
+    var sym = symbolStrokesOf(ch);
+    if (sym !== null) { return sym; }
     return kanjiStrokesOf(ch);
   }
 
@@ -3325,8 +3385,10 @@
   }
 
   /* 7-1節の4行目(日本語の表記記号)の範囲。工程3で ゎ・ヮ を足して12字。
-     値はまだ決めない(工程4で V1 を掛けてから表へ入れる)ので、いまは
-     12字とも kanaStrokesOf が null を返す=R6 側に倒れている(SEIMEI3-2 が実測) */
+     値は工程5の3回目(SEIMEI-5c)で V1 がそろった8字だけ SEIMEI_SYMBOL_STROKES へ
+     入れた(ゝゞヽヾの4字は材料不足の保留= null のまま R6 側。22節)。
+     かなの表は動かしていないので、12字とも kanaStrokesOf は null のまま
+     (SEIMEI3-2 が実測=SEIMEI2-1 の両実装の表の一致とは衝突しない) */
   var SEIMEI_SYMBOL_RANGE = ['々', 'ゝ', 'ゞ', 'ヽ', 'ヾ', '〆', 'ゕ', 'ゖ', 'ヵ', 'ヶ', 'ゎ', 'ヮ'];
 
   /* ============ 入口 ============ */
@@ -3518,6 +3580,18 @@
       seimeiStrokeOf: seimeiStrokeOf,
       seimeiCountOf: seimeiCountOf,
       seimeiSymbolRange: SEIMEI_SYMBOL_RANGE.slice(),
+      /* 工程5の3回目(SEIMEI-5c):記号の画数表。検査 SEIMEI3-2・SEIMEI5c-1 が
+         ここと一覧ファイル(symbol_rows)を突き合わせ、値を検査へ書き写さない */
+      symbolStrokesOf: symbolStrokesOf,
+      seimeiSymbolStrokes: (function () {
+        var copy = {};
+        for (var k in SEIMEI_SYMBOL_STROKES) {
+          if (Object.prototype.hasOwnProperty.call(SEIMEI_SYMBOL_STROKES, k)) {
+            copy[k] = SEIMEI_SYMBOL_STROKES[k];
+          }
+        }
+        return copy;
+      })(),
       /* 工程4(cycle-0100 から投入中):漢字の画数表と保留表。検査 SEIMEI4-2 と
          報告書の生成側の seimeiKanjiStatus() がここを引き、表を書き写さない */
       kanjiStrokesOf: kanjiStrokesOf,
