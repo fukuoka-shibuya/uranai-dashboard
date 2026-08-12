@@ -812,7 +812,38 @@
       ((lc.notes && lc.notes.length) ? list(lc.notes) : '') +
       (lc.error ? '<p class="ng">' + esc(lc.error) + '</p>' : '');
   }
-  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml);
+  /* DUE-1(#71):期限つき・条件つきの作業の点検結果も、この欄の中に表として出す。
+     値は build.js が due-check.js から毎ビルド導出したものを並べるだけで、画面の側は
+     数え方も判定も持たない(#45。#61 の件数・#65 のループの設定と同じ作り)。
+     導出データなので手書き欄の形の検査(REPORT_ARRAY_FIELDS)の対象ではなく、
+     ここでもローカル変数を経由して受ける(照合結果 bad・unv と同じ扱い)。 */
+  var dr = d.due_review || null;
+  var drHtml = '';
+  if (dr) {
+    var drRows = (dr.rows || []).slice();
+    var drLabel = {
+      watching: '観察中', closable: '閉じられます', problem: '<span class="ng">問題あり</span>',
+      owner_check: '<span class="kin">あなたの確認待ち</span>', invalid: '<span class="ng">期限が読めません</span>',
+    };
+    drHtml = '<p style="margin-top:8px"><b class="sub" id="due-review-title">期限つき・条件つきの作業の点検</b></p>';
+    if (dr.error) {
+      drHtml += '<p class="ng">' + esc(dr.error) + '</p>';
+    } else if (drRows.length === 0) {
+      drHtml += '<p class="sub">期限つき・条件つきの未完了の作業は0件です。'
+        + '(期限を過ぎた行は毎サイクルの点検が自動で閉じます)</p>';
+    } else {
+      drHtml += table(['作業', '期限', '状態', '見立て'], drRows.map(function (r) {
+        return [esc(r.id) + ' ' + esc(r.title), esc(r.due || '(期限なし)'),
+          drLabel[r.state] || esc(r.state), esc(r.reason)];
+      })) + '<p class="sub">合計' + esc(dr.total_count) + '件:観察中' + esc(dr.watching_count)
+        + '・閉じられます' + esc(dr.closable_count) + '・問題あり' + esc(dr.problem_count)
+        + '・あなたの確認待ち' + esc(dr.owner_check_count)
+        /* 「期限が読めない」は測れなかった側の状態なので内訳から落とさない
+           (落とすと合計と内訳が合わなくなる=#61 で名指しされた形。監査 L1) */
+        + '・期限が読めない' + esc(dr.invalid_count) + '</p>';
+    }
+  }
+  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml);
 
   /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
