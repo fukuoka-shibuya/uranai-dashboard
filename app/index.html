@@ -657,7 +657,12 @@
 
     var result = engine.computeOne(key, input);
     if (!result) {
-      renderMessage(box, 'この占術はまだ読み解けませんでした。');
+      /* 姓名判断で名前が入っているのに結果が無い=1字も画数を数えられなかった
+         (未入力は上の枝で先に返っている)。この場合は表に無い字だった旨の案内を
+         出し、読了には数えない(正式化の工程6。案内文の正本はエンジン側1か所) */
+      renderMessage(box, (key === 'seimei' && engine.seimeiNoneCountedNotice)
+        ? engine.seimeiNoneCountedNotice
+        : 'この占術はまだ読み解けませんでした。');
       openResult('individual', '個別の占い', '入力のご確認', elReadIndividual);
       return;
     }

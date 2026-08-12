@@ -24,7 +24,7 @@
   /* 正式計算へ切り替え済みの占術。ここに足すことが「切り替え」のすべて。
      official.js 側に実装が無い占術を誤って足しても、下の implFor が
      supports() で確かめてから使うため、画面が止まることはない */
-  var OFFICIAL_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
+  var OFFICIAL_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo', 'seimei'];
 
   /** その占術で実際に使う実装を返す。正式計算が未実装なら仮計算へ戻す */
   function implFor(key) {
@@ -1297,8 +1297,9 @@
   }
 
   return {
-    /* 全占術が正式計算へ切り替わるまでは 'mixed'(混在)。切替の実体は OFFICIAL_KEYS */
-    mode: OFFICIAL_KEYS.length === 0 ? 'provisional' : 'mixed',
+    /* 切替の実体は OFFICIAL_KEYS。仮計算が1つも残らなくなったら 'official'、
+       混在の間は 'mixed'(工程6=cycle-0112 で全占術が正式になり 'official' へ) */
+    mode: OFFICIAL_KEYS.length === 0 ? 'provisional' : (isProvisional() ? 'mixed' : 'official'),
     officialKeys: OFFICIAL_KEYS.slice(),
     order: provisional.order.slice(),
     extraOrder: (provisional.extraOrder || []).slice(),
@@ -1306,6 +1307,10 @@
     validate: validate,
     computeOne: computeOne,
     computeAll: computeAll,
+    /* 工程6(cycle-0112):入力はあるのに1字も数えられない名前(R7)への案内文。
+       computeOne('seimei') が null を返したとき、名前が空でなければ画面がこの文を
+       出す(読了には数えない=9-4節の決定)。文の正本は正式計算側の1か所 */
+    seimeiNoneCountedNotice: (official && official.util && official.util.seimeiNoneCountedNotice) || '',
     /* Issue #50 の案内。検査から表そのものを引けるようにする(画面と同じ出どころ) */
     readingOf: function (key) { return READING[key] || ''; },
     aboutOf: function (key, label) {

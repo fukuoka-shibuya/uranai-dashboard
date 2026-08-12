@@ -106,7 +106,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo'];
+  var AVAILABLE_KEYS = ['sanmei', 'kyusei', 'suuhi', 'seiyou', 'sukuyo', 'seimei'];
 
   /* 総合占いを組む中核5占術。この5つがすべて AVAILABLE_KEYS にそろってはじめて
      総合占いを正式計算で組める(1つでも欠けたら engine/index.js が仮計算へ戻す) */
@@ -2735,25 +2735,24 @@
     };
   }
 
-  /* ============ 追加占術:姓名判断(正式計算・工程2の骨組み) ============
+  /* ============ 追加占術:姓名判断(正式計算) ============
    *
-   * 工程2は「骨組みだけを作る」工程で、画面は1文字も変わりません。
-   * seimei は AVAILABLE_KEYS に無いので supports('seimei') は偽のままで、
-   * computeOne は null を返し、engine/index.js が仮計算へ戻します(切替は工程6)。
-   *
-   * ここに置くのは docs/seimei-dictionary-plan.md 7-2 節の R1・R2・R4 だけです。
+   * 工程2(cycle-0068)で骨組みを置き、工程6(cycle-0112)で切り替えた。
+   * seimei は AVAILABLE_KEYS にあり、computeOne が seimeiOfficial を返す。
    *
    * 【この表は仮計算(provisional.js)にも同じものがあります】
-   * 仮計算と正式計算はコード上分離する(CLAUDE.md の絶対条件)ため、工程2では
-   * provisional.js から表を取り上げず、同じ内容をこちらにも持ちます。二重管理が
-   * 黙って食い違うことだけは避けたいので、tests/seimei.spec.js の SEIMEI2-1 が
-   * 両ファイルの表を1字1値まで突き合わせます(片方だけ直すと必ず落ちる)。
-   * 工程6で seimei を正式計算へ切り替えたあと、仮計算側の表を落とします。
+   * 仮計算と正式計算はコード上分離する(CLAUDE.md の絶対条件)ため、
+   * provisional.js から表を取り上げず、同じ内容をこちらにも持つ。二重管理が
+   * 黙って食い違うことは tests/seimei.spec.js の SEIMEI2-1 が両ファイルの表を
+   * 1字1値まで突き合わせて塞ぐ(片方だけ直すと必ず落ちる)。
+   * 工程6の計画には「切替後に仮計算側の表を落とす」とあったが、落とさず凍結した
+   * =切替の安全側(この一覧から外せば仮計算へ戻る)は仮計算が生きているときだけ
+   * 成り立つため。落とす選択を後で取っても SEIMEI2-1 は正式側だけを見る形へ
+   * 自動で移る(判定の分岐は検査側にある)。
    *
-   * 【値の出典はまだありません(未確認)】
-   * 表の値そのものは仮計算から引き継いだもので、実装コメントは「一般的な画数表の
-   * とおり」としか述べておらず、どの表かが分かりません(7-4 節の宿題)。工程3で
-   * V1(1字につき2通りで突き合わせる)をかなにも適用して確かめます。
+   * 【かなの値の出典】カタカナ側は外部2出典と1字(ヰ)を除いて一致を実測
+   * (計画文書9-5節)。ひらがな側の値を裏づける出典は見つかっておらず、
+   * 自分の数え方として決めて R10 の開示でおぎなう(同節)。
    */
 
   /* R4:かな・長音記号の画数表(115字=ひらがな57・カタカナ57・長音記号1)。
@@ -2781,7 +2780,11 @@
     'マ': 2, 'ミ': 3, 'ム': 2, 'メ': 2, 'モ': 3,
     'ヤ': 2, 'ユ': 2, 'ヨ': 3,
     'ラ': 2, 'リ': 2, 'ル': 2, 'レ': 1, 'ロ': 3,
-    'ワ': 2, 'ヰ': 3, 'ヱ': 3, 'ヲ': 3, 'ン': 2,
+    /* ヰ=4:工程5の2回目(cycle-0110)で外部2出典一致の4に決着し、
+       工程6(cycle-0112)で適用した(それまでの据え置き値は3)。決定と適用の
+       記録は一覧ファイルの post_freeze_decisions にあり、検査(SEIMEI5-3)が
+       決定の値と両実装の現行値の一致を毎サイクル突き合わせる */
+    'ワ': 2, 'ヰ': 4, 'ヱ': 3, 'ヲ': 3, 'ン': 2,
     'ァ': 2, 'ィ': 2, 'ゥ': 3, 'ェ': 3, 'ォ': 3,
     'ャ': 2, 'ュ': 2, 'ョ': 3, 'ッ': 3,
     'ー': 1
@@ -3201,14 +3204,13 @@
    *   追加材料として実測した Unihan(U+53A9)の総画 11 を足しても四者四様。
    *   根拠の無いまま多数決で決めない=決着を作らず「表に無い字」(R6)として扱う。
    *   この表にも本表にも入れないので kanjiStrokesOf は null のまま。
-   * ・かなの「ヰ」(9-5節)=外部2出典とも4画で「4」に決着したが、値を動かすと
-   *   仮計算(現行画面)の結果値が動くため未適用(current=3 のまま。決めたが
-   *   未適用の札は post_freeze_decisions にある)。適用は結果値が変わる回=工程6。
-   *   保留のあいだ current を黙って動かさない縛りは従来どおり SEIMEI4-2 が
-   *   突き合わせる(台帳 SEIMEI-L3)。 */
+   * ・かなの「ヰ」(9-5節)=外部2出典とも4画で「4」に決着(cycle-0110)。
+   *   切替の回=工程6(cycle-0112)で両実装の表へ適用したので、保留からは
+   *   外れた(決定と適用の記録は post_freeze_decisions の applied:true。
+   *   適用前の据え置き値3は同じ記録の current_kept に残る)。検査は
+   *   SEIMEI5-3(決定の値=現行値)と SEIMEI4-2(保留に残っていないこと)。 */
   var SEIMEI_PENDING = {
-    '厩': { own: 12, ref_wikt: 13, ref_jitenon: 14 },
-    'ヰ': { current: 3, note: 'かな表3画(出典未確認)に対し外部2出典とも4画(9-5節)。保留中は現行値を動かさない' }
+    '厩': { own: 12, ref_wikt: 13, ref_jitenon: 14 }
   };
 
   /** R5:漢字1文字ぶんの画数。表に無い字は値を作らず null を返す
@@ -3362,7 +3364,8 @@
    *  そのまま足さない=合計は「数えた字だけの和」。1字も数えられなければ
    *  total は null(0 と区別する。0 を返すと「画数が0」と「数えられなかった」が
    *  見分けられず、R7 の案内の出し分けが実装できない)。
-   *  seimei() 本体と summary への組み込み(配線)は切替の回=工程6で行う(9-2節)。
+   *  seimei 本体と summary への組み込み(配線)は工程6(cycle-0112)で行った
+   *  =下の seimeiOfficial が唯一の呼び手(9-2節)。
    *  @param {string} name 占いたい名前(そのままの入力)
    *  @returns {{counted: Array<{c: string, strokes: number}>, uncounted: string[], total: number|null}}
    */
@@ -3391,6 +3394,74 @@
      (SEIMEI3-2 が実測=SEIMEI2-1 の両実装の表の一致とは衝突しない) */
   var SEIMEI_SYMBOL_RANGE = ['々', 'ゝ', 'ゞ', 'ヽ', 'ヾ', '〆', 'ゕ', 'ゖ', 'ヵ', 'ヶ', 'ゎ', 'ヮ'];
 
+  /* ---- 工程6(cycle-0112):切替=seimei 本体と summary への配線(9-2節・9-4節) ----
+   *
+   * 生年月日でなく「占いたい名前」から読む唯一の占術。computeOne は parseDate より
+   * 前に seimei を分岐する(生年月日が無くても動くこと=OC26 の要件)。
+   * 返し方の約束:
+   *  ・未入力(数える字が0)も、入力はあるが1字も数えられない(R7)も null を返す。
+   *    どちらかは呼ぶ側が「名前が空でないか」で見分ける(画面は R7 の案内
+   *    SEIMEI_NONE_COUNTED_NOTICE を出し、読了に数えない=9-4節の決定)。
+   *  ・一部だけ数えられない名前は、数えた字の合計で結果を組み、数えなかった字を
+   *    R6 の案内(seimeiUncountedNoticeOf)として summary で名指しする。
+   *  ・頭字の画・結字の画は「名前の最初・最後の一字」の画数の偶奇。その字が
+   *    表に無ければ値を作らず欄そのものを出さない(#45=根拠の無い値を作らない。
+   *    別の字の偶奇を「頭字」と呼ぶ読み替えもしない)。
+   *  ・R10 の開示(流派で分かれる)は結び(closing)の文だけで行い、note には
+   *    仕組みの話を書かない(9-1節)。 */
+
+  /* 画の型の値の文字(一〜九)。仮計算と同じ言い換えで、値の文字は両実装で同じに
+     なる(読みは合流点の VALUE_NOTE が添える) */
+  var SEIMEI_KATA_KAZU = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+
+  /** 一桁になるまで各桁を足し縮める(仮計算の digitRoot と同じ数え方) */
+  function seimeiDigitRoot(n) {
+    var x = n;
+    while (x > 9) {
+      var sum = 0;
+      while (x > 0) { sum += x % 10; x = Math.floor(x / 10); }
+      x = sum;
+    }
+    return x;
+  }
+
+  function seimeiOfficial(name) {
+    var count = seimeiCountOf(name);
+    if (count.total === null) { return null; }  /* 未入力または R7(数えられる字が無い) */
+    var chars = seimeiCharsOf(name);
+    var total = count.total;
+    var kata = seimeiDigitRoot(total);
+    /* 頭字・結字は入力の並びの最初・最後の字そのもの(数えた字の最初ではない) */
+    var headStroke = seimeiStrokeOf(chars[0]);
+    var tailStroke = seimeiStrokeOf(chars[chars.length - 1]);
+    var items = [
+      { label: '画の型', value: SEIMEI_KATA_KAZU[kata] + 'の型', note: '' }
+    ];
+    if (headStroke !== null) {
+      items.push({ label: '頭字の画', value: (headStroke % 2 === 1 ? '奇数' : '偶数'), note: '' });
+    }
+    if (tailStroke !== null) {
+      items.push({ label: '結字の画', value: (tailStroke % 2 === 1 ? '奇数' : '偶数'), note: '' });
+    }
+    return {
+      key: 'seimei',
+      name: '姓名判断',
+      view: '名前の画数から見た印象',
+      /* R6:数えなかった字があるときだけ、その字を名指しで開示する(出し分けの
+         検査は SEIMEI6-2。数えた合計の数字はどちらの場合も述べる) */
+      summary: '「' + chars.join('') + '」という名前を画数に置きかえると、合わせて' + total +
+               '画になります。' +
+               seimeiUncountedNoticeOf(count.uncounted) +
+               '画の重なりから、名前がまとう雰囲気を眺めていきます。',
+      /* R10 の開示は結びの1文(9-1節)。前後はやわらかい受け止めの文 */
+      closing: '姓名判断が見ているのは、名前という持ち物の一つの側面にすぎません。' +
+               SEIMEI_STROKE_DISCLOSURE +
+               '呼ばれて心地よい響きであることをいちばんに数えて、軽やかに受け取っていただけたらと思います。',
+      items: items,
+      provisional: false
+    };
+  }
+
   /* ============ 入口 ============ */
 
   function supports(key) { return AVAILABLE_KEYS.indexOf(key) >= 0; }
@@ -3405,6 +3476,9 @@
 
   function computeOne(key, input) {
     if (!supports(key)) { return null; }
+    /* 姓名判断は生年月日でなく「占いたい名前」から読む(工程6=cycle-0112)。
+       生年月日の解析より前に分岐する(名前だけで動くこと=OC26 の要件) */
+    if (key === 'seimei') { return seimeiOfficial(input && input.seimeiName); }
     var b = parseDate(input && input.birthdate);
     if (!b) { return null; }
     if (key === 'sanmei') { return sanmeiOfficial(b); }
