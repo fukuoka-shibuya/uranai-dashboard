@@ -1290,6 +1290,156 @@
              limits: official.util.kanshiSameKeyLimits };
   }
 
+  /* ====== 占術をまたいで同じ角度を名乗る欄(cycle-0118・台帳 YOMI-L9)======
+     **なぜ合流点に置くか**:角度の表は6占術に散っている(算命学・九星・数秘は
+     official.js の KANSHI_ANGLE / KYUSEI_ANGLE / SUUHI_ANGLE、西洋・宿曜・姓名判断は
+     この index.js の SEIYOU_ANGLE / SHUKU_ANGLE / SEIMEI_ANGLE)。**6つ全部が見える
+     場所はここだけ**なので、占術をまたぐ照合はここに置く。
+
+     **なぜ要るか**:cycle-0086 の点検役 R3 が「数秘の誕生数」と「九星の月命星」の
+     角度がほとんど同じだと指摘した(must が5語中4語まで共通)。ところが占術ごとの
+     重なりの検査(YOMI2-5・YOMI3-5)はその占術の中しか見ないので、**占術をまたぐ
+     写しはどの線にも掛からない**。改善基準⑥(占術間の差の明確化)に関わる。
+
+     **一覧を手で書かない**(障害19・cycle-0080 の教訓)=衝突する組は角度の表の
+     must の語から機械で出す。実際に走らせると、台帳 YOMI-L9 が名指ししていた1組
+     ではなく**4組**が出た(cycle-0118 の実測。名指しの一覧で作っていたら残る3組は
+     数に出なかった)。 */
+
+  /** 共有語がこの数以上なら「同じ角度を名乗っている」と見なす。**捕まえる側へ倒す**
+      =2語で拾うと、意味の近い組(算命学の月/数秘のライフパス)まで測ることになるが、
+      測って線の内側だと示すほうが、拾わずに黙っているより安全である。
+      **ただしこの数だけで見ると、must の語がこの数より少ない欄は
+      どうやっても引っかからない**(いまなら seiyou/太陽星座 の must は1語しかない)。
+      語数の少ない欄が構造的に照合の外へ落ちるのは「対象を狭めた走査」と同じことなので、
+      **一方の must が丸ごと共有されている場合は語数によらず衝突として拾う**
+      (crossAngleCollisions の判定を参照)。その欄が抜け落ちていないことは
+      検査 YOMI1-6 が全欄について表明する。 */
+  var CROSS_ANGLE_SHARED_MIN = 2;
+
+  /** 角度の表を持つ欄を6占術ぶん集める。**欄の一覧は書かず、読みの側から出す**
+      (at は「欄/値」なので、その頭を取って角度の表に問い合わせる) */
+  function angleFieldsAll() {
+    var sources = [
+      { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: kanshiYomiTextsAll },
+      { key: 'kyusei', angleOf: official.util.kyuseiAngleOf, texts: official.util.kyuseiYomiTexts },
+      { key: 'suuhi', angleOf: official.util.suuhiAngleOf, texts: official.util.suuhiYomiTexts },
+      { key: 'seiyou', angleOf: seiyouAngleOf, texts: seiyouYomiTexts },
+      { key: 'sukuyo', angleOf: shukuAngleOf, texts: shukuYomiTexts },
+      { key: 'seimei', angleOf: seimeiAngleOf, texts: seimeiYomiTexts }
+    ];
+    var out = [], s, i;
+    for (s = 0; s < sources.length; s++) {
+      var texts = sources[s].texts(), byField = {};
+      for (i = 0; i < texts.length; i++) {
+        var field = texts[i].at.slice(0, texts[i].at.indexOf('/'));
+        if (!own(byField, field)) { byField[field] = []; }
+        byField[field].push(texts[i]);
+      }
+      for (var f in byField) {
+        if (!own(byField, f)) { continue; }
+        var angle = sources[s].angleOf(f);
+        if (!angle) { continue; }              /* 角度の表を持たない欄は対象外 */
+        out.push({ key: sources[s].key, field: f, must: angle.must,
+                   desc: angle.desc, texts: byField[f] });
+      }
+    }
+    return out;
+  }
+
+  /** 算命学の3欄の読み。official 側に texts をまとめる関数が無いので合流点で組む */
+  function kanshiYomiTextsAll() {
+    var out = [], f, i;
+    var fields = official.util.kanshiFields, keys = official.util.kanshiKeys;
+    for (f = 0; f < fields.length; f++) {
+      for (i = 0; i < keys.length; i++) {
+        var t = official.util.kanshiYomiOf(fields[f], keys[i]);
+        if (t !== null && t !== undefined) {
+          out.push({ at: fields[f] + '/' + keys[i], value: keys[i], text: t });
+        }
+      }
+    }
+    return out;
+  }
+
+  /** 占術をまたいで角度がぶつかる組を返す(共有語つき)。
+      **fields を渡すと突き合わせる相手を差し替えられる**=「一方の must が丸ごと
+      共有されている」枝はいまの実体では一度も通らない(語数1の欄の語が他の must に
+      無いため)ので、到達しない枝を「実装した」と書いたままにしないため、
+      反証 YOMI1-6b が判定へ直に見本を渡して確かめる(cycle-0078 の点検役 M1 と同じ扱い) */
+  function crossAngleCollisions(fieldsIn) {
+    var fields = fieldsIn || angleFieldsAll(), out = [], i, j, k;
+    for (i = 0; i < fields.length; i++) {
+      for (j = i + 1; j < fields.length; j++) {
+        if (fields[i].key === fields[j].key) { continue; }
+        var shared = [];
+        for (k = 0; k < fields[i].must.length; k++) {
+          if (fields[j].must.indexOf(fields[i].must[k]) >= 0) { shared.push(fields[i].must[k]); }
+        }
+        /* 語数の少ない欄を構造的に取りこぼさないため、**どちらか一方の must が
+           丸ごと共有されている場合も衝突とする**(must が1語の欄はこちらで拾う) */
+        var whole = shared.length > 0 &&
+          shared.length === Math.min(fields[i].must.length, fields[j].must.length);
+        if (shared.length >= CROSS_ANGLE_SHARED_MIN || whole) {
+          out.push({ a: fields[i], b: fields[j], shared: shared, whole: whole });
+        }
+      }
+    }
+    return out;
+  }
+
+  /** ぶつかった組それぞれについて、2欄の読みどうしの重なりを測る。
+      線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとにも組ごとにも別の線を持たない)。
+      **ぶつかる組が1つも無ければ measured:false ではなく count:0 で返す**=
+      「ぶつかっていない」と「測れなかった」を見分けるため(#55 の進捗と同じ扱い)。 */
+  function crossAngleOverlap() {
+    var pairs = crossAngleCollisions(), out = [], p, i, j;
+    for (p = 0; p < pairs.length; p++) {
+      var A = pairs[p].a, B = pairs[p].b, rows = [];
+      for (i = 0; i < A.texts.length; i++) {
+        for (j = 0; j < B.texts.length; j++) {
+          var one = official.util.kanshiPairOverlapOf([
+            { at: 'a', text: A.texts[i].text }, { at: 'b', text: B.texts[j].text }]);
+          rows.push({ at: A.texts[i].at + ' × ' + B.texts[j].at, value: one.max });
+        }
+      }
+      var sum = 0, max = 0, worst = '';
+      for (i = 0; i < rows.length; i++) {
+        sum += rows[i].value;
+        if (rows[i].value > max) { max = rows[i].value; worst = rows[i].at; }
+      }
+      out.push({
+        at: A.key + '/' + A.field + ' × ' + B.key + '/' + B.field,
+        shared: pairs[p].shared.slice(), count: rows.length,
+        average: rows.length ? sum / rows.length : null,
+        max: rows.length ? max : null, worst: worst, rows: rows
+      });
+    }
+    return { count: out.length, pairs: out, limits: official.util.kanshiSameKeyLimits };
+  }
+
+  /** 上の測りが線の内側にあるか。**ぶつかる組は測ること**が条件で、
+      「ぶつかる組を作らない」道も同じ判定で通る(組が0なら問題も0)。 */
+  function crossAngleProblems(overlap) {
+    var ov = overlap || crossAngleOverlap();
+    var lim = ov.limits, problems = [], i;
+    for (i = 0; i < ov.pairs.length; i++) {
+      var p = ov.pairs[i];
+      if (p.count === 0 || p.average === null) {
+        problems.push(p.at + ': 角度がぶつかっているのに重なりを測れていない');
+        continue;
+      }
+      if (p.average > lim.average) {
+        problems.push(p.at + ': 平均が線(' + lim.average + ')を越えている ' + p.average.toFixed(4));
+      }
+      if (p.max > lim.max) {
+        problems.push(p.at + ': 最大が線(' + lim.max + ')を越えている ' + p.max.toFixed(4) +
+                      ' 「' + p.worst + '」');
+      }
+    }
+    return problems;
+  }
+
   function computeOne(key, input) { return withGuide(key, implFor(key).computeOne(key, input)); }
 
   function computeAll(input) {
@@ -1384,6 +1534,13 @@
     seimeiAngleOf: seimeiAngleOf,
     seimeiAngleProblems: seimeiAngleProblems,
     seimeiSameScreenOverlap: seimeiSameScreenOverlap,
+    /* cycle-0118(台帳 YOMI-L9)。占術をまたいで同じ角度を名乗る欄と、その重なり。
+       6占術の角度の表が見えるのは合流点だけなので、ここに置く */
+    angleFieldsAll: angleFieldsAll,
+    crossAngleSharedMin: CROSS_ANGLE_SHARED_MIN,
+    crossAngleCollisions: crossAngleCollisions,
+    crossAngleOverlap: crossAngleOverlap,
+    crossAngleProblems: crossAngleProblems,
     /* 中核5占術がすべて正式計算に切り替わったので、総合占いも正式計算側で組む
        (cycle-0043)。切替の実体は上の OFFICIAL_KEYS のままで、ここに別の設定は置かない */
     overallIsOfficial: function () { return overallImpl() === official; },

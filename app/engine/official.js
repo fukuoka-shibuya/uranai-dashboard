@@ -2013,6 +2013,119 @@
     return v;
   }
 
+  /** 「数の性質」の値は**ライフパスナンバーから一意に決まる**(ゾロ目ならゾロ目の数、
+      でなければ偶奇)。cycle-0118(台帳 YOMI-L10)でここへ切り出した=それまでは
+      suuhiOfficial の items の中に式が直書きされており、同じ導出を測りの側
+      (suuhiScreens)でもう一度書くことになっていた。**導出を二重に持つと、
+      片方だけ書き替えたとき測りが実際の画面と別の組を測る**(障害19と同じ形)。 */
+  function suuhiSeishitsuKeyOf(life) {
+    if (typeof life !== 'number') { return null; }
+    var master = (life === 11 || life === 22 || life === 33);
+    return master ? 'ゾロ目の数' : (life % 2 === 0 ? '偶数の数' : '奇数の数');
+  }
+
+  /** 「数の重なり」の値は2つの数がそろうかどうかだけで決まる。上と同じ理由で1か所に置く */
+  function suuhiKasanariKeyOf(life, birth) {
+    if (typeof life !== 'number' || typeof birth !== 'number') { return null; }
+    return life === birth ? '重なっている' : '離れている';
+  }
+
+  /** 画面に並びうる4本の組を、値の顔ぶれの掛け合わせから作る(cycle-0118・台帳 YOMI-L10)。
+      ライフパスナンバー12通り × 誕生数11通り = 132通りの画面それぞれについて、
+      4欄の (欄, 値) を返す。**残る2欄は上の導出を通す**ので、画面の作り方と
+      測りの作り方が同じ1か所を向く。
+      132通りが実際の生年月日から出そろうことは検査 YOMI3-6 が日付の走査で確かめる
+      (掛け合わせが机上の空論になっていないことを、実装の外から見る) */
+  function suuhiScreens() {
+    var out = [], i, j;
+    var lifeKeys = suuhiYomiKeys('lifepath'), birthKeys = suuhiYomiKeys('birth');
+    for (i = 0; i < lifeKeys.length; i++) {
+      for (j = 0; j < birthKeys.length; j++) {
+        var life = Number(lifeKeys[i]), birth = Number(birthKeys[j]);
+        out.push([
+          { field: 'lifepath', value: lifeKeys[i] },
+          { field: 'birth', value: birthKeys[j] },
+          { field: 'seishitsu', value: suuhiSeishitsuKeyOf(life) },
+          { field: 'kasanari', value: suuhiKasanariKeyOf(life, birth) }
+        ]);
+      }
+    }
+    return out;
+  }
+
+  /** 同じ画面に並ぶ2本がどれだけ重なるか(cycle-0118・台帳 YOMI-L10)。
+      **なぜ要るか**:角度の表(SUUHI_ANGLE)はライフパスナンバーと誕生数の2欄しか
+      持たず、残る2欄を外した理由を cycle-0086 は「値の顔ぶれが他の欄と重ならないから」
+      と述べていた。しかし角度の表の目的は**同じ話を二度読ませないこと**であって
+      値の取り違えではない。「数の性質」はライフパスナンバーから一意に決まるので
+      **必ず同じ画面に並ぶ**=値が重ならないことは、同じ話が並ばない理由にならない
+      (cycle-0086 の点検役 M1)。そこで西洋の seiyouSameScreenOverlap・宿曜の
+      shukuSameScreenOverlap と同じ形で、**画面に実際に並ぶ2本の重なりを直接測る**。
+      線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。 */
+  function suuhiSameScreenOverlap() {
+    var seen = {}, rows = [], screens = suuhiScreens(), s, i, j;
+    for (s = 0; s < screens.length; s++) {
+      var fs = screens[s];
+      for (i = 0; i < fs.length; i++) {
+        for (j = i + 1; j < fs.length; j++) {
+          var a = fs[i], b = fs[j];
+          var at = a.field + '/' + a.value + ' × ' + b.field + '/' + b.value;
+          if (Object.prototype.hasOwnProperty.call(seen, at)) { continue; }
+          var t1 = suuhiYomiOf(a.field, a.value), t2 = suuhiYomiOf(b.field, b.value);
+          if (t1 === null || t2 === null) { continue; }
+          seen[at] = true;
+          var one = kanshiPairOverlapOf([{ at: 'a', text: t1 }, { at: 'b', text: t2 }]);
+          rows.push({ at: at, a: a.field, b: b.field, value: one.max });
+        }
+      }
+    }
+    if (rows.length === 0) {
+      return { measured: false, count: 0, average: null, max: null, worst: '',
+               rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+    }
+    var sum = 0, max = 0, worst = '';
+    for (i = 0; i < rows.length; i++) {
+      sum += rows[i].value;
+      if (rows[i].value > max) { max = rows[i].value; worst = rows[i].at; }
+    }
+    return { measured: true, count: rows.length, average: sum / rows.length, max: max,
+             worst: worst, rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+  }
+
+  /** 角度の表から欄を外してよい条件(cycle-0118・台帳 YOMI-L10)。
+      cycle-0086 は「値の顔ぶれが他の欄と重ならないこと」を条件にしていたが、
+      それは目的(同じ話を二度読ませない)とずれていた。**新しい条件は2つのどちらか**=
+       (a) その欄が他のどの欄とも同じ画面に並ばない(並ばなければ二度読みは起きない)
+       (b) 並んでも、その組の重なりが線の内側にある
+      いまの数秘では4欄とも必ず同じ画面に並ぶので、通るのは (b) の側だけである
+      (=(a) は数秘では一度も通らない枝。到達しない枝を「実装した」と書いたままに
+      しないため、反証 YOMI3-3b が判定へ直に「並ばない欄」を渡して確かめる)。 */
+  function suuhiAngleExemptionProblems(overlap) {
+    var problems = [], i;
+    var ov = overlap || suuhiSameScreenOverlap();
+    var fields = Object.keys(SUUHI_YOMI_TABLES);
+    var lim = KANSHI_SAMEKEY_LIMITS;
+    for (i = 0; i < fields.length; i++) {
+      var field = fields[i];
+      if (Object.prototype.hasOwnProperty.call(SUUHI_ANGLE, field)) { continue; }
+      /* 角度の表に無い欄。この欄が関わる同じ画面の組だけを取り出す */
+      var mine = ov.rows.filter(function (r) { return r.a === field || r.b === field; });
+      if (mine.length === 0) { continue; }        /* (a) どの欄とも並ばない */
+      var over = mine.filter(function (r) { return r.value > lim.max; });
+      if (over.length > 0) {
+        problems.push(field + ': 角度の表に無いのに、同じ画面に並ぶ組が線(最大' +
+          lim.max + ')を越えている 「' + over[0].at + '」' + over[0].value.toFixed(4));
+      }
+      var sum = 0, k;
+      for (k = 0; k < mine.length; k++) { sum += mine[k].value; }
+      if (sum / mine.length > lim.average) {
+        problems.push(field + ': 角度の表に無いのに、同じ画面に並ぶ組の平均が線(' +
+          lim.average + ')を越えている ' + (sum / mine.length).toFixed(4));
+      }
+    }
+    return problems;
+  }
+
   /** ライフパスナンバー:生年月日の全桁の和から縮める(ピタゴラス式) */
   function lifePathOf(b) {
     var digits = String(b.year) + String(b.month) + String(b.day);
@@ -2057,9 +2170,12 @@
       items: [
         suuhiItemOf('ライフパスナンバー', 'lifepath', life),
         suuhiItemOf('誕生数', 'birth', birth),
-        suuhiItemOf('数の性質', 'seishitsu',
-          master ? 'ゾロ目の数' : (life % 2 === 0 ? '偶数の数' : '奇数の数')),
-        suuhiItemOf('数の重なり', 'kasanari', life === birth ? '重なっている' : '離れている')
+        /* 残る2欄の値は上の2つから導く。**導出は suuhiSeishitsuKeyOf /
+           suuhiKasanariKeyOf の1か所**にあり、同じ導出を測りの側(suuhiScreens)も
+           通る(cycle-0118・台帳 YOMI-L10。式をここに直書きしていた頃は、
+           測りが画面と別の組を測っても気づけなかった) */
+        suuhiItemOf('数の性質', 'seishitsu', suuhiSeishitsuKeyOf(life)),
+        suuhiItemOf('数の重なり', 'kasanari', suuhiKasanariKeyOf(life, birth))
       ].filter(function (it) { return it !== null; }),
       provisional: false
     };
@@ -3737,6 +3853,12 @@
       suuhiAngleProblems: suuhiAngleProblems,
       suuhiHedgeProblems: suuhiHedgeProblems,
       suuhiSameNumberOverlap: suuhiSameNumberOverlap,
+      /* cycle-0118(台帳 YOMI-L10)。導出・画面の組・同じ画面の重なり・除外の条件 */
+      suuhiSeishitsuKeyOf: suuhiSeishitsuKeyOf,
+      suuhiKasanariKeyOf: suuhiKasanariKeyOf,
+      suuhiScreens: suuhiScreens,
+      suuhiSameScreenOverlap: suuhiSameScreenOverlap,
+      suuhiAngleExemptionProblems: suuhiAngleExemptionProblems,
       /* 総合占いへの写しの値。根拠の鎖(YOMI3-4)が矢印の先と突き合わせる。
          誕生数は数を鍵に持つので配列ではなく写しを返す */
       suuhiBirthMaai: (function () {

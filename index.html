@@ -21,6 +21,15 @@
     font-size:14px;line-height:1.75;
   }
   .page{max-width:1000px;margin:0 auto;padding:24px 18px 64px;}
+  /* 折り返せない長い連なりで横スクロールが出るのを防ぐ(cycle-0119)。
+     和文はどこでも改行できるが、実装の関数名を矢印でつないだ書き方
+     (例: aaaBbb→cccDdd→eeeFff)は英数字と U+2192 が続くため、UAX#14 では
+     途中に改行の機会が1つも無い1語として扱われ、幅360pxの画面をそのまま突き破る
+     (cycle-0118 の報告書で実際に scrollWidth=490 になり「横スクロールが発生しない」が落ちた)。
+     break-word は「その語だけで1行に収まらないとき」に限って途中で折るので、
+     ふだんの和文の見た目は変わらない。また表の最小内容幅にも効かないため、
+     .tblwrap(overflow-x:auto)+ table{min-width:420px} の作りはこれまでどおり。 */
+  .page{overflow-wrap:break-word;}
   header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px;}
   /* OC43(#43):タイトル行は「題名 — 状態の丸 — 仮/正式」の横並び。仮/正式のバッジだけ
      margin-left:auto で行の一番右へ寄せる。幅が足りない画面では折り返す(横スクロール禁止) */
