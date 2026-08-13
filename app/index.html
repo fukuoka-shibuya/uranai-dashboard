@@ -353,7 +353,7 @@
         <input type="checkbox" id="save-consent" name="save-consent">
         <span>この端末にだけ保存する(保存しない場合、入力内容は端末に残りません)</span>
       </label>
-      <p class="hint">入力内容が端末の外へ送られることはありません。</p>
+      <p class="hint">占いたい名前・生年月日・性別が端末の外へ送られることはありません。総合占いの読み物だけは、占いの結果から取り出した二つの向き(動き出し方と人との間合い)を外へ送って書き起こしています。</p>
     </div>
 
     <div class="field">
@@ -449,6 +449,11 @@
 <script src="engine/provisional.js"></script>
 <script src="engine/official.js"></script>
 <script src="engine/index.js"></script>
+<!-- 総合占いのAI生成(オーナーコメント #72 で承認された中継役1つだけ)。
+     送信先URLは ai-relay.js の1行にだけあり、画面側には書かない。
+     中継役が使えないときは、この下の決定論的な総合占いの文がそのまま出る -->
+<script src="engine/ai-relay.js"></script>
+<script src="engine/ai-overall.js"></script>
 <script>
 (function () {
   'use strict';
@@ -774,16 +779,27 @@
      一致点・相違点の読み物はエンジン側(computeOverall)が組み立てる。
      画面側は受け取った構造(summary / sections / items / closing)を描くだけで、
      文章そのものをここに書かない(文言検査をエンジン側に集めるため)。 */
-  function renderOverall(box, overall) {
+  function renderOverall(box, overall, screen) {
     clear(box);
     box.appendChild(document.createElement('h3')).textContent = overall.heading;
     box.appendChild(para(overall.summary));
 
-    for (var s = 0; s < overall.sections.length; s++) {
-      var sec = overall.sections[s];
-      box.appendChild(document.createElement('h4')).textContent = sec.heading;
-      for (var p = 0; p < sec.body.length; p++) {
-        box.appendChild(para(sec.body[p]));
+    if (screen && screen.source === 'ai') {
+      /* 中継役が書き、門(ai-overall.js の screenTextOf)を通った読み物。
+         段落へ割るだけで、**文字列は必ず textContent 経由**(D10)。
+         ここで innerHTML へ寄せないこと=返りはタグを含みうる信頼できない入力である */
+      box.appendChild(document.createElement('h4')).textContent = aiOverall.UI_TEXT.aiHeading;
+      var lines = String(screen.body).split('\n');
+      for (var a = 0; a < lines.length; a++) {
+        if (lines[a].trim() !== '') { box.appendChild(para(lines[a])); }
+      }
+    } else {
+      for (var s = 0; s < overall.sections.length; s++) {
+        var sec = overall.sections[s];
+        box.appendChild(document.createElement('h4')).textContent = sec.heading;
+        for (var p = 0; p < sec.body.length; p++) {
+          box.appendChild(para(sec.body[p]));
+        }
       }
     }
 
@@ -807,7 +823,34 @@
 
     box.appendChild(para(overall.closing));
     if (overall.provisional) { box.appendChild(para(NOTE_TEXT, 'provisional')); }
+
+    /* 案内の一言。**文はすべて engine 側(ai-overall.js の UI_TEXT / ai-relay.js の
+       FALLBACK_MESSAGE)が持つ**ので、ここには日本語を書かない。
+       message はどの場合もこちらが書いた文で、中継役の relayMessage は画面へ出さない(D9) */
+    if (screen && screen.notice) { box.appendChild(para(screen.notice, 'hint')); }
+    if (screen && screen.message) { box.appendChild(para(screen.message, 'hint')); }
     box.classList.remove('hidden');
+  }
+
+  /* ---------- 総合占いのAI生成(オーナーコメント #72・工程4) ----------
+     決定論的な文を**先に**描いてから中継役へ頼む。返るまでの間も、返らなかった
+     ときも、画面には総合占いが出ている(D4:欄が空になる形を作らない)。
+     中継役が使えない・門で止まったときは、この先も決定論的な文のままになる。 */
+  var aiOverall = (typeof UranaiAiOverall !== 'undefined') ? UranaiAiOverall : null;
+  var overallToken = 0;   /* 読み直しのたびに増やす。古い返りで新しい表示を上書きしないため */
+
+  function requestAiOverall(box, overall) {
+    if (!aiOverall) { return; }
+    var token = ++overallToken;
+    box.appendChild(para(aiOverall.UI_TEXT.waiting, 'hint'));
+    aiOverall.readingFor(overall).then(function (reading) {
+      if (token !== overallToken) { return; }
+      renderOverall(box, overall, aiOverall.screenTextOf(reading));
+    }, function () {
+      /* readingFor は投げない約束だが、投げても画面は決定論的な文のまま読める */
+      if (token !== overallToken) { return; }
+      renderOverall(box, overall, null);
+    });
   }
 
   var elReadOverall = document.getElementById('read-overall');
@@ -828,8 +871,9 @@
       openResult('overall', '上位の読み物', '入力のご確認', elReadOverall);
       return;
     }
-    renderOverall(box, overall);
+    renderOverall(box, overall, null);
     openResult('overall', '上位の読み物', '総合占い', elReadOverall);
+    requestAiOverall(box, overall);
   });
 
   /* ---------- プロフィールの保存と管理(端末内のみ・localStorage) ----------

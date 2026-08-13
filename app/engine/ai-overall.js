@@ -16,9 +16,12 @@
  *   - 同じ見立ての返りはその起動の間だけ持ち、1回しか呼ばない(D7)
  *   - **門を通していない文を `text` という名で返さない**。中継役が書いた文は
  *     `aiText`、こちらの文は `fallbackText` という別の名で返し、
- *     どちらを画面へ出すかは工程4の門を通してから決めさせる
+ *     どちらを画面へ出すかは**この部品の門(`screenTextOf`)を通してから**決めさせる
+ *   - 画面へ出す文と、待っている間・断りの一言は**すべてこの部品が持つ**
+ *     (app/index.html に文章を書かない=文言の検査をエンジン側に集めるため)
  *
- * この部品は画面へまだつながっていません(工程4でつなぎます)。
+ * 工程4(cycle-0124)で画面へつないだ。画面側が呼ぶのは `readingFor` と
+ * `screenTextOf` の2つだけで、`aiText` を直に読む道は画面側に無い。
  */
 (function (root, factory) {
   var relay = (typeof module === 'object' && module.exports)
@@ -175,6 +178,120 @@
     return out.join('\n');
   }
 
+  /* ===== 受け取り側の門(D8・工程4) =====================================
+     中継役の先(外部モデル)は当方の管理外なので、返り文字列は**信頼できない入力**として
+     扱う。指示文の側で「使わないでください」と書いても守られる保証は無いので、
+     **画面へ出す直前にこちら側で当てる**(D8)。
+
+     ここに置く一覧は `tests/banned-words.js` の `BANNED` と `JARGON_SCREEN` と
+     **同じもの**である。テストのファイルは公開されずブラウザからも読めないため、
+     アプリ側にも同じ表を持つほかない(仮計算と正式計算の表を分けて持つのと同じ形)。
+     **二重管理が黙って食い違うことは tests/ai-screen.spec.js の AI4-1 が
+     両側の正規表現を1本ずつ突き合わせて塞ぐ**(片方に語を足すと必ず落ちる)。 */
+
+  /* 門の一覧ここから
+     この下の2つの表は**禁止語そのものを持つのが役目**なので、
+     tests/engine.spec.js の「エンジンの文章に禁止表現が含まれない」走査から外す。
+     外れるのは印にはさまれたこの区画だけで、同じファイルの他はすべて走査される。
+     区画が実在すること・区画に表以外のものを置いていないことは同じ検査が見る */
+  var BANNED = [
+    /* 断定・的中 */
+    /必ず/, /絶対/, /運命(が|は).{0,4}決ま/, /的中/, /間違い(なく|ありません)/,
+    /当た(る|り)ま/, /外れ(ない|ません)/, /確実に/, /断言/,
+    /* 恐怖 */
+    /死ぬ|死に/, /呪/, /祟/, /不幸/, /災い/, /大凶|凶運|凶相/, /地獄/, /罰が/,
+    /* 依存誘発 */
+    /(毎日|欠かさず).{0,8}(見て|読んで|確かめて|確認して)/, /ここでしか/, /あなただけに/, /(見|読ま)ないと/,
+    /* 医療・法律・投資の断定 */
+    /(治り|治る|治し)ま/, /効きます/, /病気が(良く|悪く)なり/,
+    /勝てます/, /訴え(れば|たら|るべき)/,
+    /儲かり|利益が出ま|値上がりしま|買うべき|売るべき/
+  ];
+
+  var JARGON_SCREEN = [
+    { re: /安住|和善|急速|軽燥|毒害|猛悪|剛柔/, name: '七科分宿の呼び名' },
+    { re: /柱/, name: '柱' },
+    { re: /区分/, name: '区分' },
+    { re: /組(?![みむん])/, name: '組(組み合わせ・組む を除く)' },
+    { re: /系統/, name: '系統' },
+    { re: /盤/, name: '盤' },
+    { re: /定位/, name: '定位' },
+    { re: /黄道/, name: '黄道' },
+    { re: /五行/, name: '五行' },
+    { re: /十干|十二支|十大主星/, name: '十干・十二支・十大主星' },
+    { re: /エレメント/, name: 'エレメント' },
+    { re: /グループ/, name: 'グループ' },
+    { re: /のしるし/, name: 'しるし' }
+  ];
+  /* 門の一覧ここまで */
+
+  /* 中継役の返りが空でないのに門で止まったとき、なぜ止めたかを画面に出さない
+     ——止めた語をそのまま出せば、禁じた語が画面に出てしまう。理由は返り値の
+     `blocked`(語の呼び名だけ)に残し、画面へは出さない */
+  function screenProblems(text) {
+    var body = typeof text === 'string' ? text : '';
+    var problems = [];
+    var i;
+    if (body.trim() === '') { return ['文が空']; }
+    for (i = 0; i < BANNED.length; i++) {
+      if (BANNED[i].test(body)) { problems.push('禁止表現(' + BANNED[i].source + ')'); }
+    }
+    for (i = 0; i < JARGON_SCREEN.length; i++) {
+      if (JARGON_SCREEN[i].re.test(body)) { problems.push('画面に出さない語(' + JARGON_SCREEN[i].name + ')'); }
+    }
+    return problems;
+  }
+
+  /** 門を通るか(通れば true)。空文字は通さない */
+  function passesGate(text) { return screenProblems(text).length === 0; }
+
+  /* 画面に出す、こちらが書いた文(app/index.html には文章を置かない)。
+     **中継役が返した `relayMessage` は画面へ出さない**=ご指示は「message の日本語を
+     そのまま案内文に使ってよい」と述べているが「使え」とは述べておらず、
+     こちらの表(ai-relay.js の FALLBACK_MESSAGE)で同じ用が足りる。
+     外から来た文を1つでも減らすほうが安全側なので出さない側を選んだ。
+     出していないことは AI4-6 が偽の返りで毎回確かめる */
+  var UI_TEXT = {
+    /* 待っている間。決定論的な文はすでに下に出ているので、隠れるものは無い */
+    waiting: '読み物を書き起こしています。少しお待ちください。',
+    /* AI生成の文が出たときの見出しと、毎回変わりうることの断り(D3・M6) */
+    aiHeading: '今日の読み物',
+    aiNotice: 'この読み物はお読みになるたびに書き起こされるため、同じ生年月日でも文章が変わることがあります。下の一覧に出る占いの結果そのものは変わりません。',
+    /* 門で止めたときの案内。止めた語そのものは出さない */
+    blocked: '書き起こした文が当アプリの決まりに合わなかったため、これまでどおりの総合占いをお読みいただけます。'
+  };
+
+  /**
+   * 画面へ出す文を1か所で決める(D8 の門はここを通る)。
+   *
+   * - `aiText` が門を通ったときだけ `source:'ai'` を返す
+   * - それ以外は必ず `source:'fallback'`(=いま画面に出ている決定論的な文)
+   * - `body` は**必ず文字列**で、空にならない(戻り先が空のときだけ空になりうるが、
+   *   その場合は呼び出し側がすでに描いた本文をそのまま残せばよい)
+   *
+   * @param {object} reading readingFor の返り
+   * @returns {{source:'ai'|'fallback', body:string, notice:string, message:string, blocked:string[]}}
+   */
+  function screenTextOf(reading) {
+    var r = reading || {};
+    var fallbackText = typeof r.fallbackText === 'string' ? r.fallbackText : '';
+    var message = typeof r.message === 'string' ? r.message : '';
+
+    if (!r.usable) {
+      return { source: 'fallback', body: fallbackText, notice: '', message: message, blocked: [] };
+    }
+    var problems = screenProblems(r.aiText);
+    if (problems.length > 0) {
+      return {
+        source: 'fallback', body: fallbackText, notice: '',
+        message: UI_TEXT.blocked, blocked: problems
+      };
+    }
+    return {
+      source: 'ai', body: String(r.aiText), notice: UI_TEXT.aiNotice, message: '', blocked: []
+    };
+  }
+
   /* その起動の間だけのひかえ(D7)。localStorage へは書かない
      =「保存は利用者が選んだ時だけ」の条項に触れないため。
      **ひかえるのは中継役から返った側だけ**で、戻り先の文はひかえない
@@ -277,6 +394,12 @@
     buildUserText: buildUserText,
     buildPayload: buildPayload,
     fallbackTextOf: fallbackTextOf,
+    BANNED: BANNED,
+    JARGON_SCREEN: JARGON_SCREEN,
+    UI_TEXT: UI_TEXT,
+    screenProblems: screenProblems,
+    passesGate: passesGate,
+    screenTextOf: screenTextOf,
     readingFor: readingFor,
     resetCache: resetCache,
     cacheSize: cacheSize
