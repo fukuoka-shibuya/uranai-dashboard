@@ -2349,6 +2349,18 @@
     var ov = overlap || suuhiSameScreenOverlap();
     var fields = Object.keys(SUUHI_YOMI_TABLES);
     var lim = KANSHI_SAMEKEY_LIMITS;
+    /* **測れなかったものを (a) の枝で通さない**(cycle-0142・台帳 CROSS-L1)。
+       suuhiSameScreenOverlap は組が1つも作れないとき measured:false を返すが、
+       この判定はそれを読んでいなかったので、**測定に失敗した受け取り物が
+       「どの欄とも並ばないから通った」と同じ緑になっていた**(点検役 M2)。
+       欄ごとの mine.length === 0 は「並ばない」を意味してよいが、それは
+       **測りそのものが成り立っているとき**に限る。measured を名乗らない受け取り物も
+       測れていない扱いにする=捕まえる側へ倒す(合流点の crossAngleProblems と同じ作り) */
+    if (!ov || ov.measured !== true) {
+      problems.push('数秘の角度の除外: 同じ画面の重なりが測れていない' +
+        '(測れた組が0のときと「どの欄とも並ばない」を取り違えないため)');
+      return problems;
+    }
     for (i = 0; i < fields.length; i++) {
       var field = fields[i];
       if (Object.prototype.hasOwnProperty.call(SUUHI_ANGLE, field)) { continue; }

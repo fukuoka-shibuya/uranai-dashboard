@@ -1344,9 +1344,17 @@
       検査 YOMI1-6 が全欄について表明する。 */
   var CROSS_ANGLE_SHARED_MIN = 2;
 
-  /** 角度の表を持つ欄を6占術ぶん集める。**欄の一覧は書かず、読みの側から出す**
-      (at は「欄/値」なので、その頭を取って角度の表に問い合わせる) */
-  function angleFieldsAll() {
+  /** 角度の表を持つ欄を6占術ぶん集め、**占術ごとに何欄集まったかも一緒に返す**
+      (cycle-0142・台帳 CROSS-L1)。**欄の一覧は書かず、読みの側から出す**
+      (at は「欄/値」なので、その頭を取って角度の表に問い合わせる)。
+
+      **なぜ占術ごとの数まで返すか**:集める側が黙って空を返しても、下の
+      crossAngleCollisions は「ぶつかる組が0」を返すだけで、判定は何も言わなかった
+      =**「ぶつかっていない」と「測れなかった」が見分けられなかった**(台帳 CROSS-L1)。
+      見分ける手がかりは**この関数の中にしか無い**(下流はもう欄しか見ていない)ので、
+      ここで占術ごとの内訳を添える。**「6占術」という数は書かない**=下の sources の
+      顔ぶれそのものが母数で、占術が増減してもこの判定はついてくる。 */
+  function angleFieldsReport() {
     var sources = [
       { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: kanshiYomiTextsAll },
       { key: 'kyusei', angleOf: official.util.kyuseiAngleOf, texts: official.util.kyuseiYomiTexts },
@@ -1355,9 +1363,9 @@
       { key: 'sukuyo', angleOf: shukuAngleOf, texts: shukuYomiTexts },
       { key: 'seimei', angleOf: seimeiAngleOf, texts: seimeiYomiTexts }
     ];
-    var out = [], s, i;
+    var out = [], tally = [], s, i;
     for (s = 0; s < sources.length; s++) {
-      var texts = sources[s].texts(), byField = {};
+      var texts = sources[s].texts(), byField = {}, before = out.length;
       for (i = 0; i < texts.length; i++) {
         var field = texts[i].at.slice(0, texts[i].at.indexOf('/'));
         if (!own(byField, field)) { byField[field] = []; }
@@ -1370,8 +1378,16 @@
         out.push({ key: sources[s].key, field: f, must: angle.must,
                    desc: angle.desc, texts: byField[f] });
       }
+      tally.push({ key: sources[s].key, texts: texts.length,
+                   fields: out.length - before });
     }
-    return out;
+    return { fields: out, sources: tally };
+  }
+
+  /** 欄だけが要るときの入口(検査も下流も長くこちらを呼んでいる)。
+      **源は angleFieldsReport 1か所**=占術の一覧を2か所に持たない */
+  function angleFieldsAll() {
+    return angleFieldsReport().fields;
   }
 
   /** 算命学の3欄の読み。official 側に texts をまとめる関数が無いので合流点で組む */
@@ -1417,10 +1433,20 @@
 
   /** ぶつかった組それぞれについて、2欄の読みどうしの重なりを測る。
       線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとにも組ごとにも別の線を持たない)。
-      **ぶつかる組が1つも無ければ measured:false ではなく count:0 で返す**=
-      「ぶつかっていない」と「測れなかった」を見分けるため(#55 の進捗と同じ扱い)。 */
+
+      **「ぶつかっていない」と「測れなかった」の見分け方**(cycle-0142・台帳 CROSS-L1)。
+      cycle-0118 からここには「ぶつかる組が1つも無ければ measured:false ではなく
+      count:0 で返す=見分けるため」と書いてあったが、**count:0 を渡された判定の側は
+      両方とも問題なしを返していた**(実測:crossAngleProblems({count:0,pairs:[]}) → [])。
+      つまり見分けているつもりで、**どちらも同じ緑になっていた**(点検役 M2)。
+      count:0 は2通りの意味を持つ=(あ) 角度が本当にぶつかっていない (い) 集める側が
+      空を返した(読みが1本も引けない・占術が丸ごと欠けた)。**この2つを分ける手がかりは
+      集める側にしか無い**ので、angleFieldsReport の内訳を measured として添える。
+      **measured は「線の内側か」ではなく「測れたか」だけを述べる**(#55 の進捗・
+      照合の unverified と同じ扱いで、測れなかったものは緑にも赤にも数えず問題として出す)。 */
   function crossAngleOverlap() {
-    var pairs = crossAngleCollisions(), out = [], p, i, j;
+    var report = angleFieldsReport();
+    var pairs = crossAngleCollisions(report.fields), out = [], p, i, j;
     for (p = 0; p < pairs.length; p++) {
       var A = pairs[p].a, B = pairs[p].b, rows = [];
       for (i = 0; i < A.texts.length; i++) {
@@ -1442,14 +1468,49 @@
         max: rows.length ? max : null, worst: worst, rows: rows
       });
     }
-    return { count: out.length, pairs: out, limits: official.util.kanshiSameKeyLimits };
+    /* 角度の表を持つ欄が1つも集まらなかった占術。1つでもあれば測れていない。
+       **「読みが引けなかった」とは言えない**(cycle-0142 の点検役 中2)=欄が0になる道は
+       2つある(読みが1本も返らない/読みは返るが角度の表が引けない)。実測では
+       kyuseiAngleOf を null にすると texts:18 のまま fields:0 になる=読みは18本返っている。
+       **どちらであるかはここでは分からない**ので、分かることだけを名乗る。 */
+    var empty = [];
+    for (i = 0; i < report.sources.length; i++) {
+      if (report.sources[i].fields === 0) { empty.push(report.sources[i].key); }
+    }
+    return { count: out.length, pairs: out, limits: official.util.kanshiSameKeyLimits,
+             /* **measured が名乗るのは「角度を突き合わせる相手が집まったか」までである。**
+                欄を保ったまま読みの本数が減る形(180本→3本)は真のまま通る=
+                この穴は台帳 CROSS-L2b に登録して開示した(点検役 中1)。
+                確かめている以上のことを名乗らない(#45) */
+             measured: report.fields.length > 0 && empty.length === 0,
+             sources: report.sources, emptySources: empty };
   }
 
   /** 上の測りが線の内側にあるか。**ぶつかる組は測ること**が条件で、
-      「ぶつかる組を作らない」道も同じ判定で通る(組が0なら問題も0)。 */
+      「ぶつかる組を作らない」道も同じ判定で通る(**測れたうえで**組が0なら問題も0)。
+
+      **測れなかったものは通さない**(cycle-0142・台帳 CROSS-L1)=measured が真だと
+      名乗っていないものはすべて問題として積む。**安全側は「捕まえる側」**なので、
+      measured の欄そのものが無い受け取り物(古い形の呼び出し)も測れていない扱いにする
+      =見分けを足したのに、欄を書かないだけで素通りできる形を残さないため。 */
   function crossAngleProblems(overlap) {
     var ov = overlap || crossAngleOverlap();
     var lim = ov.limits, problems = [], i;
+    if (ov.measured !== true) {
+      /* **分かることだけを言う**(cycle-0142 の点検役 中2)。それまでは
+         「読みを1本も返さなかった占術=kyusei」と断定していたが、実測では
+         kyusei は読みを18本返しており、引けなかったのは角度の表のほうだった
+         =次のサイクルを間違った場所へ送る文になっていた。
+         measured を名乗らなかっただけの受け取り物にも「1つも集められなかった」と
+         断定していたので、そちらも言い分けている。 */
+      problems.push('占術をまたぐ角度: 測れていない(' +
+        ((ov.emptySources && ov.emptySources.length)
+          ? '角度の表を持つ欄が1つも集まらなかった占術=' + ov.emptySources.join('・') +
+            '(読みが返らないのか、角度の表が引けないのかはここでは分からない)'
+          : '測れたと名乗っていない(角度の表を持つ欄が1つも集まらなかったか、' +
+            'measured の欄そのものが無い)') + ')');
+      return problems;      /* 測れていないものに線を当てない(数を作らない) */
+    }
     for (i = 0; i < ov.pairs.length; i++) {
       var p = ov.pairs[i];
       if (p.count === 0 || p.average === null) {
@@ -1564,6 +1625,8 @@
     /* cycle-0118(台帳 YOMI-L9)。占術をまたいで同じ角度を名乗る欄と、その重なり。
        6占術の角度の表が見えるのは合流点だけなので、ここに置く */
     angleFieldsAll: angleFieldsAll,
+    /* cycle-0142・台帳 CROSS-L1。占術ごとの内訳つき(「測れたか」の唯一の手がかり) */
+    angleFieldsReport: angleFieldsReport,
     crossAngleSharedMin: CROSS_ANGLE_SHARED_MIN,
     crossAngleCollisions: crossAngleCollisions,
     crossAngleOverlap: crossAngleOverlap,
