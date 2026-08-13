@@ -852,7 +852,37 @@
         + '・期限が読めない' + esc(dr.invalid_count) + '</p>';
     }
   }
-  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml);
+  /* TIDY-1(#75/#76):溜まっている作業の自動棚卸しの結果も、この欄の中に表として出す。
+     作りは上の due_review とそろえてある(値は build.js が tidy-check.js から毎ビルド
+     導出したものを並べるだけで、画面の側は数え方も判定も持たない)。
+     **通常の未着手作業(state:'open')は表に出さない**=棚卸しの対象ではないので、
+     出すと61行の一覧になってしまい「何を自動で閉じたのか」が読めなくなる。 */
+  var tr = d.tidy_review || null;
+  var trHtml = '';
+  if (tr) {
+    var trRows = (tr.rows || []).filter(function (r) { return r.state !== 'open'; });
+    var trLabel = {
+      closable: '閉じられます', keep: '<span class="kin">閉じません</span>',
+      measure: '<span class="kin">実測待ち</span>', problem: '<span class="ng">問題あり</span>',
+    };
+    trHtml = '<p style="margin-top:8px"><b class="sub" id="tidy-review-title">溜まっている作業の自動棚卸し</b></p>';
+    if (tr.error) {
+      trHtml += '<p class="ng">' + esc(tr.error) + '</p>';
+    } else if (trRows.length === 0) {
+      trHtml += '<p class="sub">自動で閉じてよい条件に当たる未完了の作業は0件です。'
+        + '(条件に当たる行は毎サイクルの棚卸しが自動で閉じます)</p>';
+    } else {
+      trHtml += table(['作業', '根拠', '状態', '見立て'], trRows.map(function (r) {
+        return [esc(r.id) + ' ' + esc(r.title), esc(r.ground),
+          trLabel[r.state] || esc(r.state), esc(r.reason)];
+      })) + '<p class="sub">対象' + esc(tr.total_count) + '件:閉じられます' + esc(tr.closable_count)
+        + '・閉じません' + esc(tr.keep_count)
+        /* 「実測待ち」は測れなかった側の状態なので内訳から落とさない(due_review と同じ) */
+        + '・実測待ち' + esc(tr.measure_count) + '・問題あり' + esc(tr.problem_count)
+        + '(棚卸しの対象でない通常の作業は' + esc(tr.open_count) + '件)</p>';
+    }
+  }
+  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml + trHtml);
 
   /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
