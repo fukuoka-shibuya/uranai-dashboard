@@ -364,16 +364,22 @@
 
   /* その起動の間だけのひかえ(D7)。localStorage へは書かない
      =「保存は利用者が選んだ時だけ」の条項に触れないため。
+     **中身は「中継役へ頼んでいる約束(Promise)」**で、返った値ではない
+     (cycle-0129・台帳 AI6-M2。返る前の2度目もこの1つに相乗りさせるため)。
      **ひかえるのは中継役から返った側だけ**で、戻り先の文はひかえない
      ——同じ見立て(25通り)には日の違う人がまとめて入るので、
      戻り先の文まで持つと**別の日の文**を出してしまう(戻り先は毎回その日の
      結果オブジェクトから作り直す) */
   var cache = {};
 
-  /** ひかえを空にする(検査と、画面を閉じたときのために持つ) */
+  /** ひかえを空にする。**呼んでいるのは検査だけ**(画面側は1度も呼ばない)。
+      画面から呼ぶ側へ倒さないこと=進行中の約束を捨てると、次の同じ見立てが
+      1回余計に送ることになり、1人1日5回の上限の観点では逆へ働く */
   function resetCache() { cache = {}; }
 
-  /** いまひかえている見立ての数(検査が「1入力1回」を数えるために持つ) */
+  /** いまひかえている見立ての数(検査が「1入力1回」を数えるために持つ)。
+      **進行中の約束も1件として数える**(cycle-0129 以降。ひかえへ入れるのが
+      返ってからではなく送った直後になったため) */
   function cacheSize() {
     var n = 0;
     for (var k in cache) { if (Object.prototype.hasOwnProperty.call(cache, k)) { n++; } }
@@ -406,27 +412,59 @@
 
     var key = digestKey(digest);
     if (Object.prototype.hasOwnProperty.call(cache, key)) {
-      var kept = cache[key];
-      return Promise.resolve(shape({
-        outcome: kept.outcome, usable: kept.usable, aiText: kept.aiText,
-        relayMessage: kept.relayMessage, reason: kept.reason, sent: false, cached: true
-      }, fallbackText, digest));
+      /* **ひかえているのは「返り」ではなく「進行中の約束そのもの」**
+         (cycle-0129・台帳 AI6-M2)。返った値だけをひかえる作りだと、
+         **返る前**にもう一度呼ばれた2度目はひかえに当たらずそのまま送ってしまい、
+         1人1日5回の上限をその分だけ早く食う(待ちの上限は20秒あるので、
+         その間に開き直せば起きる)。約束をひかえておけば、返る前の2度目は
+         **同じ1回に相乗りして**同じ返りを受け取る。
+         鍵は見立てだけなので、**相乗りする側は先に頼んだ側の送信口・待ちの上限に乗る**
+         (2度目に別の `opts` を渡しても効かない)。画面から呼ぶのは `opts` 無しの
+         1か所だけなので実害は無いが、検査を書くときは踏みやすい。 */
+      return cache[key].then(function (kept) {
+        return shape({
+          outcome: kept.outcome, usable: kept.usable, aiText: kept.aiText,
+          relayMessage: kept.relayMessage, reason: kept.reason, sent: false, cached: true
+        }, fallbackText, digest);
+      });
     }
 
-    return post.request(buildPayload(digest), options).then(function (out) {
-      var kept = {
+    /* 失敗した返りもひかえる=同じ見立てで何度も呼び直さない(1入力1回・D7) */
+    var pending = post.request(buildPayload(digest), options).then(function (out) {
+      return {
         outcome: out.outcome,
         usable: out.usable,
         aiText: out.usable ? out.text : '',
         relayMessage: out.relayMessage,
-        reason: out.reason
+        reason: out.reason,
+        sent: out.sent !== false
       };
-      /* 失敗した返りもひかえる=同じ見立てで何度も呼び直さない(1入力1回・D7) */
-      cache[key] = kept;
+    }, function () {
+      /* **ここで投げない**=この関数は例外を投げない約束(上の説明)。
+         `relay.request` も投げない作りだが、送信口ごと差し替えられた場合など
+         **約束の外側から壊れることはある**。そのときも投げずに「使えなかった」側へ倒す。
+         **ひかえが約束そのものになった以上、投げると相乗りしている2度目以降も
+         まとめて巻き添えになる**(壊れ方が1人ぶんでは済まない)ので、
+         受け止める位置はここ以外にない。
+         `sent` は **true** にする=中継役へ渡したあとのどこで壊れたのか分からない以上、
+         「送っていない」と名乗るのは言い過ぎで、1日の上限を数える側では
+         **送ったかもしれない側へ倒すほうが安全**だからである(#45)。 */
+      return {
+        outcome: 'unavailable', usable: false, aiText: '', relayMessage: '',
+        reason: '中継役へ頼む途中で処理そのものが壊れた', sent: true
+      };
+    });
+    /* ひかえへ入れるのは**送った直後・返る前**。この1行が then の中にあると
+       上の相乗りが効かない(それが AI6-M2 の形だった)。
+       壊れた返りもひかえたままにする=「失敗した返りもひかえる」(D7)と同じ扱いで、
+       同じ見立てで何度も呼び直さない */
+    cache[key] = pending;
+
+    return pending.then(function (kept) {
       return shape({
         outcome: kept.outcome, usable: kept.usable, aiText: kept.aiText,
         relayMessage: kept.relayMessage, reason: kept.reason,
-        sent: out.sent !== false, cached: false
+        sent: kept.sent, cached: false
       }, fallbackText, digest);
     });
   }
