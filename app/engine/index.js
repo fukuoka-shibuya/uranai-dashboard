@@ -628,6 +628,12 @@
     return !!obj && Object.prototype.hasOwnProperty.call(obj, name);
   }
 
+  /** 配列かどうか(受け取り物の形を確かめる判定で使う。**欄が無い・別の形で来た**を
+      「測れていない」へ倒すため。cycle-0143・台帳 CROSS-3) */
+  function isArray(v) {
+    return Object.prototype.toString.call(v) === '[object Array]';
+  }
+
   function guideFor(key, label) {
     var t = GUIDE[key];
     return (t && own(t, label)) ? t[label] : null;
@@ -1038,10 +1044,23 @@
     }
   };
 
-  /** 宿曜で読みを持つ欄の顔ぶれ。**表を書き写さず、角度の表の鍵から出す** */
+  /** 宿曜で読みを持つ欄の顔ぶれ。**読みの表の側から出す**(cycle-0143・台帳 CROSS-3)。
+      **cycle-0142 まではここが `SHUKU_ANGLE`(角度の表)を回していた。**そのため宿曜だけは
+      「読みを返す欄」と「角度の表を持つ欄」が同じ蛇口から出ており、**表から欄を丸ごと外すと
+      読みの側からも同時に消えて、下の angleRosterProblems にも掛からなかった**
+      (cycle-0143 の点検役 R1 の実測=`生まれの宿` の区画を消すと YOMI1-6 の表明が全部
+      緑のまま通り、画面には175字の読みが出続けたまま27本が黙って照合の外へ出た)。
+      **他の5占術はもともと値の表の側から出していた**ので、そろえたのは宿曜だけである。
+      顔ぶれは下の shukuYomiKeys が値を引く先とそろえる(生まれの宿= VALUE_NOTE、
+      宿の系統= official の型の一覧)。 */
   function shukuYomiFields() {
     var out = [], label;
-    for (label in SHUKU_ANGLE) { if (own(SHUKU_ANGLE, label)) { out.push(label); } }
+    for (label in VALUE_NOTE.sukuyo) {
+      if (own(VALUE_NOTE.sukuyo, label)) { out.push(label); }
+    }
+    if (official.util.shukuKeitouKeys && official.util.shukuKeitouKeys.length) {
+      out.push('宿の系統');
+    }
     return out;
   }
 
@@ -1353,7 +1372,16 @@
       =**「ぶつかっていない」と「測れなかった」が見分けられなかった**(台帳 CROSS-L1)。
       見分ける手がかりは**この関数の中にしか無い**(下流はもう欄しか見ていない)ので、
       ここで占術ごとの内訳を添える。**「6占術」という数は書かない**=下の sources の
-      顔ぶれそのものが母数で、占術が増減してもこの判定はついてくる。 */
+      顔ぶれそのものが母数で、占術が増減してもこの判定はついてくる。
+
+      **角度の表を持たない欄も捨てずに返す**(cycle-0143・台帳 CROSS-3)。
+      それまでは angle が引けない欄を黙って `continue` で落としていたので、
+      **角度の表から欄を丸ごと外すと、その欄はどこからも見えなくなった**
+      (cycle-0119 の点検役 M3 の実測:KYUSEI_ANGLE から honmei の区画を消しても
+      検査 YOMI1-6 は緑のまま通った。集めた側も、表の側から数えた側も、
+      **どちらも同じ angleOf を通っていた**ので同時に1件減って必ず一致したためである)。
+      落とさずに `exempt` として返せば、**読みは返っているのに角度の表が無い欄**が
+      名前で見える=下の angleRosterProblems が外から渡された顔ぶれと突き合わせる。 */
   function angleFieldsReport() {
     var sources = [
       { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: kanshiYomiTextsAll },
@@ -1363,9 +1391,10 @@
       { key: 'sukuyo', angleOf: shukuAngleOf, texts: shukuYomiTexts },
       { key: 'seimei', angleOf: seimeiAngleOf, texts: seimeiYomiTexts }
     ];
-    var out = [], tally = [], s, i;
+    var out = [], skipped = [], tally = [], s, i;
     for (s = 0; s < sources.length; s++) {
-      var texts = sources[s].texts(), byField = {}, before = out.length;
+      var texts = sources[s].texts(), byField = {}, before = out.length,
+          beforeSkip = skipped.length;
       for (i = 0; i < texts.length; i++) {
         var field = texts[i].at.slice(0, texts[i].at.indexOf('/'));
         if (!own(byField, field)) { byField[field] = []; }
@@ -1374,14 +1403,68 @@
       for (var f in byField) {
         if (!own(byField, f)) { continue; }
         var angle = sources[s].angleOf(f);
-        if (!angle) { continue; }              /* 角度の表を持たない欄は対象外 */
+        if (!angle) {
+          /* 角度の表を持たない欄。**黙って落とさず名前で残す**(台帳 CROSS-3) */
+          skipped.push({ key: sources[s].key, field: f, texts: byField[f].length });
+          continue;
+        }
         out.push({ key: sources[s].key, field: f, must: angle.must,
                    desc: angle.desc, texts: byField[f] });
       }
       tally.push({ key: sources[s].key, texts: texts.length,
-                   fields: out.length - before });
+                   fields: out.length - before,
+                   exempt: skipped.length - beforeSkip });
     }
-    return { fields: out, sources: tally };
+    return { fields: out, exempt: skipped, sources: tally };
+  }
+
+  /** **角度の表を持たない欄の顔ぶれ**が、外から渡された顔ぶれとちょうど一致するか
+      (cycle-0143・台帳 CROSS-3)。
+
+      **なぜ外から渡すか**:これがこの判定のすべてである。angleFieldsReport が集める側も、
+      角度の表の側から数える側も、**どちらも同じ angleOf を通る**ので、表から欄を丸ごと
+      外すと両側が同時に1件減って必ず一致し、検査は緑のまま通っていた(cycle-0119 の
+      点検役 M3)。**出どころを分ける**=角度の表を通らない側(読みを返す texts の側)から
+      欄を集め、その中で角度が引けなかったものを、**実装の外に置いた顔ぶれ**と突き合わせる。
+      表から欄を外すと、その欄は読みを返したまま exempt へ移るので顔ぶれが1件増えて落ちる。
+
+      **免除の顔ぶれは実装が持たない**=実装の中に置くと、表から外すときに同じ人が同じ
+      ファイルで両方を直せてしまい、出どころを分けた意味が無くなる。渡し手は
+      tests/yomi.spec.js の EXEMPT_ANGLE_FIELDS で、1件ずつ「なぜ角度の表が要らないか」を
+      確かめている検査の名前を添えてある(値の顔ぶれが他の欄と重ならない=同じ画面に
+      同じ値が二度出ない欄には、書く角度を分ける必要がそもそも無い)。
+
+      **受け取り物が欄を名乗らない形も捕まえる側へ倒す**(cycle-0142 の measured と同じ扱い)
+      =exempt の欄そのものが無い受け取り物は「測れていない」として積む。 */
+  function angleRosterProblems(report, expectedExempt) {
+    var problems = [], i, at;
+    if (!report || !isArray(report.exempt) || !isArray(report.fields)) {
+      problems.push('角度の表の点検: 測れていない(集めた結果が角度の表を持たない欄を名乗っていない)');
+      return problems;
+    }
+    if (!isArray(expectedExempt)) {
+      problems.push('角度の表の点検: 測れていない(突き合わせる顔ぶれが渡されていない)');
+      return problems;
+    }
+    var actual = [], want = [];
+    for (i = 0; i < report.exempt.length; i++) {
+      actual.push(report.exempt[i].key + '/' + report.exempt[i].field);
+    }
+    for (i = 0; i < expectedExempt.length; i++) { want.push('' + expectedExempt[i]); }
+    for (i = 0; i < actual.length; i++) {
+      if (want.indexOf(actual[i]) < 0) {
+        at = actual[i];
+        problems.push(at + ': 読みは返っているのに角度の表が引けない' +
+          '(表から欄が外れたか、免除の顔ぶれに足し忘れている)');
+      }
+    }
+    for (i = 0; i < want.length; i++) {
+      if (actual.indexOf(want[i]) < 0) {
+        problems.push(want[i] + ': 角度の表が要らない欄として挙がっているが、' +
+          'いまは表を持つか読みを返していない(免除の顔ぶれを見直すこと)');
+      }
+    }
+    return problems;
   }
 
   /** 欄だけが要るときの入口(検査も下流も長くこちらを呼んでいる)。
@@ -1627,6 +1710,9 @@
     angleFieldsAll: angleFieldsAll,
     /* cycle-0142・台帳 CROSS-L1。占術ごとの内訳つき(「測れたか」の唯一の手がかり) */
     angleFieldsReport: angleFieldsReport,
+    /* cycle-0143・台帳 CROSS-3。角度の表から欄を丸ごと外す壊れ方を捕まえる。
+       突き合わせる顔ぶれは**実装の外**(tests/yomi.spec.js)から渡す */
+    angleRosterProblems: angleRosterProblems,
     crossAngleSharedMin: CROSS_ANGLE_SHARED_MIN,
     crossAngleCollisions: crossAngleCollisions,
     crossAngleOverlap: crossAngleOverlap,
