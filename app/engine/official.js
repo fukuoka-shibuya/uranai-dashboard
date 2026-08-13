@@ -1108,6 +1108,7 @@
       sets.push({ at: texts[i].at, map: g, keys: keys });
     }
     var sum = 0, pairs = 0, max = 0, worst = '';
+    var maxLong = 0, worstLong = '';
     for (i = 0; i < sets.length; i++) {
       for (j = i + 1; j < sets.length; j++) {
         /* 短いほうを分母にする。長い本と短い本を比べたとき、短い本が丸ごと
@@ -1122,9 +1123,22 @@
         var ratio = (small.keys.length === 0) ? 0 : shared / small.keys.length;
         sum += ratio; pairs++;
         if (ratio > max) { max = ratio; worst = a.at + ' と ' + b.at; }
+        /* cycle-0140・台帳 PLACE-2:**長いほうを分母にした同じ数**も併せて返す。
+           上の max は「短い本が相手に丸ごと入っているか」を見るので、長さの
+           そろった読みどうし(180字前後)には効くが、**長さが桁で違う組では
+           必ず 1.0 近くへ出る**。正式(170字ほど)と仮(30字ほど)の組がそれで、
+           仮の1文を正式の書き出しに使った欄は写しでなくても 75% と出る。
+           長いほうを分母にすると問いが裏返り「**長い本のほうが、短い本だけで
+           出来ていないか**」を見ることになる=正式の読みが仮の1文の焼き直しに
+           なっていないか、という本来見たい形になる。
+           **測り方は1か所のまま**で、分母を替えた数を足しただけである
+           (計算そのものは呼ばない=結果値には一切効かない measuring 用の関数) */
+        var ratioLong = (big.keys.length === 0) ? 0 : shared / big.keys.length;
+        if (ratioLong > maxLong) { maxLong = ratioLong; worstLong = a.at + ' と ' + b.at; }
       }
     }
-    return { pairs: pairs, average: (pairs === 0) ? null : sum / pairs, max: max, worst: worst };
+    return { pairs: pairs, average: (pairs === 0) ? null : sum / pairs, max: max, worst: worst,
+             maxLong: maxLong, worstLong: worstLong };
   }
 
   function kanshiRepetitionOf(texts) {
