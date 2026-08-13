@@ -223,21 +223,91 @@
     { re: /グループ/, name: 'グループ' },
     { re: /のしるし/, name: 'しるし' }
   ];
+
+  /* 禁止表現の**かな書き**(工程6・cycle-0127)。
+     上の `BANNED` は漢字の形しか持たないため、中継役の先のモデルが
+     「かならず」「ぜったい」とかなで書いた文が**そのまま画面へ出ていた**
+     (実測=13通りの見本のうち11通りが門を素通りした)。
+     これは攻撃を想定した話ではなく、**日本語をかなで書くのはごく普通のこと**
+     なので、起こりにくい抜け道ではない。
+
+     一覧は上の `BANNED` の**漢字の語から読みを起こしたもの**で、
+     取りこぼしは tests/ai-screen.spec.js の GATE6-2 が
+     「`BANNED` の各行に読みの行があるか、無いなら理由が書いてあるか」で見る。
+
+     **かなにしない語がある**=かなで書くと別の意味になってしまう語は入れない。
+     「のろい」(呪い/鈍い)・「かくじつ」(確実)のように、
+     ふつうの文で使われる語を止めると**中継役の文が理由もなく捨てられる**ためで、
+     このときは語を絞った形(「のろわれ」)にするか、読みを置かない。
+
+     **`JARGON_SCREEN`(画面に出さない語)にはかな書きを足していない。**
+     これは足し忘れではなく決めたことである=あちらの読みは
+     「はしら」「くみ」「けいとう」「ばん」「ていい」のように
+     **ふつうの日本語の語と同じ形**になるものが多く、一律にかなを止めると
+     中継役の文がまともな理由なく捨てられる。あちらは断定・恐怖ではなく
+     **言葉づかいの揃え**が目的(#51)なので、取りこぼしても読み手が傷つく形にはならない。
+     したがって `JARGON_SCREEN` はならした文に当てるところまでとし、
+     かな書きの取りこぼしは**残っている**(実測=「はしら」「ごぎょう」は素通りする)。
+     この限りは台帳 GATE-L1 に残す。 */
+  var BANNED_KANA = [
+    /* 断定・的中 */
+    /かならず/, /カナラズ/, /ぜったい/, /ゼッタイ/,
+    /* かなと漢字は混ざる(「うんめいは決まって」)ので、受けは両方を見る */
+    /うんめい(が|は).{0,4}(決ま|きま)/, /てきちゅう/,
+    /* 恐怖 */
+    /のろわれ/, /たたり|たたられ/, /ふこう(に|な|が|を)/, /わざわい/, /じごく/,
+    /* 依存誘発 */
+    /ここでしか/, /あなただけに/
+  ];
   /* 門の一覧ここまで */
 
   /* 中継役の返りが空でないのに門で止まったとき、なぜ止めたかを画面に出さない
      ——止めた語をそのまま出せば、禁じた語が画面に出てしまう。理由は返り値の
      `blocked`(語の呼び名だけ)に残し、画面へは出さない */
+  /* 門に当てる前に文をならす(工程6・cycle-0127)。
+     語の途中に1文字はさむだけで門を素通りできたため
+     (「必 ず」「必\nず」「必・ず」「必<ゼロ幅空白>ず」の4通りを実測)、
+     **字と字の間に入りうるもの**を落としてから当てる。落とすのは
+     空白(半角・全角・タブ・改行)・ゼロ幅と制御文字・中点と読点まわりの区切り記号だけで、
+     **文字そのものは足しも減らしもしない**。
+     NFKC は全角と半角の書き分け(「必ず」)をそろえるために先に通す。
+
+     ならした文は**門に当てるためだけ**に使い、画面へ出すのは元の文である
+     (こちらで文を書き替えて出すと、中継役が書いた文とは別のものになる)。
+     ならす前とならした後の**両方**に当てて、どちらかが当たれば止める
+     =ならす操作で当たらなくなる形があっても取りこぼさないため(安全側)。 */
+  function normalizeForGate(text) {
+    var body = String(text);
+    if (typeof body.normalize === 'function') { body = body.normalize('NFKC'); }
+    /* 空白・ゼロ幅・制御文字・字間に挟まりやすい区切り記号を落とす。
+       **目に見えない文字は番号で書く**=見た目では確かめられないため */
+    return body
+      .replace(/[\s\u3000]/g, '')                          /* 空白・改行・全角空白 */
+      .replace(/[\u200b-\u200f\u2060\ufeff\u00ad]/g, '')  /* ゼロ幅・語結合子・書字方向 */
+      .replace(/[\u0000-\u001f\u007f]/g, '')               /* 制御文字 */
+      .replace(/[\u30fb\uff65\u00b7\u2027.,\-_~*]/g, '');  /* 中点・区切り記号 */
+  }
+
   function screenProblems(text) {
     var body = typeof text === 'string' ? text : '';
     var problems = [];
     var i;
     if (body.trim() === '') { return ['文が空']; }
+    var flat = normalizeForGate(body);
     for (i = 0; i < BANNED.length; i++) {
-      if (BANNED[i].test(body)) { problems.push('禁止表現(' + BANNED[i].source + ')'); }
+      if (BANNED[i].test(body) || BANNED[i].test(flat)) {
+        problems.push('禁止表現(' + BANNED[i].source + ')');
+      }
+    }
+    for (i = 0; i < BANNED_KANA.length; i++) {
+      if (BANNED_KANA[i].test(body) || BANNED_KANA[i].test(flat)) {
+        problems.push('禁止表現のかな書き(' + BANNED_KANA[i].source + ')');
+      }
     }
     for (i = 0; i < JARGON_SCREEN.length; i++) {
-      if (JARGON_SCREEN[i].re.test(body)) { problems.push('画面に出さない語(' + JARGON_SCREEN[i].name + ')'); }
+      if (JARGON_SCREEN[i].re.test(body) || JARGON_SCREEN[i].re.test(flat)) {
+        problems.push('画面に出さない語(' + JARGON_SCREEN[i].name + ')');
+      }
     }
     return problems;
   }
@@ -395,7 +465,9 @@
     buildPayload: buildPayload,
     fallbackTextOf: fallbackTextOf,
     BANNED: BANNED,
+    BANNED_KANA: BANNED_KANA,
     JARGON_SCREEN: JARGON_SCREEN,
+    normalizeForGate: normalizeForGate,
     UI_TEXT: UI_TEXT,
     screenProblems: screenProblems,
     passesGate: passesGate,
