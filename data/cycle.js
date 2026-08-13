@@ -1,8 +1,8 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0138",
-  "cycle_label": "サイクル 0138",
-  "generated_at": "2026-08-14T01:44:08+09:00",
+  "cycle_id": "cycle-0139",
+  "cycle_label": "cycle-0139",
+  "generated_at": "2026-08-14T03:19:56+09:00",
   "status": "OK",
   "overall": {
     "phase": "天中殺の欄から「仕組みの説明」と「果たせない約束」を外す",
@@ -49,10 +49,6 @@ window.DASHBOARD_DATA = {
         "text": "ご指示 #75 の続き(【絶対に自動で閉じてはいけないもの】の「2.」の途中で切れています)が届いていないかを、毎サイクル冒頭で確認します"
       },
       {
-        "id": "SANMEI-8b",
-        "text": "日と年の3文目以降に同じ網を掛けるかを決めます。掛かるのは日64文・年98文ですが、**その数は「掛かる数」であって「直す対象の数」ではありません**。1文ずつ読んで実数を出し、0なら網を掛けない理由を実装の覚え書きへ残して閉じます"
-      },
-      {
         "id": "SEIMEI-L6",
         "text": "姓名判断で1字も数えられなかったときの見出しが、未入力のときと同じ「入力のご確認」になっています。何が起きたのかが見出しから分かる形へ直します"
       },
@@ -61,17 +57,16 @@ window.DASHBOARD_DATA = {
         "text": "画面に出ない仮計算の1文が、正式の読みの書き出しに丸ごと入っている9欄について、共通の線へそろえるか上限の表を残すかを決めます"
       }
     ],
-    "summary": "同じ二文字で欄をまたぐ組に「言い換えただけの写しに見える組」が残っていた件を片づけました。**いちばん大きかったのは、着手前に測り直したら台帳の「4組」が3組だったことです**——台帳の数は cycle-0080 の実測で、そのあと30サイクルぶんの書き替えが効いて動いていました。cycle-0136 の「29文が実測7文」と同じ形です。**もう1つ、今回自分で作った誤りを開示します**——結果値の突き合わせで最初に書いた走査は、入力の欄名を間違えていたため計算が一度も動いておらず、「差0件」という空振りの答えを2回続けて出しました。3回目に「欄を1つも作っていなければ止める」という空振り止めを先に置いてから数え直しています。"
+    "summary": "**台帳が名指ししていた「日64文・年98文」は、掛かる数であって違反の数ではありませんでした。**着手時に測り直すと 日64文・年100文(年は cycle-0138 の書き替えで動いていた=台帳の数が実測とずれるのは3回目)。1文ずつ読んで仕分けると、日は 例示の枠15・主語が読み手でない文18・可能形22 で行いの断定は9文、年は 主語が読み手でない文49・可能形12 で39文でした。**掛かる数が多いのは、月の状態の述語の一覧が「月の語彙」でできていて、年が同じ働きを別の語で述べる文(「その働きが目に留まります」)を拾えないため**で、主語が読み手ですらない文まで掛かっていました。そこで**月の網はそのまま広げませんでした。**そのうえで場面の条件が付いた文は直さず(cycle-0077 の線)、残った**持続・習慣の言い切り11文(日1・年10)**——「あなたはこう暮らしている」と事実として述べる形——だけを含み・状態の結びへ書き替え、そこだけを見る狭い網を日・年へ掛けました。"
   },
-  "task": "同じ二文字で欄をまたぐ「言い換えただけの写しに見える組」を書き直し、投資の場面に寄っていた2本を振り替える(台帳 SANMEI-6c・SANMEI-6e)",
+  "task": "算命学:日・年の欄にも「述語で分ける網」を掛けるかを、1文ずつ読んで決める(台帳 SANMEI-8b)",
   "acceptance": [
-    "**着手前に測り直す。**台帳は「4組」と書いているが、その数は cycle-0080 の実測なので、いまも4組なのかを先に数えること",
-    "同じ二文字の組で**25%以上の組が0組**になること(線そのものは動かさない)",
-    "書き直すのは**後ろの欄(年・月)の側**を、その欄の書く角度に沿った**別の場面**から",
-    "「持ち高」「相場」など投資の場面に寄った言い方が**走査で0件**になること(SANMEI-6e)",
-    "書き替えても 4部品+140字・「〜と見ます。」の結び・角度の語・言い切りの網 を保つこと",
-    "**書き替えたあとに4つの線すべてを測り直す**こと(欄ごと・混ぜて・同じ二文字の組・完全一致と20字の使い回し)",
-    "結果値が変わっていないことを、直前のコミットとの突き合わせで示すこと"
+    "日・年に月の網を当てたときに掛かる文数を、着手時に測り直して出す(台帳の数をそのまま使わない)",
+    "掛かった文を1文ずつ読み、直す対象(読み手の断定に読める文)の実数を出す",
+    "直す対象があれば含みへ書き替え、網を広げないならその理由を実装の覚え書きに残す",
+    "網を広げるなら、反証は「直す前の実物」から作る(網の形から見本を起こさない)",
+    "書き替えたら繰り返しを測り直し、4つの線の内側にあることを示す",
+    "結果値が算命学の note 以外に動いていないことを、直前のコミットとの突き合わせで示す"
   ],
   "comparison": {
     "headers": [
@@ -105,10 +100,9 @@ window.DASHBOARD_DATA = {
   "adopted_reason": "台帳が指定した道(後ろの欄を別の場面から書き直す)をそのまま取りました。**ただし着手前に測り直したところ、台帳の「4組」は3組でした**——台帳の数は cycle-0080 の実測で、そのあとの書き替えが効いて動いていたためです(台帳が挙げていた癸卯はいま 24.06% で線の内側にあります)。cycle-0136 で「29文」が実測7文だったのと同じ形なので、**台帳の数はそのまま使わず、着手前に必ず測り直す**という決まりを、この回でもう一度実行しました。",
   "rejected_reason": "線を動かす案・使い回しの線を16字へ下げる案・投資語を禁止語へ足す案は、いずれも取りませんでした。前の2つは「線ではなく文のほうを直す」というこの計画の決まりに反します。最後の1つは、一覧に足しても次は別の語で同じことが起きるためで、かわりに9語で180本を走査し、広がっていない(該当は2本の3か所だけ)ことを実測で確かめました。",
   "improvements": [
-    "算命学の同じ二文字で欄をまたぐ組のうち、25%以上の重なりがあった3組(day/year 庚寅・day/year 壬辰・day/month 庚子)を0組にした",
-    "前提知識の要る投資の言い方(相場・持ち高・値の振れ)が読みから消えた(9語で180本を走査して該当0件)",
-    "同じ二文字の組の最大の重なりが 26.11% から 24.87% へ、平均が 10.09% から 9.72% へ下がった",
-    "**結果値は1つも変わっていない**(直前のコミットと 339,552か所+総合占い786回を突き合わせ、差は算命学3欄の note 203件だけ)"
+    "算命学の日1本・年10本の読みから、持続・習慣を事実として言い切る形を外した(⑤文章重複減・⑥占術間の差の明確化ではなく、断定の解消)",
+    "日・年に狭い網(KANSHI_HABIT)を掛け、同じ形が戻らないようにした(⑧新テスト合格=SANMEI8b-1・8b-2・8b-1b)",
+    "繰り返しの最大が 27.32%→26.46% へ下がった(線35%。線は動かしていない)"
   ],
   "completed_features": [
     "起動イラスト(輪と点のCSS図形・3秒表示・タップでスキップ)",
@@ -881,12 +875,6 @@ window.DASHBOARD_DATA = {
       "plan": "いまの検査は条件の1つ目しか触らないので、2つ目を足しても反証0件のまま通ります"
     },
     {
-      "id": "SANMEI-8b",
-      "status": "未着手",
-      "title": "算命学・日と年の3文目以降にも同じ網を掛けるかを、1文ずつ読んで決める",
-      "plan": "cycle-0136 は月の欄にだけ網を掛けました。同じ網を日・年へ当てると日64文・年98文が掛かりますが、その大半は「〜する場面で力を出します。」のような**場面の例示**で、月に残っていた「前の晩に決めてから家を出ます。」のような暮らしぶりの断定とは形が違います。日は「生まれ持った芯」、年は「周りから見えやすい面」を述べる欄なので、場面の例示は「どんな場面でそれが出るか」という部品そのものであり、含みへ倒すとその部品が推量になってしまうおそれがあります。**掛かる数は直す対象の数ではない**ので、まず1文ずつ読んで実数を出します(月では手数え29文が実測7文でした)。数えた結果が0なら、網を掛けないと決めた理由を実装の覚え書きへ残して閉じます。"
-    },
-    {
       "id": "CROSS-L1",
       "status": "未着手",
       "title": "占術をまたぐ角度の照合で「ぶつかっていない」と「測れなかった」を判定そのものが見分けるようにする(点検役M2)",
@@ -1064,115 +1052,110 @@ window.DASHBOARD_DATA = {
   "tests": {
     "command": "node tools/run-tests.js tests/sanmei.spec.js tests/engine.spec.js tests/yomi.spec.js tests/wording.spec.js",
     "executed": true,
-    "passed": 268,
+    "passed": 271,
     "failed": 0,
     "count_basis": [
-      "2026-08-14T01:36:46+09:00"
+      "2026-08-14T03:14:34+09:00"
     ],
-    "duration": "01:36:46〜01:42:02(所要316秒・exit 0)",
+    "duration": "03:14:34〜03:19:49(所要315秒・exit 0)",
     "cases": [
       {
-        "name": "算命学の読み・6占術の読み・engine 全体・言葉づかい(1本にまとめて実行)",
-        "passed": 268,
+        "name": "算命学の読み・6占術の読み・engine 全体・言葉づかい",
+        "passed": 271,
         "failed": 0,
-        "note": "01:36:46〜01:42:02(所要316秒・exit 0)。268件合格・0件失敗・92件スキップです。**今回は検査を新しく置いていません**——書き替えたのは3本の読みの文章だけで、それを見張る網(4部品と140字・角度・言い切り・「逆に」の歯止め・4つの繰り返しの線)はすべて既にあり、書き替えた3本もその同じ網を通っています。**繰り返しの線を見ている SANMEI3-3・SANMEI4-3** が、今回下がった数(同じ二文字の組 平均 9.72%・最大 24.87%)を毎回測り直します。"
+        "note": "03:14:34〜03:19:49(所要315秒・exit 0)。271件合格・0件失敗・95件スキップです。**新しく置いた検査は3件**(SANMEI8b-1=日・年に持続・習慣の裸の言い切りが残っていないこと/SANMEI8b-2=月の網をそのまま広げていないこと=掛かる数と違反の数が別物であること/SANMEI8b-1b=反証。**直す前の実物11文をそのまま渡して11文とも捕まること**を見ます——網の形から見本を起こすと、網が知らない書き方は見本にも現れないためです)。**計算の照合(いちばん長いスイート)は走らせていません**=計算式・対応表・添字を1つも変えていないためで、かわりに直前のコミットとの結果値の突き合わせ(81,648欄)で確かめました。"
       }
     ],
-    "executed_at": "2026-08-14T01:42:02+09:00",
+    "executed_at": "2026-08-14T03:19:49+09:00",
     "recorded_runs": [
       {
-        "started_at": "2026-08-13T22:55:55+09:00",
-        "finished_at": "2026-08-13T23:01:03+09:00",
-        "duration_seconds": 309,
+        "started_at": "2026-08-14T03:06:38+09:00",
+        "finished_at": "2026-08-14T03:12:15+09:00",
+        "duration_seconds": 337,
         "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 0,
-        "passed": 193,
-        "failed": 0,
-        "skipped": 69,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-13T23:41:53+09:00",
-        "finished_at": "2026-08-13T23:46:00+09:00",
-        "duration_seconds": 247,
-        "command": "npx playwright test tests/sanmei.spec.js tests/engine.spec.js tests/yomi.spec.js",
         "exit_code": 1,
-        "passed": 241,
-        "failed": 1,
-        "skipped": 90,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-13T23:47:11+09:00",
-        "finished_at": "2026-08-13T23:51:24+09:00",
-        "duration_seconds": 253,
-        "command": "npx playwright test tests/sanmei.spec.js tests/engine.spec.js tests/yomi.spec.js",
-        "exit_code": 0,
-        "passed": 242,
-        "failed": 0,
-        "skipped": 90,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-13T23:52:07+09:00",
-        "finished_at": "2026-08-13T23:57:17+09:00",
-        "duration_seconds": 310,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 0,
-        "passed": 193,
-        "failed": 0,
+        "passed": 189,
+        "failed": 4,
         "skipped": 69,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-14T00:44:58+09:00",
-        "finished_at": "2026-08-14T00:45:00+09:00",
-        "duration_seconds": 3,
+        "started_at": "2026-08-14T03:12:23+09:00",
+        "finished_at": "2026-08-14T03:12:40+09:00",
+        "duration_seconds": 16,
+        "command": "npx playwright test tests/dashboard.spec.js --grep OC11",
+        "exit_code": 1,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-14T03:12:59+09:00",
+        "finished_at": "2026-08-14T03:12:59+09:00",
+        "duration_seconds": 0,
+        "command": "npx playwright test tests/dashboard.spec.js --grep OC11|OC8-2",
+        "exit_code": 255
+      },
+      {
+        "started_at": "2026-08-14T03:13:04+09:00",
+        "finished_at": "2026-08-14T03:13:20+09:00",
+        "duration_seconds": 16,
+        "command": "npx playwright test tests/dashboard.spec.js --grep OC11",
+        "exit_code": 0,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-14T03:13:23+09:00",
+        "finished_at": "2026-08-14T03:13:24+09:00",
+        "duration_seconds": 2,
+        "command": "npx playwright test tests/dashboard.spec.js --grep OC8-2",
+        "exit_code": 1,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 2,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-14T03:14:06+09:00",
+        "finished_at": "2026-08-14T03:14:07+09:00",
+        "duration_seconds": 1,
+        "command": "npx playwright test tests/dashboard.spec.js --grep OC8-2",
+        "exit_code": 0,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 2,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-14T03:14:20+09:00",
+        "finished_at": "2026-08-14T03:14:23+09:00",
+        "duration_seconds": 2,
         "command": "npx playwright test tests/sanmei.spec.js",
         "exit_code": 0,
-        "passed": 42,
+        "passed": 45,
         "failed": 0,
-        "skipped": 42,
+        "skipped": 45,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-14T00:45:09+09:00",
-        "finished_at": "2026-08-14T00:50:20+09:00",
-        "duration_seconds": 311,
-        "command": "npx playwright test tests/engine.spec.js tests/yomi.spec.js tests/wording.spec.js",
-        "exit_code": 0,
-        "passed": 226,
-        "failed": 0,
-        "skipped": 50,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-14T00:51:49+09:00",
-        "finished_at": "2026-08-14T00:57:01+09:00",
-        "duration_seconds": 312,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 0,
-        "passed": 193,
-        "failed": 0,
-        "skipped": 69,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-14T01:36:46+09:00",
-        "finished_at": "2026-08-14T01:42:02+09:00",
-        "duration_seconds": 316,
+        "started_at": "2026-08-14T03:14:34+09:00",
+        "finished_at": "2026-08-14T03:19:49+09:00",
+        "duration_seconds": 315,
         "command": "npx playwright test tests/sanmei.spec.js tests/engine.spec.js tests/yomi.spec.js tests/wording.spec.js",
         "exit_code": 0,
-        "passed": 268,
+        "passed": 271,
         "failed": 0,
-        "skipped": 92,
+        "skipped": 95,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
@@ -1185,10 +1168,8 @@ window.DASHBOARD_DATA = {
   },
   "failures": [],
   "unverified": [
-    "**「25%以上が0組」は、いまの3欄180本を測った結果です。**これから読みを書き替えるたびに動きうる数なので、「もう出ない」という意味ではありません。次に文章を触る回でも測り直してください",
-    "**同じ二文字の組で次に近いのは day/month 辛卯(24.87%)と day/month 丙午(24.24%)です。**線(30%)の内側ですが、25%までの余裕は 0.13 ポイントしかありません",
-    "**投資の言い方を数えた9語は、こちらが選んだ一覧です。**この9語に当たらない別の言い方が残っていないことまでは示せていません(語の一覧で見るかぎり、この限りは残ります)",
-    "**ご指示 #74 の合格条件1(公開中の画面でAI経由の文章が出ること)は、この回も未確認です。**中継役が受け付ける呼び出し元は公開先のURLだけで、手元からは必ず断られます(#74 で「仕様であり不具合ではない・手元での実測は不要」とのご説明があります)"
+    "ご指示 #74 の合格条件1(公開中の画面でAI経由の総合占いの文章が出ること)は、この回も**未確認**です。中継役が受け付ける呼び出し元は公開先のURLだけで、手元からは必ず断られます(#74 に「仕様であり不具合ではない・手元での実測は不要」とのご説明があります)。",
+    "**「直す対象は11文」は、こちらが1文ずつ読んで仕分けた判断です。**場面の条件が付いた文を直さない線はcycle-0077 が引いたものを引き継いでいますが、どこまでを「場面の条件」と見るかを機械で判じる道は無く、狭い網が見ているのは持続・習慣の目印を持つ文だけです。目印を持たない裸の言い切り(年「席の端で黙っている人へ先に近づき、用向きを引き出します。」など)は網の外に残っており、これは開示している穴です。"
   ],
   "denied_actions": [
     {
@@ -1226,6 +1207,11 @@ window.DASHBOARD_DATA = {
     "**次の定期報告の予定**:日報は前回の作成から24時間、戦略報告は7日が経過した時点で作成します(定期報告は作業ではないため、溜まっている作業の件数には含めていません)。"
   ],
   "recovery_history": [
+    {
+      "time": "03:0x",
+      "event": "cycle-0139:算命学の日・年へ「述語で分ける網」を広げるかを1文ずつ読んで決め、持続・習慣の言い切り11本を書き直した(台帳 SANMEI-8b)",
+      "detail": "**台帳の「日64文・年98文」は掛かる数であって違反の数ではなかった。**着手時に測り直すと日64文・**年100文**(年は cycle-0138 の書き替えで動いていた=台帳の数が実測とずれるのは cycle-0136「29文→7文」・cycle-0138「4組→3組」に続いて**3回目**)。164文を1文ずつ読んで仕分けると、日は 例示の枠「〜が当てはまります」15・主語が読み手でない文18・可能形22 で**行いの断定は9文**、年は 主語が読み手でない文49・可能形12 で**39文**だった。**掛かる数が多いのは、cycle-0136 で作った状態の述語の一覧が「月の語彙」でできていたため**で、年が同じ働きを別の語で述べる文(「その働きが目に留まります」「周りはその軽やかさに頼ります」)を拾えず、主語が読み手ですらない文まで掛かっていた。**走査で作った一覧は、その走査の範囲でしか正しくない。**そのうえで場面の条件が付いた文は直さず(cycle-0077 の線=「その場面ではこうなる」は人柄の断定ではない)、残った**持続・習慣の言い切り11文(日1・年10)**——「同じ帳面を毎日同じ形でつけ、当番を十年欠かしません。」のように「あなたはこう暮らしている」と事実として述べる形——だけを含み・状態の結びへ書き替えた。**月の網はそのまま広げていない**(広げると違反でない150文あまりを推量へ倒すことになり、ご指示 #58 の基準2の②と基準3を自分で壊す)。かわりに**持続・習慣だけを見る狭い網**(KANSHI_HABIT)を日・年へ掛けた。**目印は見つけた違反の文からだけ採り、採る途中で2つ取りこぼした**=(1)「欠かさ」では「欠か**し**ません」が漏れる(year/辛丑)ので「欠か[さし]」にした (2)「何年も」は目印にしない(year/甲辰「**何年も先**の形」は何年ものあいだではなく何年も先で習慣ではない=**走査には偽の当たりが混じる**。cycle-0080 の戒めを1件ずつ読んで外した)。**較正**=同じ網を月へ当てると0文(月は cycle-0136 で直してある)。この較正のおかげで、走査を書いた最初の版が輸出名を kanshiNounPred(実体は kanshiNounPredicate)と書き違えていたことに**その場で気づけた**(月が0にならなかった)。**走査を書くときは「答えの分かっている相手」を1つ混ぜること。**実測は 混ぜた180本 平均5.23%・**最大 27.32→26.46%(下がった)**、欄ごと 日6.60/年9.45/月8.10%、同じ二文字の組 平均9.77%・最大24.87%、完全一致0件・20字以上0か所で**4つの線すべての内側。線は1つも動かしていない**。結果値は直前のコミット ae04604 と **81,648欄(7,776件の結果)**を突き合わせ、差は算命学の年の干支 note 76・日の干支 note 22 の**98件だけ**(**値の差0件・総合占いの差0件**=66回)。検査は SANMEI8b-1・8b-2・8b-1b の3件を新設し、**反証は直す前の実物11文をそのまま渡して11文とも捕まること**を見る。**残る穴は開示する**=目印を持たない裸の言い切り(年「席の端で黙っている人へ先に近づき、用向きを引き出します。」)は網の外にあり、SANMEI8b-1b の (d) が toBe(0) で表明している。"
+    },
     {
       "time": "02:0x",
       "event": "cycle-0138:同じ二文字で欄をまたぐ「言い換えただけの写し」3組を書き直し、投資の場面に寄っていた2本を振り替えた(台帳 SANMEI-6c・SANMEI-6e)",
@@ -1979,9 +1965,9 @@ window.DASHBOARD_DATA = {
     }
   ],
   "queue_summary": {
-    "todo": 58,
+    "todo": 57,
     "in_progress": 1,
-    "done": 203,
+    "done": 204,
     "blocked": 1,
     "items": [
       {
@@ -2069,14 +2055,14 @@ window.DASHBOARD_DATA = {
       "measured": true,
       "count": 180,
       "average_pct": 5.2,
-      "max_pct": 27.3,
+      "max_pct": 26.5,
       "worst": "year/乙卯 と year/辛酉",
       "duplicate_count": 0,
       "long_run_count": 0,
       "limit_average_pct": 10,
       "limit_max_pct": 35,
       "population_average_pct": 56.1,
-      "population_max_pct": 79.7,
+      "population_max_pct": 79.1,
       "by_field": {
         "day": {
           "count": 60,
@@ -2088,9 +2074,9 @@ window.DASHBOARD_DATA = {
         "year": {
           "count": 60,
           "average_pct": 9.5,
-          "max_pct": 27.3,
+          "max_pct": 26.5,
           "worst": "year/乙卯 と year/辛酉",
-          "population_average_pct": 49.4
+          "population_average_pct": 49.3
         },
         "month": {
           "count": 60,
@@ -2103,7 +2089,7 @@ window.DASHBOARD_DATA = {
       "same_key": {
         "measured": true,
         "count": 180,
-        "average_pct": 9.7,
+        "average_pct": 9.8,
         "max_pct": 24.9,
         "worst": "day/month 辛卯",
         "limit_average_pct": 15,
@@ -2172,8 +2158,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "pending_count": {
-    "total": 59,
-    "todo": 58,
+    "total": 58,
+    "todo": 57,
     "in_progress": 1,
     "error": ""
   },
@@ -2185,7 +2171,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-14T01:43:12+09:00",
+    "last_heartbeat": "2026-08-14T03:19:12+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2200,7 +2186,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-14T01:44:08+09:00",
+    "checked_at": "2026-08-14T03:19:56+09:00",
     "rows": [
       {
         "id": "OC46-L6",
@@ -2248,7 +2234,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-14T01:44:08+09:00",
+    "checked_at": "2026-08-14T03:19:56+09:00",
     "rows": [
       {
         "id": "OC51b-L1",
@@ -2279,13 +2265,13 @@ window.DASHBOARD_DATA = {
     "keep_count": 3,
     "measure_count": 0,
     "problem_count": 0,
-    "open_count": 56,
+    "open_count": 55,
     "total_count": 3,
     "error": ""
   },
   "consistency": {
-    "checked_at": "2026-08-14T01:44:08+09:00",
-    "cycle_id": "cycle-0138",
+    "checked_at": "2026-08-14T03:19:56+09:00",
+    "cycle_id": "cycle-0139",
     "checks": [
       {
         "id": "C1",
