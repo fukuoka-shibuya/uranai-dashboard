@@ -374,27 +374,21 @@
             '同じ文' + r.duplicate_count + '件・丸ごとの使い回し(20文字以上そのまま重なる区間)' +
             r.long_run_count + 'か所。';
           /* cycle-0075(台帳 SANMEI-3b と点検役の指摘):混ぜて測る数だけでは見えない形が
-             あるので、欄ごとの数と、同じ二文字で欄をまたぐ組だけの数も併記する。
-             元の数え方(本数が増えるだけで上がるため線を掛けていない数)もここに出す。
-             どれも build.js が実体から導いた値で、無い報告書では何も足さない */
-          var bfr = r.by_field;
-          if (bfr && bfr.day && bfr.year && bfr.month) {
-            note.textContent += '欄ごとに測ると生まれ持った芯' + bfr.day.average_pct +
-              '%・周りから見えやすい面' + bfr.year.average_pct +
-              '%・ふだんの暮らしぶり' + bfr.month.average_pct +
-              '%(3欄を混ぜると欄の内側の似かよりが薄まるため別に出しています)。';
-          }
+             あるので、欄ごとの数・同じ二文字で欄をまたぐ組の数・元の数え方も開示する。
+             **cycle-0141(SANMEI-3b の残り)で、その内訳をこの一行から下の表へ移した**
+             =4通りの測り方が同じ文の中に並ぶと、どの数がどの母集団のものか読めなかった。
+             ここに残すのは見出しの数だけで、内訳は「お知らせ」欄の表が受け持つ */
+          /* 表は畳んだ欄の中にあるので、**線が掛かっているもう1つの数**(同じ二文字で欄を
+             またぐ組)は、畳んだままでも読めるようここにも残す(#61 の添え字と同じ考え方。
+             cycle-0141 の点検役 L4)。それ以外の内訳は表が受け持つ */
           var sk = r.same_key;
           if (sk && sk.measured) {
             note.textContent += '同じ二文字で欄をまたぐ組(' + sk.count + '組)は平均' +
               sk.average_pct + '%・最大' + sk.max_pct + '%(上限は平均' +
               sk.limit_average_pct + '%・最大' + sk.limit_max_pct + '%)。';
           }
-          if (typeof r.population_average_pct === 'number') {
-            note.textContent += '元の数え方(その文の言い回しのうち他の文にも出るものの割合)は平均' +
-              r.population_average_pct + '%・最大' + r.population_max_pct +
-              '%。この数は本数が増えるだけで上がるため上限は設けていません。';
-          }
+          note.textContent += 'そのほかの測り方ごとの内訳(欄ごと・元の数え方)は' +
+            '下の「お知らせ」欄の表にあります。';
         } else {
           note.textContent += '言い回しの反復率:まだ1本も無いので測っていません' +
             '(上限は平均' + r.limit_average_pct + '%・最大' + r.limit_max_pct + '%)。';
@@ -882,7 +876,110 @@
         + '(棚卸しの対象でない通常の作業は' + esc(tr.open_count) + '件)</p>';
     }
   }
-  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml + trHtml);
+  /* SANMEI-3b(#55):算命学の二文字の読みの反復率を、測り方ごとの表としてこの欄に出す。
+     **4通りの測り方があり、それぞれ母集団が違う**(3欄を混ぜたもの・欄ごと・
+     同じ二文字で欄をまたぐ組・元の数え方)ので、数だけを一行に並べると
+     どの数がどの母集団のものか読めない。表の「母集団」の列がそれを受け持つ
+     (**本数はここに書かない**=実体が変われば静かに古くなるため。点検役 L5)。
+     **元の数え方には上限の列に線を書かない**=cycle-0074(工程3)の実測で、この数は
+     文の出来が同じでも本数が増えるだけで上がることが分かり、固定の線を当てられない。
+     やめたのではなく、線を当てずに測り続けて開示する扱いである(docs/sanmei-kanshi-plan.md の5節)。
+     値は build.js の sanmeiYomiStatus() が official.js の実体から導いたものを並べるだけで、
+     画面の側は数え方も判定も持たない(#45。#61 の件数・#65 の設定・#71 の点検と同じ作り)。 */
+  var sy = d.sanmei_yomi || null;
+  var syHtml = '';
+  if (sy && typeof sy === 'object') {
+    var syPct = function (v) {
+      return (typeof v === 'number' && isFinite(v))
+        ? (String(v) + '%') : '<span class="ng">読み取れませんでした</span>';
+    };
+    var syNum = function (v, unit) {
+      return (typeof v === 'number' && isFinite(v))
+        ? (String(v) + unit) : '<span class="ng">読み取れませんでした</span>';
+    };
+    /* いちばん高い値は「値(その相手の名)」で出す。名が空の報告書では値だけを出す。
+       **相手は測り方によって「組」だったり「1本」だったりする**(2本どうしの重なりは組・
+       元の数え方は1本)ので、列名は「いちばん近い組」ではなく「いちばん高い値」にしてある
+       =cycle-0141 の点検役 R1。同じ列に組の数と1本の数が名前も無く並ぶと、読み手は
+       79.1% を「79%重なっている組がある」と受け取る(実際は1本の他の全部との共有率) */
+    var syWorst = function (v, worst) {
+      return syPct(v) + (worst ? '(' + esc(worst) + ')' : '');
+    };
+    /* 母集団は「何本を測ったか」と「そこから取れる組の数」の両方で書く。
+       **「180本」と「180組」は同じ規模ではない**(180本からは16110組が取れる)ので、
+       並べただけでは読み手が同じ規模と受け取る=点検役 M2 */
+    var syPop = function (count, pairs) {
+      return syNum(count, '本') +
+        ((typeof pairs === 'number' && isFinite(pairs)) ? '(' + pairs + '組)' : '');
+    };
+    var SY_FIELDS = [['day', '生まれ持った芯'], ['year', '周りから見えやすい面'],
+                     ['month', 'ふだんの暮らしぶり']];
+    syHtml = '<p style="margin-top:8px"><b class="sub" id="sanmei-yomi-title">' +
+      '算命学の二文字の読み:言い回しの反復率(測り方ごと)</b></p>';
+    var syR = sy.repetition || {};
+    if (sy.error) {
+      syHtml += '<p class="ng">' + esc(sy.error) + '</p>';
+    } else if (!syR.measured) {
+      syHtml += '<p class="sub">まだ1本も無いので測っていません。</p>';
+    } else {
+      var syRows = [];
+      var syLimit = '平均' + syPct(syR.limit_average_pct) + '・最大' + syPct(syR.limit_max_pct);
+      /* **行を出すかどうかは「その欄が報告書にあるかどうか」で決め、値が読めるかどうかでは
+         決めない**=値が null のときに行ごと消すと、「まだ測っていない」と「測れなかった」が
+         画面から区別できなくなる(#61 の件数・#71 の点検と同じ考え方。点検役 M4)。
+         古い報告書(その欄そのものを持たない)では従来どおり行を作らない */
+      var syHas = function (obj, key) {
+        return obj && Object.prototype.hasOwnProperty.call(obj, key);
+      };
+      /* (1) 線が掛かっている数=2本どうしの重なり(3欄を混ぜて) */
+      syRows.push(['2本どうしの重なり(3欄を混ぜて)', syPop(syR.count, syR.pairs),
+        syPct(syR.average_pct), syWorst(syR.max_pct, syR.worst), syLimit]);
+      /* (2) 同じ数を欄ごとに。混ぜると欄の内側の似かよりが薄まるので別に出す
+             (cycle-0075 の点検役の指摘。線そのものは混ぜた数に掛けてある) */
+      var syBF = syR.by_field;
+      if (syBF) {
+        SY_FIELDS.forEach(function (p) {
+          var b = syBF[p[0]];
+          if (!b) { return; }
+          syRows.push(['2本どうしの重なり(' + p[1] + 'だけ)', syPop(b.count, b.pairs),
+            syPct(b.average_pct), syWorst(b.max_pct, b.worst), '線は混ぜた数に掛けています']);
+        });
+      }
+      /* (3) 同じ二文字で欄をまたぐ組だけ。高ければ「角度を変えたつもりで言い換えただけ」。
+             **ここだけは母集団が最初から「組」**(3対×60通り)なので、本数は書かない */
+      var syK = syR.same_key;
+      if (syK) {
+        syRows.push(['同じ二文字で欄をまたぐ組', syNum(syK.count, '組'),
+          syPct(syK.average_pct), syWorst(syK.max_pct, syK.worst),
+          '平均' + syPct(syK.limit_average_pct) + '・最大' + syPct(syK.limit_max_pct)]);
+      }
+      /* (4) 元の数え方。上限の列には線を書かない(書けないことが工程3で分かった)。
+             いちばん高い値の相手は**組ではなく1本**なので、その本の名を添える */
+      var syNoLimit = '掛けていません(本数が増えるだけで上がるため)';
+      if (syHas(syR, 'population_average_pct')) {
+        syRows.push(['元の数え方(3欄を混ぜて)', syPop(syR.count, syR.pairs),
+          syPct(syR.population_average_pct),
+          syWorst(syR.population_max_pct, syR.population_worst), syNoLimit]);
+        if (syBF) {
+          SY_FIELDS.forEach(function (p) {
+            var b = syBF[p[0]];
+            if (!syHas(b, 'population_average_pct')) { return; }
+            syRows.push(['元の数え方(' + p[1] + 'だけ)', syPop(b.count, b.pairs),
+              syPct(b.population_average_pct),
+              syWorst(b.population_max_pct, b.population_worst), syNoLimit]);
+          });
+        }
+      }
+      syHtml += table(['測り方', '母集団', '平均', 'いちばん高い値', '上限'], syRows) +
+        '<p class="sub">「2本どうしの重なり」は、どれか2本を取り出したとき短いほうの言い回しの' +
+        'うち何割が相手にも出るかで、平均はその組すべての平均です(母集団の欄の括弧が組の数)。' +
+        '「同じ二文字で欄をまたぐ組」は、同じ二文字の日・年・月の3対だけを取り出したもので、' +
+        '書く角度が違う以上ここは低いはずです。「元の数え方」は、その本の言い回しのうち' +
+        '他のどれかの本にも出るものの割合で、**組ではなく1本ごとの数**です。本数が増えるだけで' +
+        '上がるため線は当てず、測って出すだけにしています。</p>';
+    }
+  }
+  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml + trHtml + syHtml);
 
   /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
