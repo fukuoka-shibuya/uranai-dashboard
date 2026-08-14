@@ -1435,9 +1435,29 @@
       同じ値が二度出ない欄には、書く角度を分ける必要がそもそも無い)。
 
       **受け取り物が欄を名乗らない形も捕まえる側へ倒す**(cycle-0142 の measured と同じ扱い)
-      =exempt の欄そのものが無い受け取り物は「測れていない」として積む。 */
-  function angleRosterProblems(report, expectedExempt) {
-    var problems = [], i, at;
+      =exempt の欄そのものが無い受け取り物は「測れていない」として積む。
+
+      ---- cycle-0144・台帳 CROSS-4 でここに足したこと ----
+
+      **(A) 免除の行は「裏づけの判定」を名前で持ち、その判定を実際に呼んで空であることまで見る。**
+      cycle-0143 まで、なぜその欄に角度の表が要らないのかは**検査の側のコメントの文字**でしか
+      添えられていなかった。文字は実体が変わっても書き替わらないので、**角度の表から欄を外した
+      あとに一覧へ1行足せば赤が消えた**(cycle-0143 の点検役 M2 の実測)。作りは #71 の
+      `due_condition`・#75 の `tidy_condition` と同じ=**名前で登録した判定にしか裏づけを
+      名乗らせない**。呼べない名前・空を返さない判定は「裏づけ済み」と数えず、
+      **「満たした」と「測れなかった」を必ず区別する**(閉じる側へ倒さない)。
+
+      **(B) 行の書き方は2通りを受ける**=`'占術/欄'` の文字だけの行と、
+      `{ at: '占術/欄', check: '判定の名前' }` の行。**文字だけの行は裏づけが無いので必ず積む**
+      =これが「裏づけの無い行を足しても赤が消えない」ことの本体である。
+
+      **(C) 診断の文を、実際に見ている範囲まで下げる**(cycle-0143 の点検役 L2)。
+      それまでは「いまは表を持つか読みを返していない」と2つの原因を1文で述べており、
+      **どちらなのかはこの判定が見ていない**のに読み手には見分けたように読めた。
+      いまは3通りを言い分ける=(1) 角度の表を持つようになった(report.fields に居る)
+      (2) 読みを1本も返していない(どちらにも居ない) (3) 裏づけの判定が呼べない(測れていない)。 */
+  function angleRosterProblems(report, expectedExempt, backings) {
+    var problems = [], i, at, row, name, got;
     if (!report || !isArray(report.exempt) || !isArray(report.fields)) {
       problems.push('角度の表の点検: 測れていない(集めた結果が角度の表を持たない欄を名乗っていない)');
       return problems;
@@ -1446,22 +1466,91 @@
       problems.push('角度の表の点検: 測れていない(突き合わせる顔ぶれが渡されていない)');
       return problems;
     }
-    var actual = [], want = [];
+    var actual = [], want = [], wantAt = [], angled = {};
     for (i = 0; i < report.exempt.length; i++) {
       actual.push(report.exempt[i].key + '/' + report.exempt[i].field);
     }
-    for (i = 0; i < expectedExempt.length; i++) { want.push('' + expectedExempt[i]); }
+    for (i = 0; i < report.fields.length; i++) {
+      angled[report.fields[i].key + '/' + report.fields[i].field] = true;
+    }
+    /* **行ごとに持つ**(cycle-0144 の点検役 中2)。はじめ欄の名前を鍵にした表へ畳んで
+       いたので、**同じ欄を2行書くと、あとの行が前の「文字だけの行」を上書きして**
+       両方が裏づけ済みとして通った(実測=['う/え', {at:'う/え',check:'ぬ'}] が空を返した)。
+       しかも順序で結果が変わった。行は行のまま見る。 */
+    for (i = 0; i < expectedExempt.length; i++) {
+      row = expectedExempt[i];
+      if (row && typeof row === 'object') {
+        want.push({ at: (typeof row.at === 'string' && row.at) ? row.at : null,
+                    check: (typeof row.check === 'string' && row.check) ? row.check : null });
+      } else {
+        want.push({ at: '' + row, check: null });
+      }
+    }
+    for (i = 0; i < want.length; i++) { if (want[i].at) { wantAt.push(want[i].at); } }
     for (i = 0; i < actual.length; i++) {
-      if (want.indexOf(actual[i]) < 0) {
-        at = actual[i];
-        problems.push(at + ': 読みは返っているのに角度の表が引けない' +
+      if (wantAt.indexOf(actual[i]) < 0) {
+        problems.push(actual[i] + ': 読みは返っているのに角度の表が引けない' +
           '(表から欄が外れたか、免除の顔ぶれに足し忘れている)');
       }
     }
     for (i = 0; i < want.length; i++) {
-      if (actual.indexOf(want[i]) < 0) {
-        problems.push(want[i] + ': 角度の表が要らない欄として挙がっているが、' +
-          'いまは表を持つか読みを返していない(免除の顔ぶれを見直すこと)');
+      at = want[i].at;
+      /* 欄を名乗らない行(点検役 軽微3)。'undefined' という欄名にしない */
+      if (!at) {
+        problems.push('免除の' + (i + 1) + '行目が欄を名乗っていない');
+        continue;
+      }
+      if (actual.indexOf(at) < 0) {
+        /* (C) 3通りを言い分ける。**この判定が実際に見ているのは居場所だけ**なので、
+           そこから言えることだけを述べる */
+        if (own(angled, at)) {
+          problems.push(at + ': 角度の表が要らない欄として挙がっているが、' +
+            'いまは角度の表を持っている(免除の顔ぶれから外すこと)');
+        } else {
+          problems.push(at + ': 角度の表が要らない欄として挙がっているが、' +
+            '読みを1本も返していない(欄そのものが無くなったか、名前が違っている)');
+        }
+      }
+      /* (A)(B) 裏づけ。**居場所が合っていても、裏づけが無ければ通さない** */
+      name = want[i].check;
+      if (!name) {
+        problems.push(at + ': 角度の表が要らない理由を確かめる判定が名前で添えられていない' +
+          '(裏づけの無い行は免除にしない)');
+        continue;
+      }
+      if (!backings || typeof backings[name] !== 'function') {
+        problems.push(at + ': 測れていない(裏づけの判定「' + name + '」が呼べない)');
+        continue;
+      }
+      try {
+        got = backings[name](at);
+      } catch (e) {
+        problems.push(at + ': 測れていない(裏づけの判定「' + name + '」が途中で止まった)');
+        continue;
+      }
+      /* **裏づけは「どの欄を見たか」を名乗る**(cycle-0144 の点検役 重大1)。
+         問題の一覧だけを返す形にしていたときは、**判定は自分の受け持ちの外については
+         構造上かならず空を返す**ので、登録された名前ならどれを名乗ってもよかった
+         (点検役の実測=角度の表から外した13欄 × 判定3つ = **39通りすべて緑**)。 */
+      if (!got || !isArray(got.covered) || !isArray(got.problems)) {
+        problems.push(at + ': 測れていない(裏づけの判定「' + name +
+          '」が、見た欄と問題の一覧を名乗らない)');
+        continue;
+      }
+      if (got.measured === false) {
+        problems.push(at + ': 測れていない(裏づけの判定「' + name + '」が何も測っていない)');
+        continue;
+      }
+      if (got.covered.indexOf(at) < 0) {
+        /* **受け持ちの外の判定の中身は、この欄の名で刷らない**(点検役 中3)=
+           見ていないものについては「見ていない」とだけ言う */
+        problems.push(at + ': 裏づけの判定「' + name + '」は、この欄を見ていない(見たのは ' +
+          (got.covered.length ? got.covered.join('・') : 'どの欄でもない') + ')');
+        continue;
+      }
+      if (got.problems.length) {
+        problems.push(at + ': 角度の表が要らない理由が、いまは成り立っていない' +
+          '(判定「' + name + '」: ' + got.problems.join(' / ') + ')');
       }
     }
     return problems;
