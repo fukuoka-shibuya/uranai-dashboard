@@ -998,7 +998,67 @@
         '(この行だけは「%」ではなく「組」に線が掛かります)。</p>';
     }
   }
-  add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml + trHtml + syHtml);
+  /* YOMI-N13(cycle-0148):**同じ画面に並ぶ組の重なり**を占術ごとの表として出す。
+     上の「算命学の…反復率」の表が読み1本どうしを混ぜて測るのに対し、こちらは
+     **一人の読み手の画面に実際に並ぶ2本**だけを取り出したものである。
+     この数は cycle-0145 以降ずっと報告書の**文章に手で書き写して**いた(#45 は数を
+     実体から導けと述べている)ので、build.js の yomiStatus() が運ぶ値を並べるだけにした。
+     **画面の側は数え方も判定も持たない**(#61 の件数・#65 の設定・#71 の点検と同じ作り)。
+     **帯の欄は「0組」と「線がまだ無い」を書き分ける**=has_near が偽の占術は帯そのものを
+     置いていないので、0組と書くと「近い組が無い」と読めてしまう(台帳 YOMI-N14 で広げる)。 */
+  var ss = (d.yomi_status && d.yomi_status.same_screen) || null;
+  var ssHtml = '';
+  if (Array.isArray(ss) && ss.length) {
+    var ssPct = function (v) {
+      return (typeof v === 'number' && isFinite(v))
+        ? (String(v) + '%') : '<span class="ng">読み取れませんでした</span>';
+    };
+    var ssNum = function (v, unit) {
+      return (typeof v === 'number' && isFinite(v))
+        ? (String(v) + unit) : '<span class="ng">読み取れませんでした</span>';
+    };
+    var ssRows = ss.map(function (r) {
+      /* 母集団は組の数。**線を引いたときの組の数と食い違っていれば、そう言う**
+         =母集団が動けば帯の線(◯組以下)はもう同じ意味を持たない(near_pairs_basis) */
+      var pop = ssNum(r.count, '組');
+      if (r.has_near && typeof r.near_pairs_basis === 'number' &&
+          r.near_pairs_basis !== r.count) {
+        pop += '<span class="ng">(線を引いたときは' + r.near_pairs_basis + '組・引き直す番です)</span>';
+      }
+      var near, limit = '平均' + ssPct(r.limit_average_pct) + '・最大' + ssPct(r.limit_max_pct);
+      if (r.has_near) {
+        near = ssNum(r.near_pairs, '組') + '(' + ssPct(r.near_threshold_pct) + '以上' +
+          ((typeof r.near_rate_pct === 'number' && isFinite(r.near_rate_pct))
+            ? '・組の' + r.near_rate_pct + '%' : '') + ')' +
+          ((r.near_rows && r.near_rows.length)
+            ? '<br><span class="sub">例: ' + esc(r.near_rows.slice(0, 2).join(' / ')) + '</span>' : '');
+        limit += '・帯' + ssNum(r.limit_near_count, '組以下');
+      } else {
+        near = '<span class="sub">帯は置いていません</span>';
+      }
+      return [esc(r.label || r.key), pop, ssPct(r.average_pct),
+              ssPct(r.max_pct) + (r.worst ? '<br><span class="sub">' + esc(r.worst) + '</span>' : ''),
+              near, limit];
+    });
+    /* 表そのものを id つきの箱に入れる=上の算命学の表にも「帯の中の組」の行があるので、
+       文字で引くと2つに当たる(検査が並び順に頼らずこの表だけを引けるようにする) */
+    ssHtml = '<p style="margin-top:8px"><b class="sub" id="same-screen-title">' +
+      '同じ画面に並ぶ組の重なり(占い6つ)</b></p>' +
+      '<div id="same-screen-box">' +
+      table(['占い', '母集団(組)', '平均', 'いちばん近い組', '帯の中の組', '上限'], ssRows) +
+      '</div>' +
+      '<p class="sub">一人の読み手の画面に並ぶ2本だけを取り出し、短いほうの言い回しのうち' +
+      '何割が相手にも出るかを測ったものです。「帯の中の組」は、線のすぐ下に近い組が' +
+      '何組ならんでいるかを数えたもので、平均は組が多いほど薄まり、' +
+      '「いちばん近い組」はその1組しか見ないため、**その下に何組並んでも' +
+      'どちらの数にも出ません**。帯を置いていない占いは、いまはその数を持ちません' +
+      '(0組ではありません)。なお帯は**近い組がいくつ並んでいるかを見るもの**であって、' +
+      '値の違う写しを先に見つける道具ではありません(いま帯に入っている組は、' +
+      '同じ値どうしが別の欄に並んだものです)。</p>';
+  }
+
+  add('お知らせ(確認だけ・対応は不要)',
+      list(d.notices) + lcHtml + drHtml + trHtml + syHtml + ssHtml);
 
   /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
