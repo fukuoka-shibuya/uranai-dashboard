@@ -1437,8 +1437,14 @@
         if (!own(byField, f)) { continue; }
         var angle = sources[s].angleOf(f);
         if (!angle) {
-          /* 角度の表を持たない欄。**黙って落とさず名前で残す**(台帳 CROSS-3) */
-          skipped.push({ key: sources[s].key, field: f, texts: byField[f].length });
+          /* 角度の表を持たない欄。**黙って落とさず名前で残す**(台帳 CROSS-3)。
+             `texts` は**本数**で、角度ありの行の `texts`(読みの配列)とは別物である
+             =この形は cycle-0143 から下流(YOMI1-6・CROSS-3)が数として読んでいるので
+             変えない。**読みの中身は `rows` として並べて持つ**(cycle-0160・台帳
+             CROSS-L2c)=角度の表を持たない欄にも本数の点検を掛けるために要る。
+             両方を持たせるのは冗長に見えるが、**片方へ寄せると下流の意味が黙って変わる**。 */
+          skipped.push({ key: sources[s].key, field: f,
+                         texts: byField[f].length, rows: byField[f] });
           continue;
         }
         out.push({ key: sources[s].key, field: f, must: angle.must,
@@ -1617,11 +1623,33 @@
 
       **「顔ぶれを渡されていない欄」は緑にしない**=満たしたと測れなかったを分ける
       (#71 の due_condition・#75 の tidy_condition と同じ扱い)。渡し手が欄を書き
-      忘れれば、その欄は通ったのではなく「測れていない」として積む。 */
+      忘れれば、その欄は通ったのではなく「測れていない」として積む。
+
+      ---- cycle-0160・台帳 CROSS-L2c でここに足したこと ----
+
+      **角度の表を持たない欄(exempt)も同じ点検に掛ける。**cycle-0158 のこの判定は
+      `report.fields`(=角度の表を持つ13欄)しか回しておらず、**角度の表を持たない8欄**
+      (算命学の中心の星10・本元の気5・天中殺の組6/数秘の数の性質3・数の重なり2/
+      西洋のエレメント4・三区分3/姓名判断の画の型9)は、exempt として名前では
+      集まっているのに**読みが何本あるかは誰も見ていなかった**=CROSS-L2b が塞いだ穴が
+      そっくり同じ形でこちら側に残っていた(角度の表に載せないことと、読みが減っても
+      よいことは別の話である)。
+
+      **なぜ「角度の表を持たない」と「見なくてよい」が混ざったか**:cycle-0143 の
+      CROSS-3 は exempt を**顔ぶれの照合のため**に作ったので、行が持っているのは
+      欄の名と本数だけだった。**名前だけ拾って中身を捨てた集まりは、次にそこを見たく
+      なったときに必ず作り直しになる。**この回で `rows`(読みの配列)を足した。
+
+      **判定そのものは1本のまま**=角度の有無で分岐せず、両方を同じ列に並べてから回す
+      (分岐させると、片方だけ緩めても検査は緑のまま通る=cycle-0142 の教訓)。 */
   function angleTextCountProblems(report, rosters) {
     var problems = [], i, j;
     if (!report || !isArray(report.fields)) {
       problems.push('読みの本数の点検: 測れていない(集めた結果が欄の一覧を名乗っていない)');
+      return problems;
+    }
+    if (!isArray(report.exempt)) {
+      problems.push('読みの本数の点検: 測れていない(集めた結果が角度の表を持たない欄を名乗っていない)');
       return problems;
     }
     if (!isArray(rosters)) {
@@ -1638,20 +1666,70 @@
       if (own(want, row.at)) { problems.push(row.at + ': 値の顔ぶれが二重に渡されている'); continue; }
       want[row.at] = row.values.slice();
     }
+    /* 角度を持つ欄と持たない欄を**同じ列へ並べてから**回す(角度の有無で分岐しない)。
+       角度なしの行の読みは `rows`。**rows を名乗らない行は緑にせず測れていないへ倒す**
+       =古い実装(cycle-0143〜0159)の exempt には rows が無いので、そこは通ったのでは
+       なく測れていないと言うのが正しい(#71 の due_condition と同じ扱い) */
+    var lanes = [];
     for (i = 0; i < report.fields.length; i++) {
-      var f = report.fields[i], at = f.key + '/' + f.field;
+      var fd = report.fields[i];
+      if (!fd || typeof fd.key !== 'string' || typeof fd.field !== 'string') {
+        problems.push('読みの本数の点検: 測れていない(角度の表を持つ欄が欄名を名乗っていない)');
+        continue;
+      }
+      if (!isArray(fd.texts)) {
+        problems.push(fd.key + '/' + fd.field +
+          ': 測れていない(角度の表を持つ欄の読みが渡されていない)');
+        seenAt[fd.key + '/' + fd.field] = true;
+        continue;
+      }
+      lanes.push({ key: fd.key, field: fd.field, rows: fd.texts, angled: true });
+    }
+    for (i = 0; i < report.exempt.length; i++) {
+      var ex = report.exempt[i];
+      if (!ex || typeof ex.key !== 'string' || typeof ex.field !== 'string') {
+        problems.push('読みの本数の点検: 測れていない(角度の表を持たない欄が欄名を名乗っていない)');
+        continue;
+      }
+      if (!isArray(ex.rows)) {
+        problems.push(ex.key + '/' + ex.field +
+          ': 測れていない(角度の表を持たない欄の読みが渡されていない)');
+        seenAt[ex.key + '/' + ex.field] = true;
+        continue;
+      }
+      lanes.push({ key: ex.key, field: ex.field, rows: ex.rows, angled: false });
+    }
+
+    for (i = 0; i < lanes.length; i++) {
+      var f = lanes[i], at = f.key + '/' + f.field;
+      if (own(seenAt, at)) { problems.push(at + ': 同じ欄が二度集まっている'); continue; }
       seenAt[at] = true;
       if (!own(want, at)) {
         problems.push(at + ': 測れていない(この欄の値の顔ぶれが渡されていない)');
         continue;
       }
       /* 読みが覆っている値。at は '欄/値' なので最初の '/' の右側を取る
-         (値の中に '/' は無いが、あっても欄名だけを落とす形にしておく) */
-      var covered = {}, dup = [];
-      for (j = 0; j < f.texts.length; j++) {
-        var s = String(f.texts[j].at), v = s.slice(s.indexOf('/') + 1);
+         (値の中に '/' は無いが、あっても欄名だけを落とす形にしておく)。
+
+         **中身の空いた読みを「覆えている」と数えない**(cycle-0160 の点検役 R1)。
+         cycle-0158 のこの判定は `at` が並んでいるかどうかだけを見ており、
+         **読みが空文字になった欄をそのまま緑で通していた**(点検役の実測=21欄のうち
+         10欄が空文字にしても捕まらなかった。算命学の干支3欄だけは kanshiYomiOf が
+         空を null に倒すので落ちていた)。**しかも cycle-0159 の GUARD1-2 は
+         「空でないことを確かめているのは YOMI1-8」と名指ししていた**=
+         名指しされた側が見ていない、という食い違いが1サイクルぶん残っていた。
+         見分け方は hasYomi・yomiItemOf と同じ(文字列で、長さがあること)。 */
+      var covered = {}, dup = [], empty = [];
+      for (j = 0; j < f.rows.length; j++) {
+        var s = String(f.rows[j].at), v = s.slice(s.indexOf('/') + 1),
+            t = f.rows[j].text;
+        if (typeof t !== 'string' || t.length === 0) { empty.push(v); continue; }
         if (own(covered, v)) { dup.push(v); }
         covered[v] = true;
+      }
+      if (empty.length) {
+        problems.push(at + ': 読みの中身が空の値がある(' + empty.slice(0, 5).join('・') +
+          (empty.length > 5 ? ' ほか' : '') + ')');
       }
       if (dup.length) { problems.push(at + ': 同じ値の読みが二度ある(' + dup.join('・') + ')'); }
       var missing = [], extra = [], list = want[at], has = {};
@@ -1676,7 +1754,7 @@
        CROSS-6 とは向きが違う=あちらは「読みが渡ってこない欄」を入口で見る */
     for (var at2 in want) {
       if (own(want, at2) && !own(seenAt, at2)) {
-        problems.push(at2 + ': 値の顔ぶれは渡されたのに、角度を持つ欄として集まっていない');
+        problems.push(at2 + ': 値の顔ぶれは渡されたのに、読みを返す欄として集まっていない');
       }
     }
     return problems;
