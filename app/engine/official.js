@@ -1925,6 +1925,19 @@
      平均と最大は KANSHI_SAMEKEY_LIMITS 1か所のままで、ここには持たない */
   var SANMEI_SCREEN_NEAR = { near_threshold: 0.23, near_count: 15, near_pairs_basis: 11300 };
   var KYUSEI_SCREEN_NEAR = { near_threshold: 0.15, near_count: 10, near_pairs_basis: 81 };
+  /* 数秘(cycle-0149・台帳 YOMI-N14/N16)。**帯の判定は実装の1か所(sameScreenProblems)へ
+     寄せる**と決めた(YOMI-N16)=cycle-0147 の九星と同じ道で、検査の側へ書き写さない。
+     実測の分布(228組・平均8.21%・最大18.24%)から下端を引いた=
+       18%以上=1組(=最大そのもの) / **15%以上=6組** / 14%以上=16組
+       → 18%より上は最大の1組だけ。14%より下は16組を超えて1組ずつ名前を読めなくなる。
+         **15%=6組**が読める大きさなので下端を 15% に置き、件数の線は実測6組へ
+         余裕を見て 10組(九星と同じ 1.6 倍ほど)。
+     **西洋12組・宿曜27組・姓名判断36組には帯を置かない**=一組が動くと平均が
+       西洋7.7・宿曜3.5・姓名判断2.5 ポイント動く(母集団が小さい)ので、
+       「線のすぐ下に組が並ぶ」形は平均か最大に必ず出る。帯が要るのは数秘だけで、
+       228組は一組が100%でも平均が0.4ポイントしか動かない=平均にも最大にも出ない。
+       (帯の要否は母集団ごとに判断してよい=cycle-0147 が九星について同じ判断をした) */
+  var SUUHI_SCREEN_NEAR = { near_threshold: 0.15, near_count: 10, near_pairs_basis: 228 };
 
   /* 平均・最大(共有)と帯(母集団ごと)を1つにまとめて返す。
      near を渡さなければ帯は無く、判定の側も帯を見ない(数を作らない) */
@@ -2651,35 +2664,16 @@
       **必ず同じ画面に並ぶ**=値が重ならないことは、同じ話が並ばない理由にならない
       (cycle-0086 の点検役 M1)。そこで西洋の seiyouSameScreenOverlap・宿曜の
       shukuSameScreenOverlap と同じ形で、**画面に実際に並ぶ2本の重なりを直接測る**。
-      線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。 */
-  function suuhiSameScreenOverlap() {
-    var seen = {}, rows = [], screens = suuhiScreens(), s, i, j;
-    for (s = 0; s < screens.length; s++) {
-      var fs = screens[s];
-      for (i = 0; i < fs.length; i++) {
-        for (j = i + 1; j < fs.length; j++) {
-          var a = fs[i], b = fs[j];
-          var at = a.field + '/' + a.value + ' × ' + b.field + '/' + b.value;
-          if (Object.prototype.hasOwnProperty.call(seen, at)) { continue; }
-          var t1 = suuhiYomiOf(a.field, a.value), t2 = suuhiYomiOf(b.field, b.value);
-          if (t1 === null || t2 === null) { continue; }
-          seen[at] = true;
-          var one = kanshiPairOverlapOf([{ at: 'a', text: t1 }, { at: 'b', text: t2 }]);
-          rows.push({ at: at, a: a.field, b: b.field, value: one.max });
-        }
-      }
-    }
-    if (rows.length === 0) {
-      return { measured: false, count: 0, average: null, max: null, worst: '',
-               rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
-    }
-    var sum = 0, max = 0, worst = '';
-    for (i = 0; i < rows.length; i++) {
-      sum += rows[i].value;
-      if (rows[i].value > max) { max = rows[i].value; worst = rows[i].at; }
-    }
-    return { measured: true, count: rows.length, average: sum / rows.length, max: max,
-             worst: worst, rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+      平均と最大の線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。
+      **cycle-0149・台帳 YOMI-N14/N16**:算命学・九星と同じ合流点 sameScreenOverlapOf を
+      通す形へそろえた=手で書いた同じ二重ループを4つ持たず、帯(SUUHI_SCREEN_NEAR)と
+      判定(sameScreenProblems)を1か所から引く。threshold は帯の下端の差し替え口で、
+      本文を1字も変えずに下端だけを動かすと帯の組数だけが動く(反証が示す)。 */
+  function suuhiSameScreenOverlap(threshold) {
+    return sameScreenOverlapOf(suuhiScreens(),
+      function (f) { return suuhiYomiOf(f.field, f.value); },
+      function (f) { return f.field + '/' + f.value; },
+      SUUHI_SCREEN_NEAR, threshold);
   }
 
   /** 角度の表から欄を外してよい条件(cycle-0118・台帳 YOMI-L10)。
@@ -4432,6 +4426,9 @@
       kyuseiScreenNear: { near_threshold: KYUSEI_SCREEN_NEAR.near_threshold,
                           near_count: KYUSEI_SCREEN_NEAR.near_count,
                           near_pairs_basis: KYUSEI_SCREEN_NEAR.near_pairs_basis },
+      suuhiScreenNear: { near_threshold: SUUHI_SCREEN_NEAR.near_threshold,
+                         near_count: SUUHI_SCREEN_NEAR.near_count,
+                         near_pairs_basis: SUUHI_SCREEN_NEAR.near_pairs_basis },
       sanmeiCoreFromIndexes: sanmeiCoreFromIndexes,
       sanmeiSameScreenOverlap: sanmeiSameScreenOverlap,
       sanmeiScreenFieldProblems: sanmeiScreenFieldProblems,
