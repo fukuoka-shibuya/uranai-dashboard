@@ -1251,14 +1251,22 @@
       var body = texts[k].text, prevShared = false;
       for (var p = 0; p + KANSHI_RUN_LIMIT <= body.length; p++) {
         var win = body.slice(p, p + KANSHI_RUN_LIMIT);
-        var shared = runs[win] > 1;
+        /* cycle-0156・台帳 SANMEI-6d:**この関数の中で `var shared` が二度宣言されていた。**
+           もう1つは上の「4連のうち他の本にも出るものの割合」を数える側(var shared = 0)で、
+           var は関数のいちばん外へ巻き上がるので**同じ1つの入れ物を、数を入れる用と
+           真偽を入れる用の二通りに使い回していた**。前段のループが完全に終わってから
+           後段へ入るため**いまの数に誤りは無い**(改名の前後で反復率のすべての数が
+           一字も変わらないことを実測してある)が、**片方のループへ手を入れた日に黙って
+           壊れる形**なので、真偽を持つこちらを isShared へ改名した。
+           (上の 1161 行の `var shared` は別の関数 kanshiPairOverlapOf のものなので触らない) */
+        var isShared = runs[win] > 1;
         /* 区間の始まりだけを1件として数える(続きは同じ1か所) */
-        if (shared && !prevShared) {
+        if (isShared && !prevShared) {
           longRunCount++;
           /* 見本は先頭5件だけ載せる。全部は載せないので件数を別に返す(黙って切り詰めない) */
           if (longRuns.length < 5) { longRuns.push(texts[k].at + ':' + win); }
         }
-        prevShared = shared;
+        prevShared = isShared;
       }
     }
 

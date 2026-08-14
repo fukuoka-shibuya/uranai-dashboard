@@ -1389,7 +1389,7 @@
       2か所に書くと、片方へ占術を足し忘れてもどちらの検査も緑のまま通る)。 */
   function yomiSources() {
     return [
-      { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: kanshiYomiTextsAll },
+      { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: sanmeiYomiTextsAll },
       { key: 'kyusei', angleOf: official.util.kyuseiAngleOf, texts: official.util.kyuseiYomiTexts },
       { key: 'suuhi', angleOf: official.util.suuhiAngleOf, texts: official.util.suuhiYomiTexts },
       { key: 'seiyou', angleOf: seiyouAngleOf, texts: seiyouYomiTexts },
@@ -1571,9 +1571,74 @@
     return angleFieldsReport().fields;
   }
 
-  /** 算命学の3欄の読み。official 側に texts をまとめる関数が無いので合流点で組む */
-  function kanshiYomiTextsAll() {
-    var out = [], f, i;
+  /** **集める側の入口で欄が丸ごと落ちる壊れ方**を捕まえる(cycle-0156・台帳 CROSS-6)。
+
+      angleRosterProblems(CROSS-3)が見るのは「合流点へ読みが渡ってきた欄」だけである
+      =角度が引けなかった欄を exempt として拾う作りなので、**そもそも読みが渡って
+      こない欄は、角度ありにも角度なしにも一度も現れない**。cycle-0155 まで算命学が
+      まさにその形で、6欄のうち3欄21本が集める側の入口で落ちたまま
+      `sanmei: texts=180 fields=3 exempt=0` と数えられていた。
+
+      **塞ぎ方は CROSS-3 と同じ=出どころを分ける。**集めた行から欄を数えると、
+      占術が丸ごと落ちても両側が同時に減って必ず一致する。**実装の外から顔ぶれを
+      受け取り**、渡ってこなかった欄と、顔ぶれに無いのに集まっている欄の**両向き**を
+      名指しする(片側だけの照合は「落ちた欄」は捕まえても「根拠の無い欄」は
+      捕まえない=#62 の教訓)。
+
+      **渡されなかったときは通さない**=「測れなかった」を緑にしない(#71 の
+      due_condition・#75 の tidy_condition と同じ扱い)。 */
+  function collectorRosterProblems(report, roster) {
+    var problems = [], got = [], i, at;
+    if (!report || !isArray(report.fields) || !isArray(report.exempt)) {
+      problems.push('集める側の点検: 測れていない(集めた結果が欄を名乗っていない)');
+      return problems;
+    }
+    if (!isArray(roster) || !roster.length) {
+      problems.push('集める側の点検: 測れていない(突き合わせる顔ぶれが渡されていない)');
+      return problems;
+    }
+    for (i = 0; i < report.fields.length; i++) {
+      got.push(report.fields[i].key + '/' + report.fields[i].field);
+    }
+    for (i = 0; i < report.exempt.length; i++) {
+      got.push(report.exempt[i].key + '/' + report.exempt[i].field);
+    }
+    for (i = 0; i < roster.length; i++) {
+      if (got.indexOf(roster[i]) < 0) {
+        problems.push(roster[i] +
+          ': 読みが合流点へ渡ってきていない(集める側の入口で落ちている)');
+      }
+    }
+    for (i = 0; i < got.length; i++) {
+      at = got[i];
+      if (roster.indexOf(at) < 0) {
+        problems.push(at + ': 顔ぶれに無い欄が集まっている(欄を足したら顔ぶれも直すこと)');
+      }
+    }
+    return problems;
+  }
+
+  /** 算命学の**6欄すべて**の読み。official 側に texts をまとめる関数が無いので合流点で組む。
+
+      **cycle-0156・台帳 CROSS-6 でここを直した。**それまでこの関数は名前のとおり
+      二文字3欄(`kanshiYomiOf`)だけを回しており、**算命学の残り3欄21本
+      (中心の星10・本元の気5・天中殺の組6)を一度も集めていなかった。**
+      実測は `sanmei: texts=180 fields=3 exempt=0` で、21本はどこにも出てこない。
+
+      **この3欄は角度の表(KANSHI_ANGLE)を持たない**ので、本来なら「角度の表が
+      要らない欄」= exempt として名前が出るはずだった。ところが**集める側の入口で
+      落ちていた**ため、角度の照合からも、免除の裏づけの照合(CROSS-4 の covered)
+      からも外れていた。cycle-0143 の CROSS-3 が塞いだのは「角度の表から欄を外すと
+      どこからも見えなくなる」形で、**同じ穴が集める側の入口に残っていた**
+      =あちらは「表から外れた欄」を拾う仕組みで、こちらは**そもそも読みが
+      渡ってこない**ので拾いようがない。
+
+      **塊の照合(SANMEI-6g)には同じ穴が無い**=あちらは `kanshiTailByField` を
+      借りており、official 側で二文字3欄と21本が既に1つへそろえてあったためである。
+      **同じ占術の読みを、検査ごとに別々の入口から集めていたことが原因**なので、
+      ここを6欄そろえて入口を1つにする。 */
+  function sanmeiYomiTextsAll() {
+    var out = [], f, i, at, cut;
     var fields = official.util.kanshiFields, keys = official.util.kanshiKeys;
     for (f = 0; f < fields.length; f++) {
       for (i = 0; i < keys.length; i++) {
@@ -1583,7 +1648,40 @@
         }
       }
     }
+    /* 残り3欄21本。`sanmeiStarTexts` は at を「欄名/値」で返すので、value は
+       そこから割って添える(下流は at・value・text の3つで受け取る形にそろえる) */
+    var stars = official.util.sanmeiStarTexts();
+    for (i = 0; i < stars.length; i++) {
+      at = stars[i].at;
+      cut = at.indexOf('/');
+      out.push({ at: at, value: at.slice(cut + 1), text: stars[i].text });
+    }
     return out;
+  }
+
+  /** 算命学で読みを持つ欄の顔ぶれと、その欄が取りうる値。
+      **どちらも上の集める側 1か所から導く**(西洋・姓名判断が VALUE_NOTE から
+      導いているのと同じ形)=別に一覧を持つと、集める側へ欄を足したときに
+      片方だけ古くなり、免除の裏づけが「見ていない欄を見た」と名乗れてしまう。 */
+  function sanmeiYomiFields() {
+    var out = [], seen = {}, texts = sanmeiYomiTextsAll(), i, f;
+    for (i = 0; i < texts.length; i++) {
+      f = texts[i].at.slice(0, texts[i].at.indexOf('/'));
+      if (!own(seen, f)) { seen[f] = true; out.push(f); }
+    }
+    return out;
+  }
+
+  /** その欄が取りうる値の顔ぶれ。**無い欄には値を作らず null を返す**
+      (seiyouYomiKeys・seimeiYomiKeys と同じ安全側) */
+  function sanmeiYomiKeys(field) {
+    var out = [], texts = sanmeiYomiTextsAll(), i;
+    for (i = 0; i < texts.length; i++) {
+      if (texts[i].at.slice(0, texts[i].at.indexOf('/')) === field) {
+        out.push(texts[i].value);
+      }
+    }
+    return out.length ? out : null;
   }
 
   /** 占術をまたいで角度がぶつかる組を返す(共有語つき)。
@@ -1898,6 +1996,12 @@
     seimeiAngleOf: seimeiAngleOf,
     seimeiAngleProblems: seimeiAngleProblems,
     seimeiSameScreenOverlap: seimeiSameScreenOverlap,
+    /* cycle-0156・台帳 CROSS-6。算命学6欄の読みと、その欄・値の顔ぶれ。
+       **免除の裏づけ(検査側の makeValueSetBacking)がここから欄と値を引く**ので、
+       集める側と裏づけの側が同じ1か所を通る */
+    sanmeiYomiTextsAll: sanmeiYomiTextsAll,
+    sanmeiYomiFields: sanmeiYomiFields,
+    sanmeiYomiKeys: sanmeiYomiKeys,
     /* cycle-0118(台帳 YOMI-L9)。占術をまたいで同じ角度を名乗る欄と、その重なり。
        6占術の角度の表が見えるのは合流点だけなので、ここに置く */
     angleFieldsAll: angleFieldsAll,
@@ -1906,6 +2010,9 @@
     /* cycle-0143・台帳 CROSS-3。角度の表から欄を丸ごと外す壊れ方を捕まえる。
        突き合わせる顔ぶれは**実装の外**(tests/yomi.spec.js)から渡す */
     angleRosterProblems: angleRosterProblems,
+    /* cycle-0156・台帳 CROSS-6。**集める側の入口で欄が丸ごと落ちる**壊れ方を捕まえる
+       (上は渡ってきた欄しか見ないので、渡ってこない欄はどちらにも現れない) */
+    collectorRosterProblems: collectorRosterProblems,
     crossAngleSharedMin: CROSS_ANGLE_SHARED_MIN,
     crossAngleCollisions: crossAngleCollisions,
     crossAngleOverlap: crossAngleOverlap,
