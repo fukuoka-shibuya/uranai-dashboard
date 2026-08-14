@@ -1554,6 +1554,113 @@
     return problems;
   }
 
+  /* cycle-0151・台帳 SANMEI-5e。**算命学の残り3欄=中心の星10・本元の気5・
+     天中殺の組6=21本には、繰り返しと言い切りの判定が掛かっていなかった。**
+     掛かっていたのは二文字の3欄180本だけで(kanshiAssertProblems と
+     kanshiPairOverlapOf の母集団はどちらも KANSHI_YOMI)、21本は
+     sanmeiSameScreenOverlap の「同じ画面に並ぶ組」としてしか測られていない
+     =**本どうしの重なりと、人柄の決めつけは一度も見ていなかった**。
+     同じ画面に並ぶ6欄のうち3欄だけが見張られている形だったので、読みを集める
+     1か所と判定をここへ置く。 */
+
+  /** 21本を表から集める。at は画面の欄名と値でそろえる(検査が画面の走査と
+      1本ずつ突き合わせられるようにするため=表だけが見張られて画面が別物、を作らない) */
+  function sanmeiStarTexts() {
+    var out = [], i, key;
+    for (i = 0; i < TEN_STAR.length; i++) {
+      out.push({ at: '中心の星/' + TEN_STAR[i], text: MAIN_STAR_NOTE[i] });
+    }
+    for (i = 0; i < GOGYO_NAME.length; i++) {
+      out.push({ at: '本元の気/' + GOGYO_NAME[i], text: GOGYO_NOTE[GOGYO_NAME[i]] });
+    }
+    for (i = 0; i < TENCHUSATSU.length; i++) {
+      key = TENCHUSATSU[i];
+      /* 画面の値は TENCHUSATSU の二文字に「天中殺」を足したもの(上の items の
+         組み立てと同じ形)。ここでもそろえておくと、検査が画面の走査と
+         欄名+値でそのまま突き合わせられる */
+      out.push({ at: '天中殺の組/' + key + '天中殺', text: TENCHUSATSU_NOTE[key] });
+    }
+    return out;
+  }
+
+  /** 21本の判定。**texts と limits を受け取れる形にしてあるのは反証のため**
+      =検査は本物の表だけでなく壊した見本も同じここへ通す(検査の側へ規則を
+      書き写さない=障害19)。省けば実物と実装の線を見る。
+
+      見るのは3つ。
+        (1) 21本が欠けずにそろっていること(表の穴を「重なりが小さい」と読ませない)
+        (2) 人柄の決めつけに読める言い切りが無いこと(180本と同じ yomiAssertProblemsOf。
+            位置で掛かる網=kanshiSentenceNetProblems は日・月の欄に限った決まりなので
+            この3欄へは持ち込まない)
+        (3) 2本どうしの重なりが線の内側にあること。**線は KANSHI_LIMITS をそのまま引く**
+            =この測り方(kanshiPairOverlapOf)は母集団の大きさで動かないので、
+            21本のために別の数を作らない(作れば「緩めた線」になる)
+
+      **帯(near_count)はここでは当てない。**あの線は 16110組(180本)の分布から
+      引いた数で、210組の母集団へ持ってくると意味が変わる(cycle-0150 で
+      「組数の線は、いま測った組数から出す」と決めたばかりである)。当てないことを
+      隠さず、欄ごとの数とあわせて docs/kobetsu-yomi-plan.md 13-h に書いてある。 */
+  function sanmeiStarProblems(texts, limits) {
+    var lim = limits || KANSHI_LIMITS;
+    var list = texts || sanmeiStarTexts();
+    var problems = [], seen = {}, i, rep, t;
+    var want = TEN_STAR.length + GOGYO_NAME.length + TENCHUSATSU.length;
+    /* **本数は渡された見本にも当てる**=当てないと「1本抜けた見本」を反証で
+       示せず、欠けを「重なりが小さくなった」と読ませる形が素通りする */
+    if (list.length !== want) {
+      problems.push('21本がそろっていない: ' + list.length + '本(表は ' + want + '本)');
+    }
+    for (i = 0; i < list.length; i++) {
+      t = String(list[i].text || '');
+      if (t === '') { problems.push(list[i].at + ': 読みが空'); continue; }
+      if (Object.prototype.hasOwnProperty.call(seen, t)) {
+        problems.push(list[i].at + ': ' + seen[t] + ' と丸ごと同じ文');
+      }
+      seen[t] = list[i].at;
+    }
+    problems = problems.concat(yomiAssertProblemsOf(list));
+    rep = kanshiPairOverlapOf(list);
+    if (rep.average === null) {
+      problems.push('2本どうしの重なりを測れない(' + list.length + '本)');
+    } else {
+      if (rep.average > lim.average) {
+        problems.push('2本どうしの重なりの平均が線を越えている: ' +
+          (rep.average * 100).toFixed(2) + '% > ' + (lim.average * 100) + '%');
+      }
+      if (rep.max > lim.max) {
+        problems.push('いちばん近い組が線を越えている: ' + rep.worst + ' ' +
+          (rep.max * 100).toFixed(2) + '% > ' + (lim.max * 100) + '%');
+      }
+    }
+    return problems;
+  }
+
+  /** 欄ごとの重なり(中心の星10・本元の気5・天中殺の組6)。**線は当てない**
+      =当てられる線がまだ無いためで、当てないことを黙らせないために数だけは
+      毎回出す。二文字の3欄に当てている 10% の外にある欄が2つあり(cycle-0151 の
+      実測=中心の星 14.56%・本元の気 14.46%)、**線を緩めて当てるのではなく
+      文のほうを直す**回を台帳 SANMEI-5j に置いた(cycle-0074 で決めた
+      「線を越えたら線ではなく文を直す」の順序どおり)。 */
+  function sanmeiStarByField() {
+    var groups = [
+      { label: '中心の星', count: TEN_STAR.length },
+      { label: '本元の気', count: GOGYO_NAME.length },
+      { label: '天中殺の組', count: TENCHUSATSU.length }
+    ];
+    var all = sanmeiStarTexts();
+    var out = [], g, i, mine, rep;
+    for (g = 0; g < groups.length; g++) {
+      mine = [];
+      for (i = 0; i < all.length; i++) {
+        if (all[i].at.indexOf(groups[g].label + '/') === 0) { mine.push(all[i]); }
+      }
+      rep = kanshiPairOverlapOf(mine);
+      out.push({ label: groups[g].label, count: mine.length, expected: groups[g].count,
+                 average: rep.average, max: rep.max, worst: rep.worst });
+    }
+    return out;
+  }
+
   /** 位置で掛かる網(欄ごと)を1か所に括る。texts は [{ at, text }]。
       **判定を渡せる形にしてあるのは反証のため**=検査は本物の表だけでなく
       壊した見本もこの同じ関数へ通す(検査の側へ規則を書き写さない=障害19)。
@@ -4472,6 +4579,12 @@
       /* 人柄の決めつけに読める言い切りの見分け方(cycle-0077・SANMEI-4c)。
          SANMEI4-4 はこの1か所を引き、検査の側に同じ見分け方を書き写さない */
       kanshiAssertProblems: kanshiAssertProblems,
+      /* cycle-0151(台帳 SANMEI-5e):算命学の残り3欄21本の読みと、その判定。
+         検査 SANMEI5e-1 と反証 SANMEI5e-1b が同じここを呼ぶ(規則も表も
+         検査の側へ書き写さない)。欄ごとの数は線を当てずに出すだけ */
+      sanmeiStarTexts: sanmeiStarTexts,
+      sanmeiStarProblems: sanmeiStarProblems,
+      sanmeiStarByField: sanmeiStarByField,
       /* cycle-0085(台帳 YOMI-2):規則を当てる部分だけを抜き出したもの。
          九星気学の18本は YOMI2-2 がここへ直接渡して同じ規則を通す */
       yomiAssertProblemsOf: yomiAssertProblemsOf,
