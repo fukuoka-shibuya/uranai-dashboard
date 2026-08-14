@@ -1734,26 +1734,47 @@
              worst: worst, rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
   }
 
+  /** 九星の画面の顔ぶれ(cycle-0146・台帳 YOMI-N9)。**値の側の理屈から出す**
+      =本命星は1〜9、月命星は getsumeiStarOf(本命星, 節月0〜11) で、寄せ木の式が
+      9 で割った余りを回るので本命星がどれでも9通りそろう=81通りがすべて実在する。
+      **机上の空論になっていないことは検査 YOMI2-6 が日付の走査で確かめる**
+      (数秘の YOMI3-6 と同じ作り)。 */
+  function kyuseiScreens() {
+    var out = [], h, g;
+    for (h = 1; h <= KYUSEI_NAME.length; h++) {
+      for (g = 1; g <= KYUSEI_NAME.length; g++) {
+        out.push([{ field: 'honmei', value: h }, { field: 'getsumei', value: g }]);
+      }
+    }
+    return out;
+  }
+
+  function kyuseiSameScreenOverlap() {
+    return sameScreenOverlapOf(kyuseiScreens(),
+      function (f) { return kyuseiYomiOf(f.field, f.value); },
+      function (f) { return f.field + '/' + KYUSEI_NAME[f.value - 1]; });
+  }
+
   /**
    * 算命学の三つの柱と、そこから導く中心の星・本元の気。
    * 結果画面(sanmeiOfficial)と総合占い(overallStancesOf)が同じ式を通るように、
    * 計算はこの一か所に置く(同じ式を二重に書かない。台帳 OC42-M3 と同じ方針)。
    */
-  function sanmeiCoreOf(b) {
-    /* 年干支:立春で年が替わる。立春の当日は新しい年として扱う(日単位) */
-    var solarYear = solarYearOf(b);
-    var yearIdx = mod(solarYear - 1984, 60);
+  /**
+   * 暦の添字(年干支の添字・節月の添字・日干支の添字)だけから三つの柱を起こす。
+   * **なぜ生年月日から切り離すか**(cycle-0146・台帳 YOMI-N9):同じ画面に並ぶ読みの
+   * 重なりを測るには、実在しうる画面をすべて起こす必要がある。生年月日を走査する道では
+   * 「その走査が 60×12×60 通りの全部に届いたか」を言えず、届かなかったぶんは黙って
+   * 測られない(狭めた走査は緑を偽る=障害19 と同じ形)。添字の側から回せば全部そろう。
+   * **式は1か所のまま**=生年月日から起こす sanmeiCoreOf もここを通る。
+   */
+  function sanmeiCoreFromIndexes(yearIdx, setsuIdx, dayIdx) {
     var yearKan = yearIdx % 10;
-
-    /* 節月:立春(寅月)から数えて、生まれた日を含む節月を探す */
-    var setsuIdx = setsuIndexOf(b, solarYear);
 
     /* 月干支:五虎遁。寅月の干は年干から決まる(甲己=丙・乙庚=戊・丙辛=庚・丁壬=壬・戊癸=甲) */
     var monthKan = mod(2 + (yearKan % 5) * 2 + setsuIdx, 10);
     var monthShi = mod(2 + setsuIdx, 12);
 
-    /* 日干支:万年暦準拠の60日周期 */
-    var dayIdx = mod(b.dayNo + DAY_KANSHI_OFFSET, 60);
     var dayKan = dayIdx % 10;
 
     return {
@@ -1765,6 +1786,18 @@
       /* 本元の気は日干の五行の添字(0=木 1=火 2=土 3=金 4=水) */
       gogyoIdx: KAN_GOGYO[dayKan]
     };
+  }
+
+  function sanmeiCoreOf(b) {
+    /* 年干支:立春で年が替わる。立春の当日は新しい年として扱う(日単位) */
+    var solarYear = solarYearOf(b);
+    return sanmeiCoreFromIndexes(
+      mod(solarYear - 1984, 60),
+      /* 節月:立春(寅月)から数えて、生まれた日を含む節月を探す */
+      setsuIndexOf(b, solarYear),
+      /* 日干支:万年暦準拠の60日周期 */
+      mod(b.dayNo + DAY_KANSHI_OFFSET, 60)
+    );
   }
 
   /* 二文字の欄を1つ作る(cycle-0078・#55 の工程5)。
@@ -1844,6 +1877,133 @@
       items: items,
       provisional: false
     };
+  }
+
+  /* ====== 同じ画面に並ぶ読みどうしの重なり(cycle-0146・台帳 YOMI-N9)======
+
+     **なぜ要るか**:同じ画面に並ぶ2本を直接測る仕組みは、西洋(seiyouSameScreenOverlap)・
+     宿曜(shukuSameScreenOverlap)・姓名判断(seimeiSameScreenOverlap)・数秘
+     (suuhiSameScreenOverlap)には置いたが、**算命学と九星には無かった**
+     (cycle-0114 の点検役 L1)。この2占術がいままで持っていたのは
+       算命学 kanshiSameKeyOverlap = 同じ二文字の欄ちがい 180組
+       九星   kyuseiSameStarOverlap = 本命星と月命星が同じ星にそろう 9組
+     だけで、**どちらも同じ画面に並ぶ組のごく一部**である(算命学は6欄=どの画面にも
+     15組・九星は2欄=1組が並ぶ)。点検役の実測ではいずれも線の内側だったが、
+     **測っていない場所を「問題なし」と読まないため**に置く。
+     線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。 */
+
+  /** 画面の一覧から、**同じ画面に並ぶ2本の組**を重複なく取り出して重なりを測る。
+      算命学と九星が同じところを通る(占術ごとに同じ判定を書き写さない)。
+      組の名は「欄/値 × 欄/値」なので、同じ組が別の画面に何度並んでも1度だけ測る
+      (数秘の suuhiSameScreenOverlap と同じ数え方)。
+      読みが引けない欄は組を作らない=**「読みが無い」を0%の重なりとして混ぜない**。 */
+  function sameScreenOverlapOf(screens, textOf, nameOf) {
+    var seen = {}, rows = [], s, i, j;
+    for (s = 0; s < screens.length; s++) {
+      var fs = screens[s];
+      for (i = 0; i < fs.length; i++) {
+        for (j = i + 1; j < fs.length; j++) {
+          var t1 = textOf(fs[i]), t2 = textOf(fs[j]);
+          if (t1 === null || t1 === undefined || t2 === null || t2 === undefined) { continue; }
+          var at = nameOf(fs[i]) + ' × ' + nameOf(fs[j]);
+          if (Object.prototype.hasOwnProperty.call(seen, at)) { continue; }
+          seen[at] = true;
+          var one = kanshiPairOverlapOf([{ at: 'a', text: t1 }, { at: 'b', text: t2 }]);
+          rows.push({ at: at, a: fs[i].field, b: fs[j].field, value: one.max });
+        }
+      }
+    }
+    if (rows.length === 0) {
+      return { measured: false, count: 0, average: null, max: null, worst: '',
+               rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+    }
+    var sum = 0, max = 0, worst = '';
+    for (i = 0; i < rows.length; i++) {
+      sum += rows[i].value;
+      if (rows[i].value > max) { max = rows[i].value; worst = rows[i].at; }
+    }
+    return { measured: true, count: rows.length, average: sum / rows.length, max: max,
+             worst: worst, rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+  }
+
+  /** 算命学の画面に並ぶ6欄(欄・値・読み)を、暦の添字だけから組み立てる。
+      並びは結果画面(sanmeiOfficial の items)と同じ順にそろえてある。
+      **結果画面と別の蛇口になるので、ずれを機械で見分けられなければ意味が無い**
+      =下の sanmeiScreenFieldProblems が生年月日の走査で1欄ずつ突き合わせる。 */
+  function sanmeiFieldsOf(core) {
+    var monthKan = core.monthKan, monthShi = core.monthShi;
+    var monthK = KAN[monthKan] + SHI[monthShi];
+    var dayK = KAN[core.dayKan] + SHI[core.dayShi];
+    var yearK = KAN[core.yearKan] + SHI[core.yearIdx % 12];
+    var star = TEN_STAR[core.centerStarIdx];
+    var gogyo = GOGYO_NAME[core.gogyoIdx];
+    var ten = TENCHUSATSU[Math.floor(core.dayIdx / 10)];
+    return [
+      { field: 'day', label: '日の干支', value: dayK, note: kanshiYomiOf('day', dayK) },
+      { field: 'centerStar', label: '中心の星', value: star,
+        note: MAIN_STAR_NOTE[TEN_STAR.indexOf(star)] },
+      { field: 'year', label: '年の干支', value: yearK, note: kanshiYomiOf('year', yearK) },
+      { field: 'month', label: '月の干支', value: monthK, note: kanshiYomiOf('month', monthK) },
+      { field: 'gogyo', label: '本元の気', value: gogyo, note: GOGYO_NOTE[gogyo] },
+      { field: 'tenchusatsu', label: '天中殺の組', value: ten + '天中殺',
+        note: TENCHUSATSU_NOTE[ten] }
+    ];
+  }
+
+  /** 実在しうる算命学の画面をすべて起こす。**数は書かず、表の長さから回す**
+      =年干支60通り × 節月12通り × 日干支60通り。中心の星・本元の気・天中殺の組は
+      この3つから決まるので、この3重の回しで画面の顔ぶれは尽きる。 */
+  function sanmeiScreens() {
+    var out = [], y, m, d;
+    for (y = 0; y < KANSHI_KEYS.length; y++) {
+      for (m = 0; m < SHI.length; m++) {
+        for (d = 0; d < KANSHI_KEYS.length; d++) {
+          out.push(sanmeiFieldsOf(sanmeiCoreFromIndexes(y, m, d)));
+        }
+      }
+    }
+    return out;
+  }
+
+  function sanmeiSameScreenOverlap() {
+    return sameScreenOverlapOf(sanmeiScreens(),
+      function (f) { return f.note; },
+      function (f) { return f.field + '/' + f.value; });
+  }
+
+  /** 上の sanmeiFieldsOf が組み立てる欄が、結果画面の欄とちょうど同じか。
+      渡された生年月日(YYYY-MM-DD の一覧)を1件ずつ、欄の数・見出し・値・読みまで
+      突き合わせて食い違いを文で返す。**日付が読めなかったものも黙って飛ばさず積む**
+      (「食い違いが無かった」と「1件も比べていない」を見分けるため)。 */
+  function sanmeiScreenFieldProblems(dates, fieldsOf) {
+    var problems = [], i, k;
+    var build = fieldsOf || sanmeiFieldsOf;   /* 反証が測る側だけをずらせる差し替え口 */
+    if (!dates || !dates.length) {
+      return ['算命学の画面の突き合わせ: 比べる生年月日が1件も渡されていない'];
+    }
+    for (i = 0; i < dates.length; i++) {
+      var b = parseDate(dates[i]);
+      if (!b) { problems.push(dates[i] + ': 日付として読めない'); continue; }
+      var real = sanmeiOfficial(b).items, mine = build(sanmeiCoreOf(b));
+      if (real.length !== mine.length) {
+        problems.push(dates[i] + ': 欄の数が違う(画面' + real.length + '・測り' + mine.length + ')');
+        continue;
+      }
+      for (k = 0; k < real.length; k++) {
+        if (real[k].label !== mine[k].label) {
+          problems.push(dates[i] + ': ' + k + '番目の見出しが違う(画面「' + real[k].label +
+            '」・測り「' + mine[k].label + '」)');
+        }
+        if (real[k].value !== mine[k].value) {
+          problems.push(dates[i] + ': ' + real[k].label + ' の値が違う(画面「' + real[k].value +
+            '」・測り「' + mine[k].value + '」)');
+        }
+        if (real[k].note !== mine[k].note) {
+          problems.push(dates[i] + ': ' + real[k].label + ' の読みが違う');
+        }
+      }
+    }
+    return problems;
   }
 
   /* ============ 九星気学(正式計算) ============ */
@@ -4109,6 +4269,8 @@
       /* 算命学の二文字ごとの読み(#55・工程1の器)の検証用。切替はしていないので
          computeOne からは呼ばれず、いまはここからだけ触れる(tests/sanmei.spec.js) */
       kanshiKeys: KANSHI_KEYS.slice(),
+      /* cycle-0146:節月の数(=十二支の数)を検査へ書き写さないため出す */
+      shiNames: SHI.slice(),
       kanshiFields: KANSHI_FIELDS.slice(),
       kanshiYomiOf: kanshiYomiOf,
       /* cycle-0078:切替の要になる分岐(読みが引けなければ欄を作らない)を検査から
@@ -4123,6 +4285,19 @@
       kanshiRepetitionOf: kanshiRepetitionOf,
       kanshiRepetitionByField: kanshiRepetitionByField,
       kanshiSameKeyOverlap: kanshiSameKeyOverlap,
+      /* cycle-0146(台帳 YOMI-N9):同じ画面に並ぶ6欄=15組の重なり。
+         kanshiSameKeyOverlap が見ているのは「同じ二文字の欄ちがい」180組だけで、
+         同じ画面に並ぶ組のごく一部でしかなかった。画面は暦の添字から起こすので
+         60×12×60 通りがすべてそろう(生年月日の走査では届いたかどうかを言えない) */
+      sanmeiScreens: sanmeiScreens,
+      sanmeiFieldsOf: sanmeiFieldsOf,
+      /* 算命学と九星が同じところを通る判定(1か所)。反証が作りものの画面を
+         直に渡して「重なりを見ていること・同じ組を二度数えないこと・読みが引けない欄で
+         組を作らないこと」を確かめる */
+      sameScreenOverlapOf: sameScreenOverlapOf,
+      sanmeiCoreFromIndexes: sanmeiCoreFromIndexes,
+      sanmeiSameScreenOverlap: sanmeiSameScreenOverlap,
+      sanmeiScreenFieldProblems: sanmeiScreenFieldProblems,
       kanshiSameKeyLimits: { average: KANSHI_SAMEKEY_LIMITS.average,
                              max: KANSHI_SAMEKEY_LIMITS.max },
       kanshiPairOverlapOf: kanshiPairOverlapOf,
@@ -4170,6 +4345,10 @@
       kyuseiAngleProblems: kyuseiAngleProblems,
       kyuseiHedgeProblems: kyuseiHedgeProblems,
       kyuseiSameStarOverlap: kyuseiSameStarOverlap,
+      /* cycle-0146(台帳 YOMI-N9):同じ画面に並ぶ2欄=81組の重なり。
+         kyuseiSameStarOverlap は「本命星と月命星が同じ星にそろう」9組しか見ていない */
+      kyuseiScreens: kyuseiScreens,
+      kyuseiSameScreenOverlap: kyuseiSameScreenOverlap,
       kyuseiNames: KYUSEI_NAME.slice(),
       kyuseiUgoki: KYUSEI_UGOKI.slice(),
       kyuseiMaai: KYUSEI_MAAI.slice(),
