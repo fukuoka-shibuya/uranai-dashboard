@@ -1571,6 +1571,93 @@
     return angleFieldsReport().fields;
   }
 
+  /** **欄を保ったまま、読みの本数だけが落ちる壊れ方**を捕まえる(cycle-0158・台帳 CROSS-L2b)。
+
+      crossAngleOverlap の `measured` が名乗るのは「角度を突き合わせる相手が集まったか」
+      までである(欄が1つ以上あり、欄0の占術が無い)。**欄はそのままで中身だけが減る形は
+      真のまま通っていた**=点検役の実測では、official.util.kanshiYomiOf を差し替えて
+      算命学の読みを 180本→3本にしても3欄は残るので measured は真、測る組が
+      720→12 に落ちても problems は空だった。YOMI1-6 の「組の数が2欄の値の掛け合わせと
+      合う」も、**同じ減った fields を両辺に使う**ので自己無矛盾のまま通る。
+
+      **塞ぎ方は「本数」ではなく「値の顔ぶれ」を突き合わせること。**本数の期待値を
+      数字で持つと #45 に反する(手入力の数)ので、**その欄が取りうる値の顔ぶれを
+      読みの表とは別の出どころから渡してもらい**、読みが覆っている値と集合で照らす。
+      欠けても余っても名前で出る=180→3 なら「57値ぶんの読みが無い」と出る。
+
+      **なぜ顔ぶれを外から渡すか**(cycle-0143・台帳 CROSS-3 と同じ理由がここでも効く):
+      顔ぶれを実装の中で読みの表から作ると、表が減ったときに期待値も同時に減って
+      必ず一致する=自己無矛盾の緑になる。渡し手は tests/yomi.spec.js の
+      ANGLE_VALUE_ROSTERS で、**値を計算する側の関数**(暦の六十干支・九星の星名・
+      十二星座・二十七宿…)から組み立てており、読みの表を1つも引いていない。
+
+      **「顔ぶれを渡されていない欄」は緑にしない**=満たしたと測れなかったを分ける
+      (#71 の due_condition・#75 の tidy_condition と同じ扱い)。渡し手が欄を書き
+      忘れれば、その欄は通ったのではなく「測れていない」として積む。 */
+  function angleTextCountProblems(report, rosters) {
+    var problems = [], i, j;
+    if (!report || !isArray(report.fields)) {
+      problems.push('読みの本数の点検: 測れていない(集めた結果が欄の一覧を名乗っていない)');
+      return problems;
+    }
+    if (!isArray(rosters)) {
+      problems.push('読みの本数の点検: 測れていない(値の顔ぶれが渡されていない)');
+      return problems;
+    }
+    var want = {}, seenAt = {};
+    for (i = 0; i < rosters.length; i++) {
+      var row = rosters[i];
+      if (!row || typeof row.at !== 'string' || !isArray(row.values) || row.values.length === 0) {
+        problems.push('読みの本数の点検: 測れていない(値の顔ぶれの行が欄名と値を名乗っていない)');
+        continue;
+      }
+      if (own(want, row.at)) { problems.push(row.at + ': 値の顔ぶれが二重に渡されている'); continue; }
+      want[row.at] = row.values.slice();
+    }
+    for (i = 0; i < report.fields.length; i++) {
+      var f = report.fields[i], at = f.key + '/' + f.field;
+      seenAt[at] = true;
+      if (!own(want, at)) {
+        problems.push(at + ': 測れていない(この欄の値の顔ぶれが渡されていない)');
+        continue;
+      }
+      /* 読みが覆っている値。at は '欄/値' なので最初の '/' の右側を取る
+         (値の中に '/' は無いが、あっても欄名だけを落とす形にしておく) */
+      var covered = {}, dup = [];
+      for (j = 0; j < f.texts.length; j++) {
+        var s = String(f.texts[j].at), v = s.slice(s.indexOf('/') + 1);
+        if (own(covered, v)) { dup.push(v); }
+        covered[v] = true;
+      }
+      if (dup.length) { problems.push(at + ': 同じ値の読みが二度ある(' + dup.join('・') + ')'); }
+      var missing = [], extra = [], list = want[at], has = {};
+      for (j = 0; j < list.length; j++) {
+        has[list[j]] = true;
+        if (!own(covered, list[j])) { missing.push(list[j]); }
+      }
+      for (var v2 in covered) {
+        if (own(covered, v2) && !own(has, v2)) { extra.push(v2); }
+      }
+      if (missing.length) {
+        problems.push(at + ': 値 ' + list.length + ' 通りのうち ' + missing.length +
+          ' 通りに読みが無い(' + missing.slice(0, 5).join('・') +
+          (missing.length > 5 ? ' ほか' : '') + ')');
+      }
+      if (extra.length) {
+        problems.push(at + ': 計算では出ない値の読みがある(' + extra.slice(0, 5).join('・') +
+          (extra.length > 5 ? ' ほか' : '') + ')');
+      }
+    }
+    /* 渡された欄が、集めた側から丸ごと消えている形(欄ごと落ちた・占術ごと落ちた)。
+       CROSS-6 とは向きが違う=あちらは「読みが渡ってこない欄」を入口で見る */
+    for (var at2 in want) {
+      if (own(want, at2) && !own(seenAt, at2)) {
+        problems.push(at2 + ': 値の顔ぶれは渡されたのに、角度を持つ欄として集まっていない');
+      }
+    }
+    return problems;
+  }
+
   /** **集める側の入口で欄が丸ごと落ちる壊れ方**を捕まえる(cycle-0156・台帳 CROSS-6)。
 
       angleRosterProblems(CROSS-3)が見るのは「合流点へ読みが渡ってきた欄」だけである
@@ -1757,10 +1844,13 @@
       if (report.sources[i].fields === 0) { empty.push(report.sources[i].key); }
     }
     return { count: out.length, pairs: out, limits: official.util.kanshiSameKeyLimits,
-             /* **measured が名乗るのは「角度を突き合わせる相手が집まったか」までである。**
-                欄を保ったまま読みの本数が減る形(180本→3本)は真のまま通る=
-                この穴は台帳 CROSS-L2b に登録して開示した(点検役 中1)。
-                確かめている以上のことを名乗らない(#45) */
+             /* **measured が名乗るのは「角度を突き合わせる相手が集まったか」までである。**
+                欄を保ったまま読みの本数が減る形(180本→3本)はここでは真のまま通る
+                =確かめている以上のことを名乗らない(#45)。**その形は
+                angleTextCountProblems が受け持つ**(cycle-0158・台帳 CROSS-L2b)
+                =値の顔ぶれを読みの表の外から渡してもらい、欠けた値を名前で出す。
+                measured を「本数まで見た」の意味へ広げないこと=広げると、
+                顔ぶれの渡し手が居ないときに測れたと名乗ることになる */
              measured: report.fields.length > 0 && empty.length === 0,
              sources: report.sources, emptySources: empty };
   }
@@ -2010,6 +2100,7 @@
     /* cycle-0143・台帳 CROSS-3。角度の表から欄を丸ごと外す壊れ方を捕まえる。
        突き合わせる顔ぶれは**実装の外**(tests/yomi.spec.js)から渡す */
     angleRosterProblems: angleRosterProblems,
+    angleTextCountProblems: angleTextCountProblems,
     /* cycle-0156・台帳 CROSS-6。**集める側の入口で欄が丸ごと落ちる**壊れ方を捕まえる
        (上は渡ってきた欄しか見ないので、渡ってこない欄はどちらにも現れない) */
     collectorRosterProblems: collectorRosterProblems,
