@@ -647,6 +647,24 @@
     return own(byValue, value) ? byValue[value] : '';
   }
 
+  /** 読みが引けた欄かどうか(cycle-0159・台帳 GUARD-1)。ご指示 #58 の基準1
+      「読みを持たない欄は表示しない」を判じる1か所。
+
+      **なぜ合流点(ここ)なのか。**cycle-0157 で歯止めを official.js の yomiItemOf
+      1か所へ集めたが、あれが受け持つのは算命学6欄だけである。残る5占術の欄は
+      { label, value, note } を直に書いて組み立てており、しかも**そのうち3占術
+      (西洋・宿曜・姓名判断)は note を空文字で置いて読みを下の VALUE_NOTE から
+      受け取る**作りなので、実装の側だけを見ても「読みが引けたか」は決まらない。
+      note が決まるのは valueNoteFor を足したあと=つまりこの withGuide の中である。
+      **歯止めは、値が決まる場所より前には置けない。**
+
+      引けなかった形は等しく扱う=null も undefined も空文字も、文字列でない値も
+      「引けなかった」とする(official.js の yomiItemOf と同じ扱い)。空文字を通すと
+      「読みが無い」と「空の読みがある」が見分けられなくなる。 */
+  function hasYomi(item) {
+    return !!item && typeof item.note === 'string' && item.note.length > 0;
+  }
+
   /** 計算結果へ案内(reading)と項目ごとの案内(plain・term・about)を添える。
       元のオブジェクトは書き換えず写しを返す(実装側が表を使い回していても汚さない)。
       label は内部の鍵として据え置く。画面が見出しに使うのは plain(Issue #51) */
@@ -670,7 +688,13 @@
         var vn = valueNoteFor(key, item.label, item.value);
         if (vn) { copy.note = vn + (item.note || ''); }
         return copy;
-      });
+      /* cycle-0159(台帳 GUARD-1):読みが引けなかった欄はここで落とす。
+         **いまの表ではこの枝は一度も通らない**(21欄すべてに読みがそろっている)
+         ので、落ちる欄は無い=結果値は変わらない。それでも置くのは、読みの表から
+         1件抜けたときに note の空いた欄が黙って画面へ出ることを防ぐためである。
+         通らないことは検査 GUARD1-2 が、実装の側(official)が組み立てた欄の
+         顔ぶれと、この合流点を通ったあとの顔ぶれを突き合わせて毎サイクル見る。 */
+      }).filter(hasYomi);
     }
     return out;
   }
@@ -2058,6 +2082,9 @@
     yomiPartsOf: yomiPartsOf,
     yomiIsDone: yomiIsDone,
     yomiMinLength: function () { return YOMI_MIN_LENGTH; },
+    /* cycle-0159(台帳 GUARD-1):「読みが引けなければ欄を出さない」歯止めそのもの。
+       検査 GUARD1-1/1b が同じここを呼ぶ(検査の側に判定を書き写さない) */
+    hasYomi: hasYomi,
     /* cycle-0087(台帳 YOMI-4)。西洋占星術の4欄31本の引き方と判定。
        tests/yomi.spec.js の YOMI4-* が同じここを呼ぶ */
     seiyouYomiFields: seiyouYomiFields,
