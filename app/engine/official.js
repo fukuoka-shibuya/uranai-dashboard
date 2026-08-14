@@ -1749,10 +1749,12 @@
     return out;
   }
 
-  function kyuseiSameScreenOverlap() {
+  /* threshold は帯の下端の差し替え口(省くと実装の線)。反証がここへ低い下端を渡す */
+  function kyuseiSameScreenOverlap(threshold) {
     return sameScreenOverlapOf(kyuseiScreens(),
       function (f) { return kyuseiYomiOf(f.field, f.value); },
-      function (f) { return f.field + '/' + KYUSEI_NAME[f.value - 1]; });
+      function (f) { return f.field + '/' + KYUSEI_NAME[f.value - 1]; },
+      KYUSEI_SCREEN_NEAR, threshold);
   }
 
   /**
@@ -1890,15 +1892,70 @@
      だけで、**どちらも同じ画面に並ぶ組のごく一部**である(算命学は6欄=どの画面にも
      15組・九星は2欄=1組が並ぶ)。点検役の実測ではいずれも線の内側だったが、
      **測っていない場所を「問題なし」と読まないため**に置く。
-     線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。 */
+     線は同じ KANSHI_SAMEKEY_LIMITS(占術ごとに別の線を持たない)。
+
+     **cycle-0147(台帳 YOMI-N12)で「近い組の帯」を足した。**
+     置いた翌サイクルに気づいたことだが、この測りが返すのは**平均といちばん近い1組
+     だけ**で、cycle-0145(台帳 SANMEI-4b)が kanshiPairOverlapOf に対して塞いだ穴が、
+     測る相手を変えたところにそのまま開いていた=算命学は11300組の単純平均なので
+     1組が100%でも 0.009 ポイントしか動かず、最大はいちばん近い1組しか見ない。
+     つまり「線のすぐ下に近い組が10組増える」形はどの数にも出ない。
+     **平均と最大の線は占術で共有する(KANSHI_SAMEKEY_LIMITS)が、帯の組数の線だけは
+     母集団ごとに置く**=組の数は母集団で動く(算命学11300組・九星81組)ので、
+     同じ組数を当てると片方が必ず意味を失うためである。
+     **線の引き方=cycle-0147 の実測の分布から決めた**(SANMEI-4b と同じ取り方)。
+       算命学(11300組・平均4.14%・上の端24.87%=day/辛卯 × month/辛卯)
+         25%以上=0組 / **24%以上=3組** / 23%以上=9組 / 22%以上=15組 /
+         20%以上=25組 / 18%以上=31組 / 15%以上=42組
+         → 24%より上に置くと0組(最大の線をきつくしただけで「並んでいる組を数える」
+           ことにならない)。22%より下は15組を超えて1組ずつ名前を読めなくなる。
+           **23%=9組**が読める大きさなので下端を 23% に置き、件数の線は
+           実測9組へ余裕を見て 15組(SANMEI-4b と同じ 1.6 倍ほど)。
+       九星(81組・平均9.08%・上の端19.19%=honmei/三碧木星 × getsumei/六白金星)
+         16%以上=1組 / **15%以上=6組** / 14%以上=9組
+         → 16%より上は1組=最大そのものなので、下端は 15%、件数の線は 10組。
+           (下端の 15% が平均の線と同じ数になったのは偶然で、別々の数である)
+     **帯に入る組は、算命学ではいまのところ全部が同じ二文字の欄ちがい**
+     (day/辛卯 × month/辛卯 のような組)で、値の違う組のいちばん近いものは
+     16.77%(centerStar/龍高星 × gogyo/火)である=値の違う写しがこの帯へ入るのは、
+     いまの実測より 6 ポイント以上近づいたときになる。**帯は「近い組が何組並んで
+     いるか」を見るものであって、値の違う組を先に見つける道具ではない。** */
+
+  /* 帯の下端と組数の線。**母集団ごとに別の値を持つ**(上の説明のとおり)。
+     平均と最大は KANSHI_SAMEKEY_LIMITS 1か所のままで、ここには持たない */
+  var SANMEI_SCREEN_NEAR = { near_threshold: 0.23, near_count: 15, near_pairs_basis: 11300 };
+  var KYUSEI_SCREEN_NEAR = { near_threshold: 0.15, near_count: 10, near_pairs_basis: 81 };
+
+  /* 平均・最大(共有)と帯(母集団ごと)を1つにまとめて返す。
+     near を渡さなければ帯は無く、判定の側も帯を見ない(数を作らない) */
+  /* threshold(反証の差し替え口)を受けたときは、名乗る下端も一緒に動かす
+     =そうしないと下の「宣言した下端と測った下端の食い違い」が反証で必ず鳴る。
+     **既定を書き替えたときだけ食い違う**ようにするための作りである
+     (cycle-0147 の点検役 中3) */
+  function screenLimitsOf(near, threshold) {
+    var out = { average: KANSHI_SAMEKEY_LIMITS.average, max: KANSHI_SAMEKEY_LIMITS.max };
+    if (near) {
+      out.near_threshold = (typeof threshold === 'number') ? threshold : near.near_threshold;
+      out.near_count = near.near_count;
+      out.near_pairs_basis = near.near_pairs_basis;
+    }
+    return out;
+  }
 
   /** 画面の一覧から、**同じ画面に並ぶ2本の組**を重複なく取り出して重なりを測る。
       算命学と九星が同じところを通る(占術ごとに同じ判定を書き写さない)。
       組の名は「欄/値 × 欄/値」なので、同じ組が別の画面に何度並んでも1度だけ測る
       (数秘の suuhiSameScreenOverlap と同じ数え方)。
-      読みが引けない欄は組を作らない=**「読みが無い」を0%の重なりとして混ぜない**。 */
-  function sameScreenOverlapOf(screens, textOf, nameOf) {
+      読みが引けない欄は組を作らない=**「読みが無い」を0%の重なりとして混ぜない**。
+      near は帯の決まり(省くと帯を測らない)、threshold は帯の下端の差し替え口で、
+      **本文を1字も変えずに下端だけを動かすと帯の組数だけが動く**ことを反証が示すために
+      受け取れるようにしてある(kanshiPairOverlapOf と同じ作り)。 */
+  function sameScreenOverlapOf(screens, textOf, nameOf, near, threshold) {
     var seen = {}, rows = [], s, i, j;
+    var limits = screenLimitsOf(near, threshold);
+    /* **帯の決まりが無ければ、下端を渡されても帯は測らない**(cycle-0147 の点検役 軽微3)
+       =線の無いところで数だけを出すと「測って0組」と「線が無い」が並んでしまう */
+    var edge = near ? limits.near_threshold : null;
     for (s = 0; s < screens.length; s++) {
       var fs = screens[s];
       for (i = 0; i < fs.length; i++) {
@@ -1915,15 +1972,83 @@
     }
     if (rows.length === 0) {
       return { measured: false, count: 0, average: null, max: null, worst: '',
-               rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+               near_threshold: edge, near_pairs: (edge === null) ? null : 0,
+               near_rate: null, near_rows: [],
+               rows: rows, limits: limits };
     }
     var sum = 0, max = 0, worst = '';
+    /* 近い組の帯。見本は先頭5組だけ載せ、件数は別に返す=黙って切り詰めない
+       (kanshiPairOverlapOf の near_rows と同じ扱い)。**線はここで当てない**
+       =当てるのは判定の側(sameScreenProblems)1か所である */
+    var nearPairs = 0, nearList = [];
     for (i = 0; i < rows.length; i++) {
       sum += rows[i].value;
       if (rows[i].value > max) { max = rows[i].value; worst = rows[i].at; }
+      if (edge !== null && rows[i].value >= edge) { nearPairs++; nearList.push(rows[i]); }
     }
+    /* 見本は**近い順**に5組(cycle-0147 の点検役 軽微4。並び順のまま先頭5組を出すと、
+       帯の中でいちばん近い組が見本から漏れる)。件数は別に返す=黙って切り詰めない */
+    nearList.sort(function (a, b) { return b.value - a.value; });
+    var nearRows = nearList.slice(0, 5).map(function (r) {
+      return r.at + ' ' + (r.value * 100).toFixed(2) + '%';
+    });
     return { measured: true, count: rows.length, average: sum / rows.length, max: max,
-             worst: worst, rows: rows, limits: KANSHI_SAMEKEY_LIMITS };
+             worst: worst,
+             near_threshold: edge,
+             near_pairs: (edge === null) ? null : nearPairs,
+             near_rate: (edge === null) ? null : nearPairs / rows.length,
+             near_rows: nearRows,
+             rows: rows, limits: limits };
+  }
+
+  /** 同じ画面の重なりの判定。**線を当てるのはここ1か所**で、算命学(SCREEN1-1)も
+      九星(YOMI2-6)も反証も同じところを通る(spec ごとに書き写さない)。
+      **測れなかったものを満たしたと混ぜない**=線が決まっているのに数が入って
+      いなければ、通さずに「測っていない」と言う(#71 の due_condition と同じ扱い)。 */
+  function sameScreenProblems(ov) {
+    var problems = [];
+    if (!ov || typeof ov.measured !== 'boolean') { return ['同じ画面の重なりを読み取れない']; }
+    if (!ov.measured) {
+      if (ov.count !== 0) { problems.push('組があるのに測っていない: ' + ov.count + '組'); }
+      if (ov.average !== null || ov.max !== null) { problems.push('測っていないのに数が入っている'); }
+      return problems;
+    }
+    var lim = ov.limits || {};
+    if (ov.average > lim.average) {
+      problems.push('同じ画面に並ぶ組の平均が線を越えている: ' +
+        (ov.average * 100).toFixed(2) + '% > ' + (lim.average * 100) + '%');
+    }
+    if (ov.max > lim.max) {
+      problems.push('いちばん近い組が線を越えている: ' + ov.worst + ' ' +
+        (ov.max * 100).toFixed(2) + '% > ' + (lim.max * 100) + '%');
+    }
+    if (typeof lim.near_count === 'number') {
+      /* **名乗った下端と、実際に数えた下端が同じであること**(cycle-0147 の点検役 中3)。
+         これが無いと「15%と名乗りながら14.5%で数えた」形が素通りする。
+         算命学の spec にだけ同じ突き合わせが書き写してあったのを、ここへ寄せた
+         =「線を当てるのは1か所」という名乗りと実態をそろえるため */
+      if (ov.near_threshold !== lim.near_threshold) {
+        problems.push('名乗った帯の下端と、実際に数えた下端が違う: 名乗り' +
+          lim.near_threshold + '・実際' + ov.near_threshold);
+      }
+      if (typeof ov.near_pairs !== 'number') {
+        problems.push('近い組の帯を測っていない(線は決まっているのに組数が入っていない)');
+      } else if (ov.near_pairs > lim.near_count) {
+        problems.push('線のすぐ下に近い組が並んでいる: ' +
+          (ov.near_threshold * 100).toFixed(0) + '%以上が ' + ov.near_pairs + '組 > ' +
+          lim.near_count + '組' +
+          ((ov.near_rows && ov.near_rows.length)
+            ? '(例: ' + ov.near_rows.slice(0, 3).join(' / ') + ')' : ''));
+      }
+      /* **組の数が線を引いたときと違えば、線を引き直す番である。**
+         帯の線は組の数そのものなので、母集団が動いたまま古い線を当て続けない
+         (SANMEI4-5 が near_pairs_basis を見るのと同じ理由) */
+      if (typeof lim.near_pairs_basis === 'number' && ov.count !== lim.near_pairs_basis) {
+        problems.push('組の数が線を引いたときと違う: いま' + ov.count + '組・線を引いたとき' +
+          lim.near_pairs_basis + '組(帯の線を引き直す番)');
+      }
+    }
+    return problems;
   }
 
   /** 算命学の画面に並ぶ6欄(欄・値・読み)を、暦の添字だけから組み立てる。
@@ -1965,10 +2090,12 @@
     return out;
   }
 
-  function sanmeiSameScreenOverlap() {
+  /* threshold は帯の下端の差し替え口(省くと実装の線)。反証がここへ低い下端を渡す */
+  function sanmeiSameScreenOverlap(threshold) {
     return sameScreenOverlapOf(sanmeiScreens(),
       function (f) { return f.note; },
-      function (f) { return f.field + '/' + f.value; });
+      function (f) { return f.field + '/' + f.value; },
+      SANMEI_SCREEN_NEAR, threshold);
   }
 
   /** 上の sanmeiFieldsOf が組み立てる欄が、結果画面の欄とちょうど同じか。
@@ -4295,6 +4422,16 @@
          直に渡して「重なりを見ていること・同じ組を二度数えないこと・読みが引けない欄で
          組を作らないこと」を確かめる */
       sameScreenOverlapOf: sameScreenOverlapOf,
+      /* 同じ画面の重なりへ線を当てる1か所(cycle-0147・台帳 YOMI-N12)。
+         算命学の SCREEN1-1 も九星の YOMI2-6 も反証も、ここを通る */
+      sameScreenProblems: sameScreenProblems,
+      /* 帯の決まりは母集団ごとに別(組の数は母集団で動く)。写しを渡す */
+      sanmeiScreenNear: { near_threshold: SANMEI_SCREEN_NEAR.near_threshold,
+                          near_count: SANMEI_SCREEN_NEAR.near_count,
+                          near_pairs_basis: SANMEI_SCREEN_NEAR.near_pairs_basis },
+      kyuseiScreenNear: { near_threshold: KYUSEI_SCREEN_NEAR.near_threshold,
+                          near_count: KYUSEI_SCREEN_NEAR.near_count,
+                          near_pairs_basis: KYUSEI_SCREEN_NEAR.near_pairs_basis },
       sanmeiCoreFromIndexes: sanmeiCoreFromIndexes,
       sanmeiSameScreenOverlap: sanmeiSameScreenOverlap,
       sanmeiScreenFieldProblems: sanmeiScreenFieldProblems,
