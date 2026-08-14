@@ -2132,10 +2132,23 @@
      起きないよう、6欄そろうことを SANMEI5-2 が 1950〜2020年の広域の走査で毎サイクル見る
      (月の干支だけは日・年と別の式=五虎遁と節月で作られるので、表の鍵から外れる形が
      いちばん起きやすい。SANMEI1-6 も同じ走査で値そのものを押さえている) */
-  function kanshiItemOf(field, label, value) {
-    var text = kanshiYomiOf(field, value);
-    if (text === null) { return null; }
+  /* cycle-0157(台帳 SANMEI-5h・cycle-0082 の点検役 L7):**歯止めそのものを
+     kanshiItemOf の外へ出した。**cycle-0078 でこの歯止めを入れたとき当てたのは
+     二文字の3欄(日・年・月)だけで、同じ画面に並ぶ残り3欄(中心の星・本元の気・
+     天中殺の組)は表を直に引いて欄を組み立てていた=表に無い鍵が来れば
+     note が undefined のまま欄が出る。**歯止めが片側にしか無いことは、
+     「歯止めを持つ道」と「持たない道」が並んでいる限り実装を読まないと分からない。**
+     そこで判定を yomiItemOf 1か所に集め、6欄すべてがここを通る形にした。
+     引き方(表から引くのか関数から引くのか)は呼ぶ側の違いにすぎないので、
+     ここは「引けた文字列かどうか」だけを見る=null も undefined も空文字も
+     等しく「引けなかった」として欄を作らない。 */
+  function yomiItemOf(label, value, text) {
+    if (typeof text !== 'string' || text.length === 0) { return null; }
     return { label: label, value: value, note: text };
+  }
+
+  function kanshiItemOf(field, label, value) {
+    return yomiItemOf(label, value, kanshiYomiOf(field, value));
   }
 
   function sanmeiOfficial(b) {
@@ -2146,6 +2159,9 @@
 
     var centerStar = TEN_STAR[core.centerStarIdx];
     var gogyo = GOGYO_NAME[core.gogyoIdx];
+    /* cycle-0157:天中殺の鍵を先に取る。値の文字を組み立てる前に鍵を握っておくと、
+       表に無い鍵が来たときに「undefined天中殺」という値の文字を作らずに済む */
+    var tenKey = TENCHUSATSU[Math.floor(dayIdx / 10)];
 
     var items = [
       /* 語り口(W8):算命学の note は「〜と見ます。」で結ぶ。Issue #51(2026-08-06 オーナー指示)で
@@ -2155,14 +2171,15 @@
       /* cycle-0078(#55・工程5):二文字の3欄は KANSHI_YOMI から値ごとの読みを引く。
          引けなければ欄そのものを出さない(kanshiItemOf が null を返し、下で落とす) */
       kanshiItemOf('day', '日の干支', KAN[dayKan] + SHI[dayShi]),
-      { label: '中心の星', value: centerStar, note: MAIN_STAR_NOTE[TEN_STAR.indexOf(centerStar)] },
+      /* cycle-0157(台帳 SANMEI-5h):この3欄も yomiItemOf を通す=引けなければ
+         欄そのものを作らない。二文字の3欄と作りがそろった */
+      yomiItemOf('中心の星', centerStar, MAIN_STAR_NOTE[TEN_STAR.indexOf(centerStar)]),
       kanshiItemOf('year', '年の干支', KAN[yearKan] + SHI[yearIdx % 12]),
       kanshiItemOf('month', '月の干支', KAN[monthKan] + SHI[monthShi]),
-      { label: '本元の気', value: gogyo, note: GOGYO_NOTE[gogyo] },
+      yomiItemOf('本元の気', gogyo, GOGYO_NOTE[gogyo]),
       /* cycle-0082(台帳 SANMEI-5d):値ごとの読みを引く。鍵は二文字そのもの
          (添字ではない)なので TENCHUSATSU の並びを入れ替えても引く先がずれない */
-      { label: '天中殺の組', value: TENCHUSATSU[Math.floor(dayIdx / 10)] + '天中殺',
-        note: TENCHUSATSU_NOTE[TENCHUSATSU[Math.floor(dayIdx / 10)]] }
+      yomiItemOf('天中殺の組', tenKey + '天中殺', TENCHUSATSU_NOTE[tenKey])
     ].filter(function (it) { return it !== null; });
 
     return {
@@ -4770,6 +4787,12 @@
          外れる組が作れない)。通らない枝を「実装した」と書いたままにしないため、
          SANMEI5-3 が無い二文字を渡して null が返ることを直に確かめる */
       kanshiItemOf: kanshiItemOf,
+      /* cycle-0157(台帳 SANMEI-5h):歯止めそのもの。6欄すべてがここを通るので、
+         **この1か所へ「引けなかった」を渡せば、どの欄でも欄が落ちることを直に確かめられる。**
+         3欄(中心の星・本元の気・天中殺の組)の枝もいまの表では一度も通らない
+         =値は必ず 10/5/6 通りに収まる。到達しない枝を「実装した」と書いたままに
+         しないため、SANMEI5-4 が引けない値の5通りをここへ直に渡す */
+      yomiItemOf: yomiItemOf,
       kanshiYomiProgress: kanshiYomiProgress,
       kanshiRepetition: kanshiRepetition,
       kanshiRepetitionOf: kanshiRepetitionOf,
@@ -4844,6 +4867,10 @@
          「空の読みがある」を見分けられるようにするため) */
       sanmeiStarNames: TEN_STAR.slice(),
       sanmeiGogyoNames: GOGYO_NAME.slice(),
+      /* cycle-0157(台帳 SANMEI-5h):天中殺の二文字の顔ぶれ。SANMEI5-4 が
+         「歯止めの枝へ落ちる値が無い」ことを**値の側の数から**言うために引く
+         (件数も二文字も検査の側へ書き写さない=障害19) */
+      tenchusatsuKeys: TENCHUSATSU.slice(),
       sanmeiStarYomiOf: function (i) {
         return (i >= 0 && i < MAIN_STAR_NOTE.length) ? MAIN_STAR_NOTE[i] : null;
       },
