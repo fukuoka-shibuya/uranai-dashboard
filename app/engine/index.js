@@ -1382,8 +1382,13 @@
       **どちらも同じ angleOf を通っていた**ので同時に1件減って必ず一致したためである)。
       落とさずに `exempt` として返せば、**読みは返っているのに角度の表が無い欄**が
       名前で見える=下の angleRosterProblems が外から渡された顔ぶれと突き合わせる。 */
-  function angleFieldsReport() {
-    var sources = [
+  /** 6占術の読みの出どころ。**関数にしてあるのは読み込みの順**=モジュールの
+      いちばん外で配列にすると official.util がまだ組み上がっていないことがある。
+      **占術の一覧をここ1か所に持つ**=角度の照合(angleFieldsReport)も、
+      結びの塊の照合(yomiTailByField)も同じここを通る(cycle-0155・台帳 SANMEI-6g。
+      2か所に書くと、片方へ占術を足し忘れてもどちらの検査も緑のまま通る)。 */
+  function yomiSources() {
+    return [
       { key: 'sanmei', angleOf: official.util.kanshiAngleOf, texts: kanshiYomiTextsAll },
       { key: 'kyusei', angleOf: official.util.kyuseiAngleOf, texts: official.util.kyuseiYomiTexts },
       { key: 'suuhi', angleOf: official.util.suuhiAngleOf, texts: official.util.suuhiYomiTexts },
@@ -1391,6 +1396,10 @@
       { key: 'sukuyo', angleOf: shukuAngleOf, texts: shukuYomiTexts },
       { key: 'seimei', angleOf: seimeiAngleOf, texts: seimeiYomiTexts }
     ];
+  }
+
+  function angleFieldsReport() {
+    var sources = yomiSources();
     var out = [], skipped = [], tally = [], s, i;
     for (s = 0; s < sources.length; s++) {
       var texts = sources[s].texts(), byField = {}, before = out.length,
@@ -1700,6 +1709,101 @@
     return problems;
   }
 
+  /* ====== 結びの塊を6占術ぶん数える(cycle-0155・台帳 SANMEI-6g)======
+     **なぜ合流点に置くか**:cycle-0154 が置いた塊の線(KANSHI_TAIL_LIMITS /
+     kanshiTailProblems)は算命学6欄にしか掛かっていなかった。数え方も線も
+     占術を問わないので、**足りないのは集める側だけ**である。6占術の読みが
+     見えるのはここだけなので(角度の照合と同じ理由)、集める側をここへ置く。
+
+     **なぜ要るか**:cycle-0080 は年の欄で13本の塊を見つけて9本を書き替えたが、
+     **他の欄を数えなかったので、直された年より大きい12本の塊が日の欄に
+     74サイクル残った**(cycle-0154 の実測)。同じ見落としは占術の側でも起きる
+     =算命学だけを見る判定は算命学だけを守る。
+
+     **実測(cycle-0155・末尾12字)**:21欄すべてが線の内側だった。いちばん
+     詰まっているのは kyusei/getsumei 3本(線3)・suuhi/lifepath 4本(線4)・
+     seiyou/太陽星座 4本(線4)の3欄で**余裕が0**である。**越えた欄が無いので
+     文は1本も書き替えていない**(cycle-0154 は日が線の外にあったので先に文を
+     直してから引いた。今回は直す対象が無い)。
+
+     **12字が占術によって同じ重さではないことは隠さない**:文末の型(W8)は
+     占術ごとに長さが違い、その占術の全本が共有する末尾を実測すると
+     算命学5字・九星8字・数秘5字・西洋5字・宿曜1字・姓名判断6字だった。
+     つまり12字の窓のうち書き手が動かせるのは**九星で4字・宿曜で11字**である。
+     **それでも字数は占術ごとに変えない**=変えれば「その占術のために引いた線」に
+     なり、いちばん詰まっている九星がいちばん緩む。詳細は
+     docs/kobetsu-yomi-plan.md の 13-i 節。 */
+
+  /** 6占術21欄の結びの塊。**算命学は official の kanshiTailByField をそのまま借りる**
+      =あちらは二文字3欄(kanshiYomiOf)と21本(sanmeiStarTexts)で持ち主が違うのを
+      既に1つへそろえてあり、ここで組み直すと同じ欄を2通りに数える口ができる。
+      残る5占術は yomiSources() の読みを欄ごとに束ねて同じ数え方へ通す。
+
+      **欄の名前は「占術/欄」でそろえる**=占術をまたぐと同じ欄名がぶつかりうるので、
+      顔ぶれを突き合わせる側(検査)が一意に名指しできる形にする。 */
+  function yomiTailByField() {
+    var out = [], sources = yomiSources(), s, i, j, row;
+    var by = official.util.kanshiTailByField();
+    for (i = 0; i < by.length; i++) {
+      row = {};
+      for (var k in by[i]) { if (own(by[i], k)) { row[k] = by[i][k]; } }
+      row.label = 'sanmei/' + by[i].label;
+      out.push(row);
+    }
+    for (s = 0; s < sources.length; s++) {
+      /* 算命学はもう入っている。**ここで飛ばすことは1つの決めごと**なので、
+         下の判定が「欄の顔ぶれ」を外から渡された一覧と突き合わせる
+         =飛ばし過ぎても飛ばし忘れても顔ぶれが合わなくなって落ちる */
+      if (sources[s].key === 'sanmei') { continue; }
+      var texts = sources[s].texts(), byField = {}, order = [];
+      for (i = 0; i < texts.length; i++) {
+        var field = texts[i].at.slice(0, texts[i].at.indexOf('/'));
+        if (!own(byField, field)) { byField[field] = []; order.push(field); }
+        byField[field].push(texts[i]);
+      }
+      for (j = 0; j < order.length; j++) {
+        var mine = byField[order[j]];
+        var rows = official.util.kanshiTailClustersOf(mine);
+        out.push({ label: sources[s].key + '/' + order[j], count: mine.length,
+                   ceiling: official.util.kanshiTailCeilingOf(mine.length),
+                   largest: rows.length ? rows[0].count : 0,
+                   worst: rows.length ? rows[0].tail : null,
+                   members: rows.length ? rows[0].members : [], rows: rows });
+      }
+    }
+    return out;
+  }
+
+  /** 21欄の判定。**線も数え方も official.js の1か所を引く**(kanshiTailProblems)。
+      ここが足すのは**欄の顔ぶれの突き合わせ**だけである。
+
+      **なぜ顔ぶれを外から受け取るか**:これがこの判定のすべてである。集めた行から
+      「21欄あった」と数えると、占術が丸ごと落ちても両側が同時に減って必ず一致する
+      (cycle-0143 の CROSS-3 と同じ形)。**出どころを分ける**=実装の外(検査の
+      TAIL_FIELD_ROSTER)に置いた顔ぶれと突き合わせ、増えても減っても落ちる。
+
+      **渡されなかったときは通さない**=「測れなかった」を緑にしない(#71 の
+      DUE-1・#75 の TIDY-1 と同じ扱いで、捕まえる側へ倒す)。 */
+  function yomiTailProblems(rows, limits, roster) {
+    var list = rows || yomiTailByField();
+    var problems = [], i, have = [], want;
+    if (!roster || !roster.length) {
+      problems.push('結びの塊: 欄の顔ぶれを渡されていない(測れていない)');
+      return problems;
+    }
+    want = roster.slice().sort();
+    for (i = 0; i < list.length; i++) { have.push(list[i].label); }
+    have = have.sort();
+    for (i = 0; i < want.length; i++) {
+      if (have.indexOf(want[i]) < 0) { problems.push('欄が集まっていない: ' + want[i]); }
+    }
+    for (i = 0; i < have.length; i++) {
+      if (want.indexOf(have[i]) < 0) { problems.push('顔ぶれに無い欄が混じっている: ' + have[i]); }
+    }
+    return problems.concat(
+      official.util.kanshiTailProblems(list, limits, roster.length));
+  }
+
   function computeOne(key, input) { return withGuide(key, implFor(key).computeOne(key, input)); }
 
   function computeAll(input) {
@@ -1805,6 +1909,9 @@
     crossAngleSharedMin: CROSS_ANGLE_SHARED_MIN,
     crossAngleCollisions: crossAngleCollisions,
     crossAngleOverlap: crossAngleOverlap,
+    /* 結びの塊を6占術ぶん(cycle-0155・台帳 SANMEI-6g) */
+    yomiTailByField: yomiTailByField,
+    yomiTailProblems: yomiTailProblems,
     crossAngleProblems: crossAngleProblems,
     /* 中核5占術がすべて正式計算に切り替わったので、総合占いも正式計算側で組む
        (cycle-0043)。切替の実体は上の OFFICIAL_KEYS のままで、ここに別の設定は置かない */

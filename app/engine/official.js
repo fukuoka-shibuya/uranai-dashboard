@@ -1822,11 +1822,19 @@
         (2) 本が1本も無い欄を作らないこと(0本なら塊も0で必ず通ってしまう)
         (3) 塊の大きさを数えられていること(数でないなら、測れなかったので
             あって満たしたのではない=#71 の DUE-1 と同じ「満たした/測れなかった」)
-        (4) いちばん大きい塊がその欄の線の内側にあること */
-  function kanshiTailProblems(rows, limits) {
+        (4) いちばん大きい塊がその欄の線の内側にあること
+
+      **expected(欄がいくつあるはずか)を外から渡せる**(cycle-0155・台帳 SANMEI-6g)
+      =この判定は算命学6欄のために書いたが、数え方も線も占術を問わないので、
+      合流点(index.js の yomiTailProblems)が6占術21欄ぶんの行を同じここへ通す。
+      **渡されなければ算命学の6欄**(=これまでどおり)。渡す側が数を手で書かないことは
+      呼び出し側の受け持ちで、合流点は**実装の外(検査)から渡された欄の顔ぶれ**の
+      長さを渡す(自分が集めた行から数えると、欄が落ちても両側が同時に減って必ず一致する
+      =cycle-0143 の CROSS-3 で学んだ形)。 */
+  function kanshiTailProblems(rows, limits, expectedIn) {
     var lim = limits || KANSHI_TAIL_LIMITS;
     var list = rows || kanshiTailByField();
-    var expected = KANSHI_FIELDS.length + 3;
+    var expected = (typeof expectedIn === 'number') ? expectedIn : KANSHI_FIELDS.length + 3;
     var problems = [], i, r, ceiling;
     if (list.length !== expected) {
       problems.push('欄が' + expected + 'つそろっていない: ' + list.length + '欄');
