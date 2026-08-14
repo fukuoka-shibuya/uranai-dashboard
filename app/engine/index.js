@@ -665,6 +665,67 @@
     return !!item && typeof item.note === 'string' && item.note.length > 0;
   }
 
+  /* ---- 欄の数を語る文の入れ札(cycle-0161・台帳 GUARD-3) ----
+
+     cycle-0159 で歯止め(hasYomi)を合流点へ置いたことにより、**欄が落ちる場所が
+     実装(provisional.js / official.js)の外へ移った**。ところが導入文と結びは
+     実装の中で組み立てられ、そこで items.length を読む=**歯止めより手前の数**を
+     読んでいた。したがって仮計算の算命学で読みが1件抜けると、欄は5つに減るのに
+     導入文は「六つの窓から眺めていきます」と言い続ける(台帳 GUARD-3)。
+
+     cycle-0159 が歯止めについて書いた「**歯止めは、値が決まる場所より前には
+     置けない**」は、数についてもそのまま当てはまる=**欄の数は、欄が確定する場所
+     より前には書けない**。そこで実装の側は数を書かず入れ札(COUNT_TOKEN)を置き、
+     歯止めを通したあとのここで埋める。
+
+     **実装の側にもう一つ歯止めを書き写す道は取らなかった**=cycle-0157 が畳んだ
+     「歯止めを持つ道と持たない道が並ぶ」形に戻るためである(GUARD-1 の注記と同じ理由)。
+
+     入れ札が埋まらずに画面へ出ることが無いよう、検査 GUARD3-1 が6占術×2実装の
+     結果を走査して残りかすが1つも無いことを見る。判定は countFillProblems 1か所で、
+     反証 GUARD3-1b も同じ関数を呼ぶ。
+
+     **入れ札を置いてよいのは、この withGuide を通る道の文だけである。**総合占い
+     (computeOverall)は withGuide を通らない=実装の返りをそのまま返すので、
+     あちらの文に入れ札を書くと埋まらないまま画面へ出る(cycle-0161 の点検役 重大2。
+     実際に写しへ1つ置いて漏れることを実測した)。いまの実装は総合占いに入れ札を
+     1つも置いていないが、**置けてしまう**ので GUARD3-1 は総合占いの結果も走査して
+     残りかすが無いことを見る(名乗りと網の範囲をそろえる=cycle-0158 の申し送り)。 */
+  var COUNT_TOKEN = '{欄数}';
+  var KANJI_KAZU = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+
+  /** 入れ札を、歯止めを通ったあとの欄の数で埋める。入れ札が無ければそのまま返す */
+  function fillCount(text, n) {
+    if (typeof text !== 'string' || text.indexOf(COUNT_TOKEN) < 0) { return text; }
+    return text.split(COUNT_TOKEN).join(KANJI_KAZU[n] || String(n));
+  }
+
+  /** 実装の生の結果(raw)と合流点を通った結果(filled)を突き合わせ、
+      数の入れ札が正しく埋まっているかを判じる(cycle-0161・台帳 GUARD-3)。
+      **期待値を合流点の中で作らない**=埋める前の文は実装から、欄の数は歯止めを
+      通ったあとの結果から引く=出どころの違う二つを突き合わせる
+      (cycle-0158 の申し送り「期待値を実装の中で作ると必ず一致する」)。 */
+  function countFillProblems(raw, filled) {
+    var out = [];
+    if (!raw || !filled) { return ['突き合わせる結果が無い']; }
+    var n = Object.prototype.toString.call(filled.items) === '[object Array]'
+      ? filled.items.length : null;
+    ['summary', 'closing'].forEach(function (f) {
+      var before = raw[f], after = filled[f];
+      if (typeof after === 'string' && after.indexOf(COUNT_TOKEN) >= 0) {
+        out.push(f + ': 数の入れ札が埋まらないまま残っている');
+        return;
+      }
+      if (typeof before !== 'string' || before.indexOf(COUNT_TOKEN) < 0) { return; }
+      if (n === null) { out.push(f + ': 入れ札があるのに欄が数えられない'); return; }
+      var want = before.split(COUNT_TOKEN).join(KANJI_KAZU[n] || String(n));
+      if (after !== want) {
+        out.push(f + ': 埋めた数が歯止めのあとの欄の数(' + n + ')と合っていない');
+      }
+    });
+    return out;
+  }
+
   /** 計算結果へ案内(reading)と項目ごとの案内(plain・term・about)を添える。
       元のオブジェクトは書き換えず写しを返す(実装側が表を使い回していても汚さない)。
       label は内部の鍵として据え置く。画面が見出しに使うのは plain(Issue #51) */
@@ -695,6 +756,12 @@
          通らないことは検査 GUARD1-2 が、実装の側(official)が組み立てた欄の
          顔ぶれと、この合流点を通ったあとの顔ぶれを突き合わせて毎サイクル見る。 */
       }).filter(hasYomi);
+      /* cycle-0161(台帳 GUARD-3):欄が確定したここで、欄の数を語る文の入れ札を埋める。
+         実装の側で埋めると歯止めより手前の数になる(上の注記)。
+         **無い欄を作らない**=もともと持っていない文には触れない(写しの鍵が増えると
+         結果値の突き合わせが「差あり」と出る) */
+      if (own(out, 'summary')) { out.summary = fillCount(out.summary, out.items.length); }
+      if (own(out, 'closing')) { out.closing = fillCount(out.closing, out.items.length); }
     }
     return out;
   }
@@ -2163,6 +2230,10 @@
     /* cycle-0159(台帳 GUARD-1):「読みが引けなければ欄を出さない」歯止めそのもの。
        検査 GUARD1-1/1b が同じここを呼ぶ(検査の側に判定を書き写さない) */
     hasYomi: hasYomi,
+    /* cycle-0161(台帳 GUARD-3):欄の数を語る文の入れ札と、その埋まり方の判定。
+       検査 GUARD3-1/1b が同じここを呼ぶ(検査の側に判定を書き写さない) */
+    countToken: function () { return COUNT_TOKEN; },
+    countFillProblems: countFillProblems,
     /* cycle-0087(台帳 YOMI-4)。西洋占星術の4欄31本の引き方と判定。
        tests/yomi.spec.js の YOMI4-* が同じここを呼ぶ */
     seiyouYomiFields: seiyouYomiFields,
