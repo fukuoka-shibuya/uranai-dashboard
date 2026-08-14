@@ -934,6 +934,21 @@
       /* (1) 線が掛かっている数=2本どうしの重なり(3欄を混ぜて) */
       syRows.push(['2本どうしの重なり(3欄を混ぜて)', syPop(syR.count, syR.pairs),
         syPct(syR.average_pct), syWorst(syR.max_pct, syR.worst), syLimit]);
+      /* (1-b) 近い組の帯(cycle-0145・台帳 SANMEI-4b)。
+             **上の行の平均も「いちばん高い値」も、少数の写しを捕まえられない**
+             =平均は16110組の単純平均なので1組が100%でも0.006ポイントしか動かず、
+             いちばん高い値はその1組しか見ない。**その下に何組並んでも数に出ない**ので、
+             帯の中の組数を別の行として出す。ここは「%」ではなく「組」が線に掛かる数 */
+      if (syHas(syR, 'near_pairs')) {
+        syRows.push(['帯の中の組(' + syPct(syR.near_threshold_pct) + '以上)',
+          syPop(syR.count, syR.pairs),
+          (typeof syR.near_rate_pct === 'number' && isFinite(syR.near_rate_pct))
+            ? (String(syR.near_rate_pct) + '%(組の割合)') : '<span class="ng">読み取れませんでした</span>',
+          syNum(syR.near_pairs, '組') +
+            ((syR.near_rows && syR.near_rows.length)
+              ? '(例: ' + esc(syR.near_rows.slice(0, 2).join(' / ')) + ')' : ''),
+          syNum(syR.limit_near_count, '組以下')]);
+      }
       /* (2) 同じ数を欄ごとに。混ぜると欄の内側の似かよりが薄まるので別に出す
              (cycle-0075 の点検役の指摘。線そのものは混ぜた数に掛けてある) */
       var syBF = syR.by_field;
@@ -976,7 +991,11 @@
         '「同じ二文字で欄をまたぐ組」は、同じ二文字の日・年・月の3対だけを取り出したもので、' +
         '書く角度が違う以上ここは低いはずです。「元の数え方」は、その本の言い回しのうち' +
         '他のどれかの本にも出るものの割合で、**組ではなく1本ごとの数**です。本数が増えるだけで' +
-        '上がるため線は当てず、測って出すだけにしています。</p>';
+        '上がるため線は当てず、測って出すだけにしています。' +
+        '「帯の中の組」は、近い組が何組あるかを数えたものです。平均は組が多いほど薄まり、' +
+        '「いちばん高い値」はその1組しか見ないので、**その下に近い組が並んでも' +
+        'どちらの数にも出ません**。そこだけを数えて線を当てています' +
+        '(この行だけは「%」ではなく「組」に線が掛かります)。</p>';
     }
   }
   add('お知らせ(確認だけ・対応は不要)', list(d.notices) + lcHtml + drHtml + trHtml + syHtml);

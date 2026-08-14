@@ -1034,8 +1034,39 @@
      年を足したあとの120本は平均5.78%・最大27.84% で線の内側にある
      (平均が日の60本より下がったのは、年の60本が日の写しになっていないため)。
      **元の数え方をやめたのではない**=population_average / population_max として
-     引き続き測り、報告書と申し送りに開示する。線を当てないだけである。 */
-  var KANSHI_LIMITS = { average: 0.10, max: 0.35 };
+     引き続き測り、報告書と申し送りに開示する。線を当てないだけである。
+
+     **cycle-0145(台帳 SANMEI-4b)で「近い組の帯」を足した。**
+     cycle-0075 の点検役 M1=**平均も最大も、少数の写しを捕まえられない**。
+     平均は 180本=16110組 の単純平均なので、1組が 100% でも 0.006 ポイントしか動かない。
+     最大は**いちばん近い1組しか見ない**ので、その1組より下に何組並んでも数に出ない。
+     つまり「線のすぐ下に近い組が20組増える」形は、いまの3つの数(平均・最大・
+     丸ごとの使い回し)のどれにも現れない。そこで**帯の中に何組あるかを数える**。
+       near_threshold  この割合以上を「近い組」と数える(帯の下端)
+       near_count      その組数の線
+       near_pairs_basis 線を引いたときの組の数(下の「線の引き方」の裏づけ)
+     **線の引き方=cycle-0145 の実測の分布から決めた**(台帳 SANMEI-4b の受入条件
+     「しきい値と件数の線は、180本の実測の分布を見てから決める」)。180本16110組の
+     上の端は 26.46%(year/乙卯 と year/辛酉)で、そこから下は
+       28%以上=0組 / 26%以上=2組 / 25%以上=2組 / **24%以上=8組** /
+       22%以上=30組 / 20%以上=71組 / 18%以上=146組 / 15%以上=429組
+     と、**切れ目なく続く**(どこかで急に空く帯は無い)。
+     帯の下端を 28% より上に置くと 0組になり、それは最大の線をきつくしただけで
+     「並んでいる組を数える」ことにならない。逆に 20% より下へ置くと数十〜数百組が
+     入り、1組ずつ見に行けない数になる。**8組=1組ずつ名前を読める大きさ**なので
+     下端を 24% に置いた。件数の線は実測8組へ余裕を見て 13組
+     (この repo が線を引くときの取り方と同じ=日の60本の平均5.99%へ余裕を見て10%に
+     したのと同じ 1.6 倍ほど)。**つまり近い組が5組増えたら赤になる。**
+     **この線は「組の数」なので母集団の大きさで動く**(本数が2倍になれば組は約4倍)。
+     算命学の180本は3欄×60通りで埋まりきっており、これ以上増えない前提で引いた線
+     である。増えたときに黙って古い線を当て続けないよう、near_pairs_basis に
+     線を引いたときの組の数を残し、SANMEI4-5 が「いまの組の数がこれと同じか」を
+     毎サイクル見る=本数が変わればその検査が落ち、線を引き直す番だと分かる。
+     **割合(near_rate)も併せて測って出す**が、線は当てていない=帯に入る組は
+     16110組のうち8組(0.05%)しかなく、割合で見ると写しが何組増えても
+     小数点の下で動くだけで読み手に伝わらないためである。 */
+  var KANSHI_LIMITS = { average: 0.10, max: 0.35,
+                        near_threshold: 0.24, near_count: 13, near_pairs_basis: 16110 };
 
   /* 表を引く。無い二文字・無い欄には値を作らず null を返す(姓名判断の kanaStrokesOf と
      同じ安全側)。空文字を返してはいけない=「読みが無い」のか「空の読みがある」のかを
@@ -1099,8 +1130,14 @@
      どれか2本を取り出し、短いほうの4連のうち何割が相手にも出るかを見て、
      全部の組の平均といちばん近い組を返す。本数が増えても組ごとの近さは変わらないので、
      固定の線を当てられる。合格の線(KANSHI_LIMITS)はこちらに掛ける。 */
-  function kanshiPairOverlapOf(texts) {
+  /* threshold は近い組の帯の下端。省くと実装の線(KANSHI_LIMITS.near_threshold)を使う。
+     **受け取れるようにしてあるのは、帯が本当に効いているかを確かめるため**である
+     =同じ180本のまま下端だけを下げると、平均も最大も完全一致も使い回しも1つも
+     動かないのに帯の組数だけが増える。「平均と最大では捕まえられない形」を、
+     作りものの見本ではなく実物で示せる(cycle-0145・台帳 SANMEI-4b)。 */
+  function kanshiPairOverlapOf(texts, threshold) {
     var i, j, key;
+    var near = (typeof threshold === 'number') ? threshold : KANSHI_LIMITS.near_threshold;
     var sets = [];
     for (i = 0; i < texts.length; i++) {
       var g = kanshiGramsOf(texts[i].text, KANSHI_GRAM), keys = [];
@@ -1109,6 +1146,11 @@
     }
     var sum = 0, pairs = 0, max = 0, worst = '';
     var maxLong = 0, worstLong = '';
+    /* 近い組の帯(cycle-0145・台帳 SANMEI-4b)。KANSHI_LIMITS.near_threshold 以上の組を
+       数える。見本は先頭5組だけ載せ、件数は別に返す=黙って切り詰めない
+       (丸ごとの使い回し long_runs と同じ扱い)。**線はここで当てない**
+       =当てるのは判定の側(tests/sanmei.spec.js の repetitionProblems)1か所である */
+    var nearPairs = 0, nearRows = [];
     for (i = 0; i < sets.length; i++) {
       for (j = i + 1; j < sets.length; j++) {
         /* 短いほうを分母にする。長い本と短い本を比べたとき、短い本が丸ごと
@@ -1123,6 +1165,12 @@
         var ratio = (small.keys.length === 0) ? 0 : shared / small.keys.length;
         sum += ratio; pairs++;
         if (ratio > max) { max = ratio; worst = a.at + ' と ' + b.at; }
+        if (ratio >= near) {
+          nearPairs++;
+          if (nearRows.length < 5) {
+            nearRows.push(a.at + ' と ' + b.at + ' ' + (ratio * 100).toFixed(2) + '%');
+          }
+        }
         /* cycle-0140・台帳 PLACE-2:**長いほうを分母にした同じ数**も併せて返す。
            上の max は「短い本が相手に丸ごと入っているか」を見るので、長さの
            そろった読みどうし(180字前後)には効くが、**長さが桁で違う組では
@@ -1138,16 +1186,23 @@
       }
     }
     return { pairs: pairs, average: (pairs === 0) ? null : sum / pairs, max: max, worst: worst,
-             maxLong: maxLong, worstLong: worstLong };
+             maxLong: maxLong, worstLong: worstLong,
+             near_threshold: near, near_pairs: nearPairs,
+             near_rate: (pairs === 0) ? null : nearPairs / pairs, near_rows: nearRows };
   }
 
-  function kanshiRepetitionOf(texts) {
+  /* threshold は近い組の帯の下端(省くと実装の線)。kanshiPairOverlapOf へそのまま渡す */
+  function kanshiRepetitionOf(texts, threshold) {
     var k, key;
     var count = texts.length;
     if (count === 0) {
       return { measured: false, count: 0, average: null, max: null, worst: '', pairs: 0,
                population_average: null, population_max: null, population_worst: '',
-               duplicates: [], long_runs: [], long_run_count: 0, limits: KANSHI_LIMITS };
+               duplicates: [], long_runs: [], long_run_count: 0,
+               near_threshold: (typeof threshold === 'number') ? threshold
+                                                              : KANSHI_LIMITS.near_threshold,
+               near_pairs: 0, near_rate: null,
+               near_rows: [], limits: KANSHI_LIMITS };
     }
 
     /* どの4連が何本に出るかを先に数える */
@@ -1210,11 +1265,15 @@
     /* 線を当てるのは母集団の大きさで動かないほう(2本どうしの重なり)。
        上で数えた「他の本にも出る4連の割合」は population_ として引き続き開示する
        =やめたのではなく、固定の線を当てる相手として使えないだけである(KANSHI_LIMITS の説明) */
-    var pair = kanshiPairOverlapOf(texts);
+    var pair = kanshiPairOverlapOf(texts, threshold);
     return { measured: true, count: count,
              average: pair.average, max: pair.max, worst: pair.worst, pairs: pair.pairs,
              population_average: sum / count, population_max: max, population_worst: worst,
              duplicates: duplicates, long_runs: longRuns, long_run_count: longRunCount,
+             /* 近い組の帯(cycle-0145・台帳 SANMEI-4b)。平均も最大も捕まえられない
+                「線のすぐ下に並ぶ組」を数えたもの。線は判定の側で当てる */
+             near_threshold: pair.near_threshold, near_pairs: pair.near_pairs,
+             near_rate: pair.near_rate, near_rows: pair.near_rows,
              limits: KANSHI_LIMITS };
   }
 
@@ -4067,7 +4126,14 @@
       kanshiSameKeyLimits: { average: KANSHI_SAMEKEY_LIMITS.average,
                              max: KANSHI_SAMEKEY_LIMITS.max },
       kanshiPairOverlapOf: kanshiPairOverlapOf,
-      kanshiLimits: { average: KANSHI_LIMITS.average, max: KANSHI_LIMITS.max },
+      /* 線は写しを渡す(呼ぶ側が書き替えても実装の線が動かないようにするため)。
+         **近い組の帯(cycle-0145・台帳 SANMEI-4b)の3つもここに載せる**
+         =載せ忘れると判定の側で線が undefined になり、帯の判定が丸ごと素通りする
+         (実際 cycle-0145 で一度そうなった。写しを手で並べる作りの弱いところ) */
+      kanshiLimits: { average: KANSHI_LIMITS.average, max: KANSHI_LIMITS.max,
+                      near_threshold: KANSHI_LIMITS.near_threshold,
+                      near_count: KANSHI_LIMITS.near_count,
+                      near_pairs_basis: KANSHI_LIMITS.near_pairs_basis },
       /* 3欄で書く角度の表(4-b 節・cycle-0072)。反復率では押さえられない
          「欄ごとに書くことが違う」を SANMEI2-2 がこの表から突き合わせる */
       kanshiAngleOf: kanshiAngleOf,
