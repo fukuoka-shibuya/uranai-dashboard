@@ -2063,15 +2063,30 @@
         }
       }
       /* **日の欄は、結び以外のどの文も裸で言い切らないこと**(cycle-0171・SANMEI-4g)。
-         月と同じ裏返しの網だが、逃がし方は月より広い(kanshiCoverOf の8条)。
+         月と同じ裏返しの網だが、逃がし方は月より広い(kanshiCoverOf の9条)。
          2文目は上の1条が受け持つのでここでは見ない=同じ文が二度出ないため。
 
-         **年へは当てない。**逃がし方を1つも通らない文が日は5文なのに年は33文あり
-         (kanshiSceneReach() が毎回数え直す)、その33文は
-         「初日の教室で隣の席へ先に話しかけ、休み時間には輪ができています。」のように
-         形の手がかりを持たない=網を当てるなら実文33本のほうを書き替えることになる。
-         cycle-0168 が「形だけでは条件付きか無条件かを判じられない」として
-         意図して外へ置いた文がそれである。年は下の狭い網(持続・習慣)のままにする。 */
+         **年へは当てない**(cycle-0172・SANMEI-4h でこの理由を実測に置き換えた)。
+         逃がし方を1つも通らない文は日は0文だが年は33文ある
+         (kanshiSceneReach() が毎回数え直す。**日の5文は広げる前の数なので
+         もう引かないこと**)。cycle-0171 の申し送りは「33文を1文ずつ読めば
+         共通の形が見つかるかもしれない」と書いていたので、読んで測った。
+
+         共通の形は**あった**=33文中31文が6文の本の位置3、すなわち具体例を
+         1つ描く枠に座っている。**しかしそれは網の外へ置く理由にならない**=
+         同じ枠の59文のうち28文はふつうの逃がし方で逃げており、位置で外せば
+         「赤い文だけを選んで外す」ことになる。
+
+         残る手は場面の目印を「名詞+格助詞+読点」まで広げることだが、
+         kanshiWideSceneCost() が測るとおり**広すぎて足りない**=
+         その形は非結び文675文のうち430文(63.7%)へ届く一方、
+         年の33文のうち新しく逃げるのは12文だけで21文が残る。
+         残る21文は「初日の教室で隣の席へ先に話しかけ、」のように
+         読点の前が格助詞ではなく連用中止で、場面の条件ではなく
+         ふるまいの言い連ねだからである。
+         したがって年は下の狭い網(持続・習慣)のままにする。
+         この2つの理由は kanshiWideSceneProblems() が毎回留めており、
+         どちらかが崩れたら赤くなって決め直しを促す。 */
       if (field === 'day') {
         for (j = 0; j < ss.length - 1; j++) {
           if (j === 1) { continue; }
@@ -2191,6 +2206,102 @@
       if (!hit) {
         problems.push('場面の目印「' + markers[i].word + '」が実文に1つも当たらない(空振りの語を逃がし方へ足さない)');
       }
+    }
+    return problems;
+  }
+
+  /* 「名詞+格助詞+読点」まで場面の目印を広げた形(cycle-0172・台帳 SANMEI-4h)。
+     **これは逃がし方ではない**=どこにも使っていない。年の33文へ網を当てられるかを
+     測るためだけに置いてある物差しである。
+
+     機械は名詞を見分けられないので、**読点の直前が格助詞であること**で代用する
+     (2字以上の非読点+格助詞+読点)。cycle-0171 が「ここまでは広げない」と
+     戒めた形そのもので、その戒めを言葉ではなく数で示すために作った。 */
+  var KANSHI_SCENE_WIDEST = /[^、。]{2,}[でにへとをがはも]、/;
+
+  /** 目印を「名詞+格助詞+読点」まで広げたら何が起きるかを毎回測り直す
+      (cycle-0172・台帳 SANMEI-4h)。**数を文書や検査へ書き写さないため**にここへ置く。
+
+      台帳 SANMEI-4h は「年に残る33文を1文ずつ読めば共通の形が見つかるかもしれない」
+      と書いていた。読んだ結果、共通の形は**あった**=33文中31文が6文の本の位置3、
+      すなわち具体例を1つ描く枠に座っている。ところがその枠は年の59本ぶんのうち
+      28文がふつうの逃がし方で逃げており(kanshiSceneReach が数える)、
+      **位置そのものは「見なくてよい」理由にならない**。位置3を丸ごと外すのは
+      赤い文だけを選んで網の外へ置くことにほかならない。
+
+      そこで残る手は目印を広げることだが、それは2つの理由でできない。
+      両方とも下の数が示す。
+        reach   広げた形が非結び文全体のどこまで届くか(=**広すぎる**)
+        rescued 広げても新しく逃げる年の文の数(=**足りない**)
+        left    広げてなお残る年の文の数
+
+      欄ごとに返すのは6つ。 */
+  function kanshiWideSceneCost() {
+    var out = [], f, i, j, ss, texts, row;
+    for (f = 0; f < KANSHI_FIELDS.length; f++) {
+      texts = kanshiFieldTexts(KANSHI_FIELDS[f]);
+      row = { field: KANSHI_FIELDS[f], books: texts.length, nonClosing: 0,
+              reach: 0, uncovered: 0, rescued: 0, left: 0 };
+      for (i = 0; i < texts.length; i++) {
+        ss = kanshiSentencesOf(texts[i].text);
+        for (j = 0; j < ss.length - 1; j++) {
+          if (ss[j].indexOf('逆に') >= 0) { continue; }
+          row.nonClosing++;
+          if (KANSHI_SCENE_WIDEST.test(ss[j])) { row.reach++; }
+          /* 逃がし方の一覧は kanshiCoverOf 1か所から引く(ここへ書き写さない) */
+          if (kanshiCoverOf(ss[j])) { continue; }
+          row.uncovered++;
+          if (KANSHI_SCENE_WIDEST.test(ss[j])) { row.rescued++; } else { row.left++; }
+        }
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
+  /** 上の数の見張り。**結論そのものではなく、結論の前提を留めておくための検査**である
+      (cycle-0172・台帳 SANMEI-4h)。
+
+      SANMEI-4h の結論は「年へは裏返しの網を当てない」で、その理由は2つだけである。
+      どちらかが崩れたら結論のほうを決め直さなければならないので、崩れたら赤くする。
+        (3) **広すぎる**=広げた形が非結び文の半分より多くへ届く
+        (4) **足りない**=広げてなお年に逃がし方を通らない文が残る
+      **これは「よくなったら落ちる」向きの検査である。**わざとそうしてある=
+      前提が変わったことを黙って通すと、結論だけが根拠なく残るためである
+      (kanshiSceneReachProblems の月の較正と同じ作り)。
+
+      あわせて (1) 欄がそろっていること (2) 数が数であり内訳の和が合うこと を見る
+      (測れなかったのに満たしたと言わない=#71 の DUE-1 と同じ扱い)。 */
+  function kanshiWideSceneProblems(rowsIn) {
+    var rows = rowsIn || kanshiWideSceneCost();
+    var problems = [], i, r, year = null, total = 0, reach = 0;
+    if (rows.length !== KANSHI_FIELDS.length) {
+      problems.push('欄が' + KANSHI_FIELDS.length + 'つそろっていない: ' + rows.length + '欄');
+    }
+    for (i = 0; i < rows.length; i++) {
+      r = rows[i];
+      if (typeof r.nonClosing !== 'number' || typeof r.reach !== 'number'
+          || typeof r.uncovered !== 'number' || typeof r.rescued !== 'number'
+          || typeof r.left !== 'number') {
+        problems.push(r.field + ': 数えられない(測れなかったのであって満たしたのではない)');
+        continue;
+      }
+      if (r.rescued + r.left !== r.uncovered) {
+        problems.push(r.field + ': 内訳が合わない ' + r.rescued + '+' + r.left
+          + ' ≠ ' + r.uncovered);
+      }
+      total += r.nonClosing;
+      reach += r.reach;
+      if (r.field === 'year') { year = r; }
+    }
+    if (!year) { return problems; }
+    if (!(reach * 2 > total)) {
+      problems.push('広げても広すぎなくなった(' + reach + '/' + total
+        + ')。年へ網を当てない理由の片方が消えたので SANMEI-4h を決め直すこと');
+    }
+    if (year.left === 0) {
+      problems.push('広げれば年の文がすべて逃げるようになった(残り0文)。'
+        + '年へ網を当てない理由のもう片方が消えたので SANMEI-4h を決め直すこと');
     }
     return problems;
   }
@@ -5161,6 +5272,9 @@
       kanshiSceneMarkers: kanshiSceneMarkers,
       kanshiSceneReach: kanshiSceneReach,
       kanshiSceneReachProblems: kanshiSceneReachProblems,
+      kanshiSceneWidest: KANSHI_SCENE_WIDEST,
+      kanshiWideSceneCost: kanshiWideSceneCost,
+      kanshiWideSceneProblems: kanshiWideSceneProblems,
       kanshiExample: KANSHI_EXAMPLE,
       kanshiPotential: KANSHI_POTENTIAL,
       /* cycle-0171(台帳 SANMEI-4g):逃がし方は kanshiCoverOf 1か所。検査
