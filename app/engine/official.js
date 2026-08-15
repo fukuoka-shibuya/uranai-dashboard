@@ -1549,6 +1549,55 @@
   var KANSHI_EXAMPLE = /当てはまります。$/;
   var KANSHI_POTENTIAL = /(られます|できます|ていけます)。$/;
 
+  /* 場面を先に置く目印(cycle-0170・台帳 SANMEI-4e)。
+     **一覧は実文の走査から作った**(書き写しで作らない=障害19)。作り方は
+     「日・年の非結び文のうち、いまの逃がし方を1つも通らない120文」を集め、
+     その前置き(最初の読点まで)の末尾4字を数えたもので、出た顔ぶれは
+     ところで32 / ときに13 / 場面で9 / 時期に11 / 段階で1 / 席で4 ほかである。
+     「年」「場」は語として広すぎる(「何年も先」「その場で」が当たる)ので、
+     読点を求める側に残した。**目印に読点を求めない**のは
+     day/庚辰「重い荷を任されたときほど背筋が伸びます。」・
+     day/辛卯「〜直していくところで力を出します。」のように、
+     場面のあとへ読点を置かない文が実際にあるためである(走査で出た)。
+
+     **何のために使うか**。cycle-0139 は「行いの断定のうち、**場面の条件が
+     付いた文は直さない**」と決めた(cycle-0077 が引いた線=「その場面では
+     こうなる」は人柄の断定ではない)。ところが下の日・年の網が持つ逃がし方には
+     場面の条件を見る条が1つも無く、**決めごとと実装が食い違っていた**
+     =持続・習慣の目印を持つ文が「〜場面で、」で場面に縛られていても赤になる。
+     いまはこの目印を逃がし方に加えて、決めごとの側へそろえてある。
+     **較正**=加える前も後も日・年の網は0文で、いまの180本の判定は動いていない
+     (逃がし方を増やすときは「何も変わらない」ことを必ず測ること)。
+
+     **この目印で網そのものを日・年へ広げることはできない**(cycle-0170 の実測)。
+     台帳 SANMEI-4e は「85文は場面の目印で覆えるので月と同じ裏返しの網を当てられる」
+     と書いていたが、測ると前提が噛み合わない=覆える82文は**逃がす側**へ入るので
+     網は1文も新しく捕まえない。網が新しく捕まえるのは目印を持たない残り38文だけで、
+     それは cycle-0168 が「形だけでは条件付きか無条件かを判じられない」として
+     意図して外へ置いた文そのものである。数の出どころは
+     docs/sanmei-kanshi-plan.md の 5-l 節と、下の kanshiSceneReach()。 */
+  /* 一覧は配列で持ち、正規表現はそこから組み立てる=検査が1語ずつ「実文に当たるか」を
+     確かめられる形にするため(一覧を文字列で埋め込むと1語ずつには当てられない)。 */
+  var KANSHI_SCENE_NOUNS = ['ところ', 'とき', '場面', '時期', '段階', '席', '途中', 'うち'];
+  var KANSHI_SCENE_WIDE = ['年', '場'];
+  var KANSHI_SCENE = new RegExp(
+    '((' + KANSHI_SCENE_NOUNS.join('|') + ')[でにがはもほ]|('
+         + KANSHI_SCENE_WIDE.join('|') + ')[でには]、)');
+
+  /** 目印を1語ずつ引けるようにする(検査が空振りの語を見つけるため)。 */
+  function kanshiSceneMarkers() {
+    var out = [], i;
+    for (i = 0; i < KANSHI_SCENE_NOUNS.length; i++) {
+      out.push({ word: KANSHI_SCENE_NOUNS[i], wide: false,
+                 re: new RegExp(KANSHI_SCENE_NOUNS[i] + '[でにがはもほ]') });
+    }
+    for (i = 0; i < KANSHI_SCENE_WIDE.length; i++) {
+      out.push({ word: KANSHI_SCENE_WIDE[i], wide: true,
+                 re: new RegExp(KANSHI_SCENE_WIDE[i] + '[でには]、') });
+    }
+    return out;
+  }
+
   function kanshiSentencesOf(text) {
     var raw = String(text || '').split('。'), out = [], i;
     for (i = 0; i < raw.length; i++) {
@@ -1961,7 +2010,10 @@
           if (!KANSHI_HABIT.test(ss[j])) { continue; }
           if (KANSHI_HEDGE.test(ss[j]) || KANSHI_ARRANGEMENT.test(ss[j])
               || KANSHI_NOUN_PRED.test(ss[j]) || KANSHI_STATE.test(ss[j])
-              || KANSHI_EXAMPLE.test(ss[j]) || KANSHI_POTENTIAL.test(ss[j])) { continue; }
+              || KANSHI_EXAMPLE.test(ss[j]) || KANSHI_POTENTIAL.test(ss[j])
+              /* 場面の条件が付いた文は直さない(cycle-0139 の決めごと)。
+                 cycle-0170 でこの1条を足すまで、決めごとだけがあって実装が無かった。 */
+              || KANSHI_SCENE.test(ss[j]) || KANSHI_CONDITION.test(ss[j])) { continue; }
           problems.push(texts[i].at + ': ' + field
             + 'の欄で持続・習慣を裸で言い切っている 「' + ss[j] + '」');
         }
@@ -1971,6 +2023,94 @@
         if (ss[j].indexOf('逆に') < 0) { continue; }
         if (KANSHI_HEDGE.test(ss[j]) || KANSHI_CONDITION.test(ss[j])) { continue; }
         problems.push(texts[i].at + ': 「逆に」の文が含みでも条件付きでもない 「' + ss[j] + '」');
+      }
+    }
+    return problems;
+  }
+
+  /** 網がどこまで届いているかを毎回数え直す(cycle-0170・台帳 SANMEI-4e)。
+      **数を文書や検査へ書き写さないため**にここへ置く=13-d の表が20サイクル
+      古いまま残った形(cycle-0169)を、この数でも作らないこと。
+
+      数えるのは欄ごとに4つ。
+        nonClosing  結び以外の文(「逆に」の文は別条が持つので除く)
+        uncovered   いまの逃がし方を1つも通らない文
+        withScene   そのうち場面の目印を持つ文(=網を当てても逃がす側へ入る)
+        withoutScene そのうち目印を持たない文(=網を当てると新しく赤になる文) */
+  function kanshiSceneReach() {
+    var out = [], f, i, j, ss, texts, row;
+    for (f = 0; f < KANSHI_FIELDS.length; f++) {
+      texts = kanshiFieldTexts(KANSHI_FIELDS[f]);
+      row = { field: KANSHI_FIELDS[f], books: texts.length, nonClosing: 0,
+              uncovered: 0, withScene: 0, withoutScene: 0, samples: [] };
+      for (i = 0; i < texts.length; i++) {
+        ss = kanshiSentencesOf(texts[i].text);
+        for (j = 0; j < ss.length - 1; j++) {
+          if (ss[j].indexOf('逆に') >= 0) { continue; }
+          row.nonClosing++;
+          if (KANSHI_HEDGE.test(ss[j]) || KANSHI_ARRANGEMENT.test(ss[j])
+              || KANSHI_NOUN_PRED.test(ss[j]) || KANSHI_STATE.test(ss[j])
+              || KANSHI_EXAMPLE.test(ss[j]) || KANSHI_POTENTIAL.test(ss[j])
+              || KANSHI_CONDITION.test(ss[j])) { continue; }
+          row.uncovered++;
+          if (KANSHI_SCENE.test(ss[j])) { row.withScene++; }
+          else { row.withoutScene++; row.samples.push(texts[i].at + ': ' + ss[j]); }
+        }
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
+  /** 上の数の見張り。**rows と markers を受け取れる形にしてあるのは反証のため**
+      =検査は本物の実測だけでなく壊した見本も同じここへ通す(障害19)。
+
+      見るのは5つ。
+        (1) 3欄そろっていること(欄が落ちたことを「届いている」と読ませない)
+        (2) 数が数であること(測れなかったのに満たしたと言わない=#71 の DUE-1 と同じ)
+        (3) uncovered が withScene と withoutScene の和であること(数え落としが無い)
+        (4) **月の uncovered が0であること**=較正。月は裏返しの網が全文を覆えており、
+            この0が崩れたら月の網か逃がし方のどちらかが動いたということ。
+        (5) **目印の一覧のどの語も、実文に1つ以上当たること**=空振りの語を
+            一覧へ足させない。この目印は網の**逃がし方**なので、当たらない語を
+            足すのは黙って網を緩めることに等しい(cycle-0117 の点検役 M3 と同じ戒め)。 */
+  function kanshiSceneReachProblems(rowsIn, markersIn) {
+    var rows = rowsIn || kanshiSceneReach();
+    var markers = markersIn || kanshiSceneMarkers();
+    var problems = [], i, r, hit, f, j, ss, texts;
+    if (rows.length !== KANSHI_FIELDS.length) {
+      problems.push('欄が' + KANSHI_FIELDS.length + 'つそろっていない: ' + rows.length + '欄');
+    }
+    for (i = 0; i < rows.length; i++) {
+      r = rows[i];
+      if (typeof r.uncovered !== 'number' || typeof r.withScene !== 'number'
+          || typeof r.withoutScene !== 'number') {
+        problems.push(r.field + ': 数えられない(測れなかったのであって満たしたのではない)');
+        continue;
+      }
+      if (r.withScene + r.withoutScene !== r.uncovered) {
+        problems.push(r.field + ': 内訳が合わない ' + r.withScene + '+' + r.withoutScene
+          + ' ≠ ' + r.uncovered);
+      }
+      if (r.field === 'month' && r.uncovered !== 0) {
+        problems.push('月の較正が崩れている: 逃がし方を通らない文が' + r.uncovered + '文');
+      }
+    }
+    /* 目印の空振りを見る。当てる相手は日・年の非結び文そのもの。 */
+    for (i = 0; i < markers.length; i++) {
+      hit = 0;
+      for (f = 0; f < KANSHI_FIELDS.length; f++) {
+        if (KANSHI_FIELDS[f] === 'month') { continue; }
+        texts = kanshiFieldTexts(KANSHI_FIELDS[f]);
+        for (j = 0; j < texts.length; j++) {
+          ss = kanshiSentencesOf(texts[j].text);
+          for (var k = 0; k < ss.length - 1; k++) {
+            if (markers[i].re.test(ss[k])) { hit++; }
+          }
+        }
+      }
+      if (!hit) {
+        problems.push('場面の目印「' + markers[i].word + '」が実文に1つも当たらない(空振りの語を逃がし方へ足さない)');
       }
     }
     return problems;
@@ -4938,6 +5078,12 @@
          九星気学の18本は YOMI2-2 がここへ直接渡して同じ規則を通す */
       yomiAssertProblemsOf: yomiAssertProblemsOf,
       kanshiSentenceNetProblems: kanshiSentenceNetProblems,
+      kanshiScene: KANSHI_SCENE,
+      kanshiSceneMarkers: kanshiSceneMarkers,
+      kanshiSceneReach: kanshiSceneReach,
+      kanshiSceneReachProblems: kanshiSceneReachProblems,
+      kanshiExample: KANSHI_EXAMPLE,
+      kanshiPotential: KANSHI_POTENTIAL,
       /* cycle-0137(台帳 SANMEI-5f・5g):判定は1か所。検査 SANMEI5f-1 と反証が
          同じここを呼ぶ(検査の側に語の一覧も結び方も書き写さない=障害19) */
       tenchusatsuGuardWords: tenchusatsuGuardWords,
