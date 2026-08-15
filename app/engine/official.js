@@ -1548,6 +1548,23 @@
   var KANSHI_HABIT = /(毎日|毎月|毎週|毎年|十年|その都度|欠か[さし]|手放しま|ては、|回ります|回しています|続けま|続けて)/;
   var KANSHI_EXAMPLE = /当てはまります。$/;
   var KANSHI_POTENTIAL = /(られます|できます|ていけます)。$/;
+  /* 可能形の広いほう(cycle-0171・台帳 SANMEI-4g)。**上の3語では足りない文が
+     日の欄に2文ある**=day/壬寅「惜しみなく力を注げます。」・
+     day/乙巳「行きたいところへ少しずつ近づけます。」で、どちらも力量を述べる文
+     (=行いの断定ではない)なのに、上の一覧が「けます」「げます」を外しているため
+     逃がし方を1つも通らない。
+
+     **外してあった理由は正しい**=「〜けます」は可能形(近づく→近づける)と
+     下一段動詞(つける・上げる)で形がまったく同じで、**正規表現では分けられない**。
+     分かれ目になるのは語形ではなく、その文が習慣の目印を持つかどうかだけである
+     (「毎日同じ形でつけます」は行いの言い切りで、「力を注げます」は力量)。
+     そこで**この広いほうは KANSHI_HABIT に当たらない文にだけ許す**。
+     cycle-0139 が心配した「毎日つけます」は習慣の目印を持つので、いまも捕まる。
+
+     **これは「網を緑にするために逃がし方を広げた」のではない**=広げて新しく逃げる
+     文は 675文中5文(すべて日の欄)で、年・月は1文も動かない。裏づけは
+     SANMEI4g-2 の較正と、下の kanshiSceneReach()。 */
+  var KANSHI_POTENTIAL_WIDE = /(けます|げます)。$/;
 
   /* 場面を先に置く目印(cycle-0170・台帳 SANMEI-4e)。
      **一覧は実文の走査から作った**(書き写しで作らない=障害19)。作り方は
@@ -1578,10 +1595,23 @@
      docs/sanmei-kanshi-plan.md の 5-l 節と、下の kanshiSceneReach()。 */
   /* 一覧は配列で持ち、正規表現はそこから組み立てる=検査が1語ずつ「実文に当たるか」を
      確かめられる形にするため(一覧を文字列で埋め込むと1語ずつには当てられない)。 */
-  var KANSHI_SCENE_NOUNS = ['ところ', 'とき', '場面', '時期', '段階', '席', '途中', 'うち'];
+  /* cycle-0171(台帳 SANMEI-4g)で3つ足した。**足したぶんはすべて実文から出ている**
+     =日の欄で逃がし方を1つも通らなかった5文のうち3文がこの形だった。
+       週末 … day/戊辰「家族の予定が崩れた週末に、」
+       役目 … day/丙午「場を一気に温める役目で、」
+       読点 … day/甲寅「持ち場に置かれたとき、」(「とき」は一覧にあったが、
+              許す助詞に読点が無かったので当たらなかった)
+     **「名詞+格助詞+読点」までは広げない**(台帳 SANMEI-4g の戒め)=そこまで採ると
+     読点を持つほとんどの文が逃げる。足したのは名詞2語と読点1つで、広げて新しく
+     逃げる文は日の3文だけ・年と月は0文である(SANMEI4g-2 が毎回測る)。 */
+  var KANSHI_SCENE_NOUNS = ['ところ', 'とき', '場面', '時期', '段階', '席', '途中', 'うち',
+                            '週末', '役目'];
   var KANSHI_SCENE_WIDE = ['年', '場'];
+  /* 助詞は1か所に持つ=目印の正規表現と、1語ずつ引く kanshiSceneMarkers() が
+     別々の助詞を持つと、検査は当たるのに本番は当たらない形ができる */
+  var KANSHI_SCENE_PARTICLES = '[でにがはもほ、]';
   var KANSHI_SCENE = new RegExp(
-    '((' + KANSHI_SCENE_NOUNS.join('|') + ')[でにがはもほ]|('
+    '((' + KANSHI_SCENE_NOUNS.join('|') + ')' + KANSHI_SCENE_PARTICLES + '|('
          + KANSHI_SCENE_WIDE.join('|') + ')[でには]、)');
 
   /** 目印を1語ずつ引けるようにする(検査が空振りの語を見つけるため)。 */
@@ -1589,13 +1619,44 @@
     var out = [], i;
     for (i = 0; i < KANSHI_SCENE_NOUNS.length; i++) {
       out.push({ word: KANSHI_SCENE_NOUNS[i], wide: false,
-                 re: new RegExp(KANSHI_SCENE_NOUNS[i] + '[でにがはもほ]') });
+                 re: new RegExp(KANSHI_SCENE_NOUNS[i] + KANSHI_SCENE_PARTICLES) });
     }
     for (i = 0; i < KANSHI_SCENE_WIDE.length; i++) {
       out.push({ word: KANSHI_SCENE_WIDE[i], wide: true,
                  re: new RegExp(KANSHI_SCENE_WIDE[i] + '[でには]、') });
     }
     return out;
+  }
+
+  /** 逃がし方(網の穴)を1か所に括る(cycle-0171・台帳 SANMEI-4g)。
+      戻り値は**どの条で逃げたかの名**で、逃げなければ null を返す
+      =「何文が逃げたか」だけでなく「どの条で逃げたか」を数えられる形にしてある
+      (逃がし方を広げた回に、どの条が効いたのかを実測で言えるようにするため)。
+
+      **1か所に括った理由**=cycle-0170 までは同じ一覧が日・年の狭い網と
+      kanshiSceneReach() の2か所に書かれており、片方だけを広げれば
+      「網は緩んだのに届きの数は動かない」という食い違いが黙って作れた。
+
+      opts.withoutScene を渡すと**場面の目印だけを外して**判じる
+      =kanshiSceneReach() が「場面で覆える文/覆えない文」に割るために使う。
+
+      **月の欄はここを通らない**=月の裏返しの網は逃がし方が4条(含み・並びの説明・
+      名詞述語・状態)と狭く、ここへ寄せると場面・条件節・当てはまり・可能形のぶんだけ
+      黙って緩む。月は cycle-0136 の狭い網のままでよい(実測でも0文)ので、
+      **そろえるために緩めることはしない**。 */
+  function kanshiCoverOf(s, opts) {
+    if (KANSHI_HEDGE.test(s)) { return '含み'; }
+    if (KANSHI_ARRANGEMENT.test(s)) { return '並びの説明'; }
+    if (KANSHI_NOUN_PRED.test(s)) { return '名詞述語'; }
+    if (KANSHI_STATE.test(s)) { return '状態'; }
+    if (KANSHI_EXAMPLE.test(s)) { return '当てはまり'; }
+    if (KANSHI_POTENTIAL.test(s)) { return '可能形'; }
+    if (KANSHI_CONDITION.test(s)) { return '条件節'; }
+    /* 広い可能形は習慣の目印を持たない文にだけ許す(KANSHI_POTENTIAL_WIDE の覚え書き)。
+       場面より後ろに置くのは、場面で逃げる文をこちらの名で数えさせないため。 */
+    if (!(opts && opts.withoutScene) && KANSHI_SCENE.test(s)) { return '場面'; }
+    if (KANSHI_POTENTIAL_WIDE.test(s) && !KANSHI_HABIT.test(s)) { return '可能形(広)'; }
+    return null;
   }
 
   function kanshiSentencesOf(text) {
@@ -2001,19 +2062,37 @@
           problems.push(texts[i].at + ': 月の欄で読み手の暮らしぶりを裸で言い切っている 「' + ss[j] + '」');
         }
       }
-      /* 日・年は、持続・習慣を述べる文が裸の言い切りで結ばないこと
+      /* **日の欄は、結び以外のどの文も裸で言い切らないこと**(cycle-0171・SANMEI-4g)。
+         月と同じ裏返しの網だが、逃がし方は月より広い(kanshiCoverOf の8条)。
+         2文目は上の1条が受け持つのでここでは見ない=同じ文が二度出ないため。
+
+         **年へは当てない。**逃がし方を1つも通らない文が日は5文なのに年は33文あり
+         (kanshiSceneReach() が毎回数え直す)、その33文は
+         「初日の教室で隣の席へ先に話しかけ、休み時間には輪ができています。」のように
+         形の手がかりを持たない=網を当てるなら実文33本のほうを書き替えることになる。
+         cycle-0168 が「形だけでは条件付きか無条件かを判じられない」として
+         意図して外へ置いた文がそれである。年は下の狭い網(持続・習慣)のままにする。 */
+      if (field === 'day') {
+        for (j = 0; j < ss.length - 1; j++) {
+          if (j === 1) { continue; }
+          if (ss[j].indexOf('逆に') >= 0) { continue; }
+          if (kanshiCoverOf(ss[j])) { continue; }
+          problems.push(texts[i].at
+            + ': 日の欄で読み手のふるまいを裸で言い切っている 「' + ss[j] + '」');
+        }
+      }
+      /* 年は、持続・習慣を述べる文が裸の言い切りで結ばないこと
          (cycle-0139・SANMEI-8b)。月の網をそのまま広げない理由は
-         KANSHI_HABIT の上の覚え書きにある。 */
-      if (field === 'day' || field === 'year') {
+         KANSHI_HABIT の上の覚え書きにある。**日をここから外したのは
+         cycle-0171** で、上の裏返しの網が同じ逃がし方で日の全文を見るため
+         (残すと同じ文が二度出る)。 */
+      if (field === 'year') {
         for (j = 0; j < ss.length - 1; j++) {
           if (ss[j].indexOf('逆に') >= 0) { continue; }
           if (!KANSHI_HABIT.test(ss[j])) { continue; }
-          if (KANSHI_HEDGE.test(ss[j]) || KANSHI_ARRANGEMENT.test(ss[j])
-              || KANSHI_NOUN_PRED.test(ss[j]) || KANSHI_STATE.test(ss[j])
-              || KANSHI_EXAMPLE.test(ss[j]) || KANSHI_POTENTIAL.test(ss[j])
-              /* 場面の条件が付いた文は直さない(cycle-0139 の決めごと)。
-                 cycle-0170 でこの1条を足すまで、決めごとだけがあって実装が無かった。 */
-              || KANSHI_SCENE.test(ss[j]) || KANSHI_CONDITION.test(ss[j])) { continue; }
+          /* 場面の条件が付いた文は直さない(cycle-0139 の決めごと)。
+             cycle-0170 でこの1条を足すまで、決めごとだけがあって実装が無かった。 */
+          if (kanshiCoverOf(ss[j])) { continue; }
           problems.push(texts[i].at + ': ' + field
             + 'の欄で持続・習慣を裸で言い切っている 「' + ss[j] + '」');
         }
@@ -2048,10 +2127,10 @@
         for (j = 0; j < ss.length - 1; j++) {
           if (ss[j].indexOf('逆に') >= 0) { continue; }
           row.nonClosing++;
-          if (KANSHI_HEDGE.test(ss[j]) || KANSHI_ARRANGEMENT.test(ss[j])
-              || KANSHI_NOUN_PRED.test(ss[j]) || KANSHI_STATE.test(ss[j])
-              || KANSHI_EXAMPLE.test(ss[j]) || KANSHI_POTENTIAL.test(ss[j])
-              || KANSHI_CONDITION.test(ss[j])) { continue; }
+          /* 場面だけを外して判じる=残りを「場面で覆える文/覆えない文」に割るため。
+             逃がし方の一覧は kanshiCoverOf 1か所にあり、ここへ書き写さない
+             (cycle-0171。書き写すと、網だけを広げて届きの数が動かない形が作れる) */
+          if (kanshiCoverOf(ss[j], { withoutScene: true })) { continue; }
           row.uncovered++;
           if (KANSHI_SCENE.test(ss[j])) { row.withScene++; }
           else { row.withoutScene++; row.samples.push(texts[i].at + ': ' + ss[j]); }
@@ -5084,6 +5163,11 @@
       kanshiSceneReachProblems: kanshiSceneReachProblems,
       kanshiExample: KANSHI_EXAMPLE,
       kanshiPotential: KANSHI_POTENTIAL,
+      /* cycle-0171(台帳 SANMEI-4g):逃がし方は kanshiCoverOf 1か所。検査
+         SANMEI4g-* はここを引き、条の一覧を検査の側へ書き写さない(障害19) */
+      kanshiCoverOf: kanshiCoverOf,
+      kanshiPotentialWide: KANSHI_POTENTIAL_WIDE,
+      kanshiSceneNouns: KANSHI_SCENE_NOUNS.slice(),
       /* cycle-0137(台帳 SANMEI-5f・5g):判定は1か所。検査 SANMEI5f-1 と反証が
          同じここを呼ぶ(検査の側に語の一覧も結び方も書き写さない=障害19) */
       tenchusatsuGuardWords: tenchusatsuGuardWords,
