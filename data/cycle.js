@@ -1,18 +1,18 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0166",
-  "cycle_label": "サイクル 0166",
-  "generated_at": "2026-08-15T15:21:54+09:00",
+  "cycle_id": "cycle-0167",
+  "cycle_label": "第167サイクル",
+  "generated_at": "2026-08-15T16:32:49+09:00",
   "status": "OK",
   "overall": {
-    "phase": "記録の無い指摘2件を、推測でなく実測で片づけた(台帳 OC46-L6・OC46-L7)",
+    "phase": "読みが消えたときの知らせ方を、実際に起きたことと合う向きへ直した(台帳 CROSS-L2f)",
     "pdca_phase": "Check",
-    "pdca_note": "「元の記録が無いので分かりません」と言い続けていた2件を、実際に測って白黒つける回です。",
-    "now_doing": "検査の網を、書き写しの一覧から走査へ作り直す(障害19 の系列)",
+    "pdca_note": "台帳が置いていた前提そのものを実測で確かめ直し、2つとも取り下げた回です。",
+    "now_doing": "検査の診断の向きをそろえる(読み手が読み替えを強いられない形にする)",
     "done_this_cycle": [
-      "GUARD3-2 の在りかの拾い方を、2語の名指しから走査へ替えた(台帳 GUARD-L2 完了)",
-      "反証 GUARD3-2b を新設し、点検役が素通りさせた壊し方そのものを写しで実測した",
-      "助数詞を外した網も試して偽の当たり24件を実測し、採らない理由を数で残した"
+      "顔ぶれが縮んだときの診断を、実際に起きたこと(読みが消えて欄ごと落ちた)を言う形に替えた",
+      "判定を tools/value-roster.js の linkedRosterProblems 1か所へ移し、反証 YOMI1-8c を新設した",
+      "台帳が7サイクル置いていた前提2つ(唯一の歯止め・向きが逆)を実測で取り下げた"
     ],
     "next_up": [
       {
@@ -20,22 +20,22 @@ window.DASHBOARD_DATA = {
         "text": "場面の帰結を述べる文の言い切りを、条件節の有無から見分ける道を探す(算命学)"
       },
       {
-        "id": "CROSS-L2f",
-        "text": "算命学の欄では、読みが消えたときの知らせ方が「計算では出ない値の読みがある」と逆向きに出る"
-      },
-      {
         "id": "AI-L5",
         "text": "中継役の返りを通す門の一覧が、アプリ側とテスト側の2か所にある(語を足す作業が2か所になる)"
+      },
+      {
+        "id": "YOMI-N11",
+        "text": "報告書の進捗の数え方が、姓名判断だけ全日付×12名で回っている(重複計算をやめる)"
       }
     ],
-    "summary": "cycle-0166 は**「探す網が、探すべきものの一覧を手で持っている」形を1件畳んだ回**である。片づけたのは台帳 GUARD-L2。欄の数を語る文(算命学の「六つの窓から」「ここに並べた六つの見方は」)が、歯止めのあとの欄の数と食い違わないかを見る検査 GUARD3-2 は、**その文の在りかを `つの窓` と `ここに並べた…つの見方` という2語で名指し**していた。cycle-0161 の点検役が結びを「並べたこの六つの見方は」へ**言い換えて数を直書き**すると、網のどちらの語にも当たらず、**3本とも素通りした**。**直し方は、語ではなく数のほうから拾うこと。**画面へ出た文に現れる「数詞+助数詞」のうち、**その値がその結果の欄の数と一致するもの**を「欄の数を語っている箇所」と見なす。文の言い回しに一切依らないので、どう言い換えても拾える。拾ったら、その文が入れ札を通っているか(実装の生の文に入れ札があるか)を見る=直書きなら生の文の側に同じ数が現れるので、そこで赤になる。**受入条件は写しを作って実測した。**点検役の壊し方を app/engine/official.js へ実際に当てると、旧版では3本とも緑だったのに対し **GUARD3-2 が赤**になり、診断も「closing: 欄の数(6)を語る文が入れ札を通っていない(実装が直書きしている)」と実際に起きたことと合う向きで出た。写しは元へ戻し、app/ の差分が空であることを確かめてある。"
+    "summary": "cycle-0167 は**台帳が置いていた前提そのものを実測で確かめ直した回**である(台帳 CROSS-L2f)。算命学の「天中殺の組」の値の顔ぶれだけは `official.computeOne` を回して集めるので、**読みを1件消すと欄ごと落ちて顔ぶれも 6→5 へ縮む**。台帳とソースの注記は、この形について(i)「守っているのは検査 YOMI1-8 の (0) ただ1つ」(ii)「出る言い方は『計算では出ない値の読みがある』で、実際に起きたこと(読みが消えた)と向きが逆」と7サイクル書き置いていた。**読みを消す形を2通り実際に作って測ると、この2つはどちらも成り立たなかった。**歯止めは2つあり(もう1つは angleTextCountProblems)、そちらの言い方は「読みの中身が空の値がある(子丑天中殺)」で**向きは合っていた**。食い違いの出どころは、(ii) を書いた cycle-0160 の**同じ回**に「中身の空いた読みを覆えていると数えない」判定が入ったことで、**注記のほうが同じ回の直しを織り込まないまま据え置かれた**。そのうえで、残っていた本当の不揃い=(0) の側は直した。旧版は `expect(通り数).toBe(6)` と `expect(頭の二字).toBe(…)` の2行で、読みが消えても「5 であってほしいのは 6」という**数の食い違いだけ**が出て、そこから「読みが1件消えて欄ごと落ちた」を読み手が毎回組み立て直す形だった。いまは**縮んだ側に触れて何が起きたのかを言う**。判定は tools/value-roster.js の `linkedRosterProblems` 1か所で、(0) と新設の反証 **YOMI1-8c** が同じ関数を呼ぶ。**接尾辞は手打ちしていない**(受入条件2)=突き合わせは「値の頭に暦側の鍵が付いている」という形だけで取り、反証の見本も実物から末尾を1つ落として作る。**占いの結果の値・画面・文章には触れていない**(app/ の差分0件)。"
   },
-  "task": "「欄の数を語る文」を探す網が、手で選んだ2語の一覧になっていたのを走査で作り直す(台帳 GUARD-L2)",
+  "task": "読みが消えたときの知らせ方を、実際に起きたことと合う向きへ直す(台帳 CROSS-L2f)",
   "acceptance": [
-    "在りかを語の名指しでなく走査で拾う形にすること(「数詞+助数詞が画面へ出る文」)",
-    "文を言い換えて数を直書きした写しが、GUARD3-1・GUARD3-2・GUARD3-1b のいずれかで捕まること",
-    "これまで捕まえていた壊し方(直書き・items.length への差し戻し・文ごと削除)も引き続き赤になること",
-    "占いの結果の値・画面・文章に触れないこと"
+    "読みが消えたときに、実際に起きたことと合う言い方で出ること(受入条件1)",
+    "接尾辞(「天中殺」)を検査の側で手打ちしないこと(受入条件2)",
+    "判定は1か所に置き、検査(YOMI1-8 の (0))と反証(YOMI1-8c)が同じ関数を呼ぶこと",
+    "占いの結果の値・画面・文章に触れないこと(app/ の差分0件)"
   ],
   "comparison": {
     "headers": [
@@ -64,7 +64,9 @@ window.DASHBOARD_DATA = {
   "adopted_reason": "案C。**「壊しても赤くならない検査」を直すのに、見張る側を増やしても意味がありません。**足りなかったのは壊し方の数ではなく、**差が出る場面そのもの**でした。いまの表では歯止めが1欄も落とさないので、走査を720件に増やしても720件とも差の出ない場面です。そこで**差の出る場面を検査の中で作り**、期待する文字を判定を呼ばずに組み立てました。こうすると、埋める側を書き替えても、判じる側を空にしても、どちらでも赤が出ます。",
   "rejected_reason": "案Aは、欄の数という**動くもの**を判定の外にもう一度持つことになり、その表自身が古くなるためです(前回のサイクルで「コメントに手打ちした数字」を落としたのと同じ理由です)。案Bは、空振りしている本体をそのままにして周りだけを厚くする形で、名乗りと中身の食い違いが残るためです。",
   "improvements": [
-    "⑧新テスト合格:GUARD3-2 を走査の形へ作り直し、反証 GUARD3-2b を新設した(点検役が素通りさせた壊し方が赤になることを写しで実測)"
+    "**⑧新テスト合格**:反証 YOMI1-8c を新設した(5通りの壊し方=顔ぶれが縮む・暦側に無い値・同じ組から二通り・2つ目の歯止め・渡され方の5形)。",
+    "**②仕様違反解消**:検査の診断が、実際に起きたこととは違う向きで出る形を1件なくした(台帳 CROSS-L2f の受入条件1)。",
+    "**⑤文章重複減にあたる整理**:ソースの注記から、実測と食い違う断り2つを取り下げた(#45)。"
   ],
   "completed_features": [
     "起動イラスト(輪と点のCSS図形・3秒表示・タップでスキップ)",
@@ -833,12 +835,6 @@ window.DASHBOARD_DATA = {
       "plan": "総合占いは合流点を通らない別の入口から画面へ出ています。まず欄の作りを走査して測り、空の欄が出る道があるかを確かめます。落とすのが正しいかどうかはご指示の範囲を確かめてから決めます"
     },
     {
-      "id": "CROSS-L2f",
-      "status": "未着手",
-      "title": "算命学の欄では、読みが消えたときの知らせ方が逆向きに出る",
-      "plan": "赤にはなりますが「計算では出ない値の読みがある」と出るため、実際に起きたこと(読みが消えた)と向きが逆です。知らせ方をそろえます"
-    },
-    {
       "id": "GUARD-L3",
       "status": "未着手",
       "title": "判定の中に、どの検査からも通らない枝が1つ残っている",
@@ -958,93 +954,31 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "npx playwright test tests/yomi.spec.js / tests/dashboard.spec.js / tests/title.spec.js",
+    "command": "npx playwright test tests/yomi.spec.js / tests/title.spec.js",
     "executed": true,
-    "passed": 309,
+    "passed": 99,
     "failed": 0,
     "count_basis": [
-      "2026-08-15T14:44:58+09:00",
-      "2026-08-15T15:02:05+09:00",
-      "2026-08-15T15:20:16+09:00"
+      "2026-08-15T16:08:35+09:00",
+      "2026-08-15T16:31:33+09:00"
     ],
-    "duration": "14:44:58〜14:48:41(所要223秒)・15:02:05〜15:10:12(所要487秒)・15:20:16〜15:21:19(所要63秒)・3本とも exit 0",
+    "duration": "16:08:35〜16:12:15(所要220秒)・16:31:33〜16:32:33(所要60秒)・2本とも exit 0",
     "cases": [
       {
         "name": "npx playwright test tests/yomi.spec.js",
-        "passed": 82,
+        "passed": 83,
         "failed": 0,
-        "note": "14:44:58〜14:48:41(所要223秒・exit 0)。82件合格・0件失敗・70件スキップです。**この回で作り直した GUARD3-2(欄の数を語る文を走査で拾う)と、新設の反証 GUARD3-2b がここに入っています。**"
-      },
-      {
-        "name": "npx playwright test tests/dashboard.spec.js",
-        "passed": 211,
-        "failed": 0,
-        "note": "15:02:05〜15:10:12(所要487秒・exit 0)。211件合格・0件失敗・73件スキップです。**1本目(14:49:37 開始)は R1「未来時刻の欄が無い」で1件落ちました**=引継ぎの written_at に実時刻より先の時刻を手で書いたためで、実時刻へ直して再実測しています(**時刻は推測で書かず実測すること**)。"
+        "note": "16:08:35〜16:12:15(所要220秒・exit 0)。83件合格・0件失敗・71件スキップです。**この回で作り直した YOMI1-8 の (0)(判定を linkedRosterProblems へ移した)と、新設の反証 YOMI1-8c がここに入っています**(前サイクル82件→83件)。"
       },
       {
         "name": "npx playwright test tests/title.spec.js",
         "passed": 16,
         "failed": 0,
-        "note": "15:20:16〜15:21:19(所要63秒・exit 0)。16件合格・0件失敗・0件スキップです。**この回の作業とは直接の関わりがありません**=下の「行き詰まり」に書いた道連れの連鎖を断ち切るため、実行記録のいちばん新しい1件を成功で置き直す目的で走らせました。"
+        "note": "16:31:33〜16:32:33(所要60秒・exit 0)。16件合格・0件失敗・0件スキップです。**この回の作業とは直接の関わりがありません**=下の「行き詰まり」に書いた道連れの連鎖を断ち切るため、実行記録のいちばん新しい1件を成功で置き直す目的で走らせました(cycle-0166 と同じ手)。"
       }
     ],
-    "executed_at": "2026-08-15T15:21:19+09:00",
+    "executed_at": "2026-08-15T16:32:33+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-08-15T14:49:37+09:00",
-        "finished_at": "2026-08-15T14:57:54+09:00",
-        "duration_seconds": 498,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 1,
-        "passed": 210,
-        "failed": 1,
-        "skipped": 73,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-15T14:58:03+09:00",
-        "finished_at": "2026-08-15T14:59:41+09:00",
-        "duration_seconds": 97,
-        "command": "npx playwright test tests/dashboard.spec.js -g R1",
-        "exit_code": 1,
-        "passed": 21,
-        "failed": 1,
-        "skipped": 18,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-15T14:59:50+09:00",
-        "finished_at": "2026-08-15T15:01:19+09:00",
-        "duration_seconds": 89,
-        "command": "npx playwright test tests/dashboard.spec.js -g R1",
-        "exit_code": 0,
-        "passed": 22,
-        "failed": 0,
-        "skipped": 18,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-15T15:02:05+09:00",
-        "finished_at": "2026-08-15T15:10:12+09:00",
-        "duration_seconds": 486,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 0,
-        "passed": 211,
-        "failed": 0,
-        "skipped": 73,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-15T15:10:51+09:00",
-        "finished_at": "2026-08-15T15:10:51+09:00",
-        "duration_seconds": 0,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC47c|OC47-2|OC47-6|OC8-2|LEDGER1|COUNT1|UNIFY1|OC54-1|OC10|OC9",
-        "exit_code": 255
-      },
       {
         "started_at": "2026-08-15T15:10:59+09:00",
         "finished_at": "2026-08-15T15:10:59+09:00",
@@ -1075,12 +1009,72 @@ window.DASHBOARD_DATA = {
         "skipped": 0,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-15T15:22:05+09:00",
+        "finished_at": "2026-08-15T15:30:13+09:00",
+        "duration_seconds": 488,
+        "command": "npx playwright test tests/dashboard.spec.js",
+        "exit_code": 0,
+        "passed": 211,
+        "failed": 0,
+        "skipped": 73,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-15T16:08:35+09:00",
+        "finished_at": "2026-08-15T16:12:15+09:00",
+        "duration_seconds": 220,
+        "command": "npx playwright test tests/yomi.spec.js",
+        "exit_code": 0,
+        "passed": 83,
+        "failed": 0,
+        "skipped": 71,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-15T16:12:59+09:00",
+        "finished_at": "2026-08-15T16:21:09+09:00",
+        "duration_seconds": 490,
+        "command": "npx playwright test tests/dashboard.spec.js",
+        "exit_code": 1,
+        "passed": 209,
+        "failed": 2,
+        "skipped": 73,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-15T16:22:41+09:00",
+        "finished_at": "2026-08-15T16:31:04+09:00",
+        "duration_seconds": 503,
+        "command": "npx playwright test tests/dashboard.spec.js",
+        "exit_code": 1,
+        "passed": 208,
+        "failed": 3,
+        "skipped": 73,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-15T16:31:33+09:00",
+        "finished_at": "2026-08-15T16:32:33+09:00",
+        "duration_seconds": 60,
+        "command": "npx playwright test tests/title.spec.js",
+        "exit_code": 0,
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
     ],
     "recorded_runs_omitted": {
       "log_total": 30,
       "omitted": 22,
-      "omitted_failed": 5
+      "omitted_failed": 7
     }
   },
   "failures": [
@@ -1090,8 +1084,9 @@ window.DASHBOARD_DATA = {
     }
   ],
   "unverified": [
-    "**助数詞の一覧は残っています。**在りかの拾い方は言い回しに依らない形へ替えましたが、「数詞+助数詞」の助数詞の側は一覧(つ・個・件・本・欄・通り・種・点・面・枚・章・項・口・筋)のままです。助数詞という閉じた語類なので特定の言い回しの名指しとは別物ですが、この一覧に無い助数詞で言い換えた場合に拾えるかは**未確認**です(助数詞を外した網は偽の当たりが24件出たため採りませんでした)。",
-    "**拾えた箇所の顔ぶれ3件は、いまの実装での実測値です。**別の占術に欄の数を語る文を足した場合、この完全一致の表明は落ちます(意図した作りですが、そのとき何が正しいかはその回に判断することになります)。"
+    "**この回で走らせたのは読みのスイート(tests/yomi.spec.js)1本だけ**です。触ったのは tools/value-roster.js と tests/yomi.spec.js の2つで、**app/ には1文字も書いていない**(git diff で確認済み)ため、計算の照合・文体・画面のスイートは走らせていません。報告書のスイート(tests/dashboard.spec.js)はビルドのあとに走らせており、**規則どおり合格件数の数には入れていません**。",
+    "**読みを消す実測は、リポジトリのファイルを書き替えずに行いました**=app/engine/official.js のソースを読み込み、`require.cache` へ差し込む形で2通りの壊し方を試しています。したがって「ファイルを実際に壊して戻した」わけではなく、**同じソースから作った写しを読ませた**結果です。",
+    "**取り下げた前提(i)(ii) が「いつから成り立たなくなったか」は未確認**です。cycle-0160 の点検役 R1 の直しと同じ回に書かれたことまでは確かめましたが、書かれた時点で既に偽だったのか、直しが入った瞬間に偽になったのかは記録から判じられません。"
   ],
   "denied_actions": [],
   "usage": {
@@ -1110,6 +1105,11 @@ window.DASHBOARD_DATA = {
     "**期限つき・条件つきの作業の点検**:この回の冒頭で自動の点検を走らせたときの対象は4件で、すべて「あなたの確認待ち」でした(期限を過ぎて条件も満たした行はありません)。**そのうち2件(OC46-L6・OC46-L7)をこの回で実測して閉じたので、確認待ちは残り2件です。**溜まっている作業の自動棚卸しも走らせ、対象3件はいずれも閉じてよい条件に当たらないため閉じていません。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-15 16:12",
+      "event": "cycle-0167:読みが消えたときの診断を、実際に起きたことと合う向きへ直した(台帳 CROSS-L2f)",
+      "detail": "算命学「天中殺の組」の顔ぶれは official.computeOne から集めるので、読みが1件消えると欄ごと落ちて 6→5 へ縮む。旧版の検査は「5 であってほしいのは 6」という数の食い違いだけを出しており、読み手が毎回「読みが消えた」を組み立て直していた。いまは「暦側の 6 通りのうち 1 通りが集まっていない(子丑)。この欄の顔ぶれは読みの歯止めを通って集まるので、その値の読みが消えて欄ごと落ちた見込み」と出る。判定は tools/value-roster.js の linkedRosterProblems 1か所で、YOMI1-8 の (0) と新設の反証 YOMI1-8c が同じ関数を呼ぶ。接尾辞は手打ちしていない(受入条件2)。**あわせて台帳とソースの注記が置いていた前提2つを実測で取り下げた**=「唯一の歯止め」も「向きが逆の言い方」も成り立たず、angleTextCountProblems が2通りの壊し方の両方で正しい向き(「読みの中身が空の値がある」)で赤になっていた。出どころは cycle-0160 の同じ回に入った点検役 R1 の直しを、注記が織り込まないまま据え置いたこと。app/ の差分0件。"
+    },
     {
       "time": "2026-08-15 15:05",
       "event": "cycle-0166:欄の数を語る文を探す網を、2語の名指しから走査へ作り直した(台帳 GUARD-L2)",
@@ -2013,9 +2013,9 @@ window.DASHBOARD_DATA = {
     }
   ],
   "queue_summary": {
-    "todo": 48,
+    "todo": 47,
     "in_progress": 0,
-    "done": 244,
+    "done": 245,
     "blocked": 1,
     "items": [
       {
@@ -2350,8 +2350,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "pending_count": {
-    "total": 48,
-    "todo": 48,
+    "total": 47,
+    "todo": 47,
     "in_progress": 0,
     "error": ""
   },
@@ -2363,7 +2363,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-15T15:21:28+09:00",
+    "last_heartbeat": "2026-08-15T16:32:28+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2378,7 +2378,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-15T15:21:54+09:00",
+    "checked_at": "2026-08-15T16:32:49+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2408,7 +2408,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-15T15:21:54+09:00",
+    "checked_at": "2026-08-15T16:32:49+09:00",
     "rows": [
       {
         "id": "OC51b-L1",
@@ -2439,13 +2439,13 @@ window.DASHBOARD_DATA = {
     "keep_count": 3,
     "measure_count": 0,
     "problem_count": 0,
-    "open_count": 45,
+    "open_count": 44,
     "total_count": 3,
     "error": ""
   },
   "consistency": {
-    "checked_at": "2026-08-15T15:21:54+09:00",
-    "cycle_id": "cycle-0166",
+    "checked_at": "2026-08-15T16:32:49+09:00",
+    "cycle_id": "cycle-0167",
     "checks": [
       {
         "id": "C1",
@@ -2550,7 +2550,7 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "「溜まっている作業」に同じ番号の行が二度出ていないか",
         "level": "ok",
-        "detail": "48行の番号に重複はありません(作業台帳の未完了は48件です)"
+        "detail": "47行の番号に重複はありません(作業台帳の未完了は47件です)"
       }
     ],
     "cross_count": 11,
