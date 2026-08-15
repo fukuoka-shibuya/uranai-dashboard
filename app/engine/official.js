@@ -1068,6 +1068,23 @@
   var KANSHI_LIMITS = { average: 0.10, max: 0.35,
                         near_threshold: 0.24, near_count: 13, near_pairs_basis: 16110 };
 
+  /* 線の写しを作る1か所(cycle-0173・台帳 SANMEI-4b-L1)。**鍵を手で並べない**
+     =cycle-0145 で KANSHI_LIMITS へ帯の3つ(near_threshold・near_count・
+     near_pairs_basis)を足したとき、export の写しへ載せ忘れた。判定の側は
+     limits.near_count が数でなければ帯の検査を丸ごと飛ばす作りなので、
+     **実装にも文書にも線があるのに赤が出なかった**(気づいたのは node で値を
+     出して undefined を見たときで、検査は緑のままだった)。丸ごと写せば
+     足した線が黙って落ちることはない。写しを渡す理由そのものは変わらず
+     「呼ぶ側が書き替えても実装の線が動かないようにするため」である。
+     載せ忘れの形が戻っていないことは SANMEI4bL1-1 が官製の宣言と
+     突き合わせて毎回見る(反証 SANMEI4bL1-1b) */
+  function limitsCopyOf(src) {
+    var out = {};
+    if (!src || typeof src !== 'object') { return out; }
+    Object.keys(src).forEach(function (key) { out[key] = src[key]; });
+    return out;
+  }
+
   /* 表を引く。無い二文字・無い欄には値を作らず null を返す(姓名判断の kanaStrokesOf と
      同じ安全側)。空文字を返してはいけない=「読みが無い」のか「空の読みがある」のかを
      呼ぶ側が見分けられなくなり、#55 の「読みを載せられない欄は表示しない」が実装できない */
@@ -2660,12 +2677,14 @@
      =そうしないと下の「宣言した下端と測った下端の食い違い」が反証で必ず鳴る。
      **既定を書き替えたときだけ食い違う**ようにするための作りである
      (cycle-0147 の点検役 中3) */
+  /* 鍵は手で並べず限度の表を丸ごと写す(limitsCopyOf の説明・台帳 SANMEI-4b-L1)。
+     差し替え口の threshold だけは写したあとで上書きする */
   function screenLimitsOf(near, threshold) {
-    var out = { average: KANSHI_SAMEKEY_LIMITS.average, max: KANSHI_SAMEKEY_LIMITS.max };
+    var out = limitsCopyOf(KANSHI_SAMEKEY_LIMITS);
     if (near) {
-      out.near_threshold = (typeof threshold === 'number') ? threshold : near.near_threshold;
-      out.near_count = near.near_count;
-      out.near_pairs_basis = near.near_pairs_basis;
+      var band = limitsCopyOf(near);
+      if (typeof threshold === 'number') { band.near_threshold = threshold; }
+      Object.keys(band).forEach(function (key) { out[key] = band[key]; });
     }
     return out;
   }
@@ -5195,30 +5214,22 @@
       /* 同じ画面の重なりへ線を当てる1か所(cycle-0147・台帳 YOMI-N12)。
          算命学の SCREEN1-1 も九星の YOMI2-6 も反証も、ここを通る */
       sameScreenProblems: sameScreenProblems,
-      /* 帯の決まりは母集団ごとに別(組の数は母集団で動く)。写しを渡す */
-      sanmeiScreenNear: { near_threshold: SANMEI_SCREEN_NEAR.near_threshold,
-                          near_count: SANMEI_SCREEN_NEAR.near_count,
-                          near_pairs_basis: SANMEI_SCREEN_NEAR.near_pairs_basis },
-      kyuseiScreenNear: { near_threshold: KYUSEI_SCREEN_NEAR.near_threshold,
-                          near_count: KYUSEI_SCREEN_NEAR.near_count,
-                          near_pairs_basis: KYUSEI_SCREEN_NEAR.near_pairs_basis },
-      suuhiScreenNear: { near_threshold: SUUHI_SCREEN_NEAR.near_threshold,
-                         near_count: SUUHI_SCREEN_NEAR.near_count,
-                         near_pairs_basis: SUUHI_SCREEN_NEAR.near_pairs_basis },
+      /* 帯の決まりは母集団ごとに別(組の数は母集団で動く)。写しを渡す
+         =鍵は手で並べず丸ごと写す(limitsCopyOf の説明・台帳 SANMEI-4b-L1) */
+      sanmeiScreenNear: limitsCopyOf(SANMEI_SCREEN_NEAR),
+      kyuseiScreenNear: limitsCopyOf(KYUSEI_SCREEN_NEAR),
+      suuhiScreenNear: limitsCopyOf(SUUHI_SCREEN_NEAR),
       sanmeiCoreFromIndexes: sanmeiCoreFromIndexes,
       sanmeiSameScreenOverlap: sanmeiSameScreenOverlap,
       sanmeiScreenFieldProblems: sanmeiScreenFieldProblems,
-      kanshiSameKeyLimits: { average: KANSHI_SAMEKEY_LIMITS.average,
-                             max: KANSHI_SAMEKEY_LIMITS.max },
+      kanshiSameKeyLimits: limitsCopyOf(KANSHI_SAMEKEY_LIMITS),
       kanshiPairOverlapOf: kanshiPairOverlapOf,
       /* 線は写しを渡す(呼ぶ側が書き替えても実装の線が動かないようにするため)。
-         **近い組の帯(cycle-0145・台帳 SANMEI-4b)の3つもここに載せる**
-         =載せ忘れると判定の側で線が undefined になり、帯の判定が丸ごと素通りする
-         (実際 cycle-0145 で一度そうなった。写しを手で並べる作りの弱いところ) */
-      kanshiLimits: { average: KANSHI_LIMITS.average, max: KANSHI_LIMITS.max,
-                      near_threshold: KANSHI_LIMITS.near_threshold,
-                      near_count: KANSHI_LIMITS.near_count,
-                      near_pairs_basis: KANSHI_LIMITS.near_pairs_basis },
+         **鍵は手で並べない**=cycle-0145 で近い組の帯の3つを載せ忘れ、判定の側で
+         線が undefined になって帯の判定が丸ごと素通りした。cycle-0173(台帳
+         SANMEI-4b-L1)で limitsCopyOf の丸ごと写しへ寄せたので、線を足しても
+         写しから落ちない */
+      kanshiLimits: limitsCopyOf(KANSHI_LIMITS),
       /* 3欄で書く角度の表(4-b 節・cycle-0072)。反復率では押さえられない
          「欄ごとに書くことが違う」を SANMEI2-2 がこの表から突き合わせる */
       kanshiAngleOf: kanshiAngleOf,
