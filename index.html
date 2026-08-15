@@ -412,14 +412,27 @@
             parts.push(NAMES[dk] + (bd[dk].fields_done || 0) + '/' + (bd[dk].fields_total || 0) + '欄');
           }
         }
-        note.textContent += '結果文の書き直し(画面に出ている文を数えたもの。上の算命学の' +
-          '二文字の読みはこの内数で、そちらは表に入った本数=画面へつなぐのは切替のとき):' +
+        note.textContent += '結果文の書き直し(分子=画面に出ている文・分母=欄が取りうる値の数。' +
+          '上の算命学の二文字の読みはこの内数で、そちらは表に入った本数=画面へつなぐのは切替のとき):' +
           w.texts_done + '/' + w.texts_total + '本・' +
           w.fields_done + '/' + w.fields_total + '欄(' + parts.join('・') + ')。' +
           '読みを載せられないので表示をやめる欄' + w.fields_dropped +
           '(うち画面から外し終えたのは' +
           (w.fields_removed === null || w.fields_removed === undefined ? '読み取れませんでした' :
            w.fields_removed + '欄') + ')。';
+        /* 台帳 GUARD-4(cycle-0162):分母の出どころと、顔ぶれにあるのに画面へ出なかった値。
+           **足りない値があるときだけ出す**(平時に毎回0件と書くと読み飛ばされる)。
+           分母を値の側から引けなかった回は、そのことを必ず出す=黙って画面の数へ戻ると、
+           進捗が「全部済み」を騙れる状態に戻ったことが誰にも見えない。 */
+        if (typeof w.values_missing === 'number' && w.values_missing > 0) {
+          note.textContent += '読みが画面に出ていない値' + w.values_missing + '件(' +
+            (w.values_missing_sample || []).join('・') + ' ほか)。';
+        }
+        if (w.denominator_source && w.denominator_source.indexOf('値の顔ぶれ') !== 0) {
+          note.textContent += '進捗の分母:' + w.denominator_source +
+            (Array.isArray(w.denominator_problems) && w.denominator_problems.length
+              ? '(' + w.denominator_problems.join(' / ') + ')' : '') + '。';
+        }
         var wr = w.repetition || {};
         if (wr.measured) {
           note.textContent += '書き直した文の反復率:平均' + wr.average_pct + '%・最大' + wr.max_pct +
