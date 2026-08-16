@@ -633,7 +633,57 @@
         d.overall.app_runs ? '<span class="ok">起動する(実測)</span>' : '<span class="ng">未確認</span>',
         d.overall.unattended_ok ? '<span class="ok">確認画面ゼロ</span>' : '<span class="ng">停止あり</span>']]));
 
-  /* 2: 溜まっている作業(OC10:未対応の作業をトップ付近に常設。
+  /* 2・3: 渋谷さん待ちの項目 / 外部の資料が手に入らないと進まない項目
+     (WAIT-1・ご指示 #78 の4・2026-08-16)
+     「報告書の先頭に『渋谷さん待ちの項目』の欄を作り、私の返答や操作がないと進まない項目だけを
+       並べてください。同じように『外部の資料が手に入らないと進まない項目』の欄も作ってください」
+
+     **置き場所の判断**:ご指示は「先頭に」だが、1番の「いまの状況(ひと目でわかる進み具合)」は
+     #8・#11 で「報告書の先頭で」とお指図いただいた欄なので、そこは動かさず**その直後の
+     2番・3番**に置いた(#23 の「溜まっている作業は上から2番目」は4番目へ下がる=OC10 の
+     「先頭4項目以内」は保っている)。ご指示どうしの兼ね合いでこちらが決めた解釈なので、
+     報告書の「解釈」の欄にも書いてある。
+
+     欄の題も説明文も waiting.js の WAITING_KINDS 1か所から来る=**画面の側に題や欄の
+     顔ぶれを書き写さない**(欄を増やした回に画面だけ古いまま残る形を作らない)。
+     件数も行も手入力しない(#45。#61 の件数・#71 の点検・#78 の2 の記録のみと同じ作り)。
+     導出データなので手書き欄の形の検査(REPORT_ARRAY_FIELDS)の対象ではなく、
+     ローカル変数を経由して受ける。 */
+  /* 中身が読めなかったとき(この欄を持たない古い報告書・導出が倒れたとき)にも
+     **欄そのものは必ず出す**ための題。waiting.js の WAITING_KINDS と同じ字でなければ
+     ならないが、画面はデータより先に描かれるのでここだけは持たざるを得ない
+     =**食い違いは検査 WAIT1-2 が実装の側から突き合わせる**(黙ってずれない)。 */
+  var WAIT_FALLBACK_TITLES = ['渋谷さん待ちの項目', '外部の資料が手に入らないと進まない項目'];
+  var wt = d.waiting || null;
+  var wtOk = !!wt && !wt.error && wt.kinds && wt.kinds.length;
+  if (wtOk) {
+    wt.kinds.forEach(function (k) {
+      add(k.title,
+        '<p class="sub">' + esc(k.lead) + '</p>' +
+        ((k.rows && k.rows.length)
+          ? table(['ID', '印', 'どんな作業か', '何が届けば進むか', 'いつから'],
+              k.rows.map(function (r) {
+                return [esc(r.id), r.work_class ? esc(r.work_class) : '<span class="ng">—</span>',
+                  esc(r.title), esc(r.label), esc(r.since || '—')];
+              }))
+          : '<p class="sub">該当なし(この欄で止まっている項目はありません)</p>') +
+        '<p class="sub">この欄の行は、作業台帳の行そのものに付けた印から出しています' +
+        '(文面からの推測では入れません)。' +
+        (k.key === 'owner'
+          ? 'ご返答をいただければ、こちらはそのまま先へ進められます。'
+          : '当たり先が分かっているものは、その先が読めるようになれば進められます。') + '</p>',
+        k.count + '件');
+    });
+  } else {
+    /* 読めないときに0件を騙らない(#55 の進捗と同じ扱い)。**欄そのものは必ず出す**
+       =欄が消えると「待ちの項目は無い」と読めてしまう */
+    WAIT_FALLBACK_TITLES.forEach(function (t) {
+      add(t, '<p class="sub"><span class="ng">この欄の中身を読み取れませんでした</span>' +
+        (wt && wt.error ? '(' + esc(wt.error) + ')' : '') + '。0件ではありません。</p>', '—');
+    });
+  }
+
+  /* 4: 溜まっている作業(OC10:未対応の作業をトップ付近に常設。
         #23(2026-08-03)の指示で2番目へ繰り上げ、内容を普通の言葉で書く)
      契約:queue/backlog.json の status:todo / in_progress のタスクを pending_work.items に
      漏れなく載せる。整合は tests/dashboard.spec.js の OC10 検査が毎サイクル確認する。
@@ -703,7 +753,7 @@
       : '<p class="sub">該当なし(溜まっている作業はありません)</p>'),
     pcOk ? (pc.total + '件') : '—');
 
-  /* 3: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
+  /* 5: 対応できなかったこと・保留(OC10:できなかったこと専用の別枠) */
   add('対応できなかったこと・保留(別枠)',
     '<p class="sub">試みたけれど実現できなかったこと・意図して保留していることの一覧です。理由と、代わりにどうしているかを添えています。</p>' +
     ((d.undone_items && d.undone_items.length)
@@ -713,7 +763,7 @@
           }))
       : '<p class="sub">該当なし</p>'));
 
-  /* 4: 記録のみ(RECORD-1・ご指示 #78 の2・2026-08-16)
+  /* 6: 記録のみ(RECORD-1・ご指示 #78 の2・2026-08-16)
      「C1は今まで通り作業台帳に登録してください。C2は台帳に登録せず、報告書の
        『記録のみ』の欄にまとめてください。すでに台帳にあるC2も、そちらへ移してください」
 
@@ -748,7 +798,7 @@
         + (ro && ro.error ? '(' + esc(ro.error) + ')' : '') + '。</p>'),
     roOk ? (ro.total_count + '件') : '—');
 
-  /* 5: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように。
+  /* 7: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように。
         #23 の指示で「溜まっている作業」より下へ移動。長くなるため初期表示では畳まれる=OC22)
      契約:queue/owner-comments.json の全コメントを owner_directives に漏れなく載せる。
      状態は「完了/対応中/保留/対象外」のいずれか(キュー側 done→完了、third_party→対象外)。
@@ -781,9 +831,10 @@
         esc(a.how)];
     })));
 
-  /* (旧7「各案の成果とプレゼン30秒」は #24(2026-08-03)の指示で廃止。全19項目構成) */
+  /* (旧7「各案の成果とプレゼン30秒」は #24(2026-08-03)の指示で廃止。
+     いまは全22項目構成=#78 の2 で「記録のみ」、#78 の4 で待ちの2欄が増えた) */
 
-  /* 8: 比較表と採用理由(OC10 で欄を増やしても項目数を保つため統合。内容は両方とも維持) */
+  /* 10: 比較表と採用理由(OC10 で欄を増やしても項目数を保つため統合。内容は両方とも維持) */
   add('比較表と採用・不採用の理由', table(d.comparison.headers, d.comparison.rows.map(function (r) {
     return r.map(esc);
   })) +
@@ -848,14 +899,14 @@
     [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
     '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
 
-  /* 15: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
+  /* 17: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
      (旧「次回計画」欄は OC10 の「溜まっている作業」(予定・方針の列)に統合した) */
   add('あなたの作業(判断・操作のお願い)',
     (d.human_decisions && d.human_decisions.length)
       ? list(d.human_decisions)
       : '<p class="nowork">今日はあなたの作業はありません。</p>');
 
-  /* 16: お知らせ(OC7:対応不要の連絡はこちらに分離)
+  /* 18: お知らせ(OC7:対応不要の連絡はこちらに分離)
      LOOP-1(#65):ループの回し方の現状も、この欄の中に表として出す。
      値は build.js の loopControlStatus() が実体から読み取ったものをそのまま並べるだけで、
      画面の側は数を持たない(#45。#61 の件数と同じ作り)。 */
@@ -1136,7 +1187,7 @@
   add('お知らせ(確認だけ・対応は不要)',
       list(d.notices) + lcHtml + drHtml + trHtml + syHtml + ssHtml);
 
-  /* 17: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
+  /* 19: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
     d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
 
@@ -1146,14 +1197,14 @@
       return [esc(s.item), '<span class="' + cls + '">' + esc(s.state) + '</span>', esc(s.note)];
     })));
 
-  /* 19: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
+  /* 21: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
   add('完成済みの機能(これまでの成果)',
     '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
     (d.completed_features && d.completed_features.length
       ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
       : '<p class="sub">該当なし</p>'));
 
-  /* 20: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は2・3番の欄が持つ) */
+  /* 22: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は4・5番の欄が持つ) */
   add('完了した作業(これまでに終わったタスク)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
     ' / 対応中 ' + esc(d.queue_summary.in_progress) +
     ' / 完了 ' + esc(d.queue_summary.done) +
@@ -1166,11 +1217,15 @@
   /* OC22(#22):ページを短くするため、重要3欄以外は初期表示で畳み、見出しを押すと開く。
      <details>/<summary> のみ(JSトグル不使用)なのでJSエラーやアニメーションの余地がない。
      中身は DOM に残るため、既存の文言・整合検査(textContent 照合)はそのまま働く。 */
+  /* WAIT-1(#78 の4):待ちの2欄も初期表示で開く。**畳んだままにすると、
+     「あなたの返答が要る項目」を見るのに一手いる**=ご指示がこの2欄を先頭に求めた理由が
+     そこにあるので、#22 の「重要3欄以外は畳む」に2欄を足す形にした(題は
+     WAIT_FALLBACK_TITLES から引き、ここに書き写さない)。 */
   var OPEN_DEFAULT = [
     'いまの状況(ひと目でわかる進み具合)',
     '溜まっている作業(これから対応する予定)',
     'あなたの作業(判断・操作のお願い)'
-  ];
+  ].concat(WAIT_FALLBACK_TITLES);
   document.getElementById('body').innerHTML = sections.map(function (s, i) {
     var open = OPEN_DEFAULT.indexOf(s.title) !== -1;
     return '<section><details' + (open ? ' open' : '') + '><summary><h2><span class="no">' +
