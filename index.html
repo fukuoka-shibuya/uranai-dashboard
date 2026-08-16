@@ -713,7 +713,42 @@
           }))
       : '<p class="sub">該当なし</p>'));
 
-  /* 4: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように。
+  /* 4: 記録のみ(RECORD-1・ご指示 #78 の2・2026-08-16)
+     「C1は今まで通り作業台帳に登録してください。C2は台帳に登録せず、報告書の
+       『記録のみ』の欄にまとめてください。すでに台帳にあるC2も、そちらへ移してください」
+
+     値は build.js が records-only.js から毎ビルド導いたものを並べるだけで、画面の側は
+     数え方も判定も持たない(#45。#61 の件数・#71 の点検・#77 の内訳と同じ作り)。
+     導出データなので手書き欄の形の検査(REPORT_ARRAY_FIELDS)の対象ではなく、
+     ローカル変数を経由して受ける(due_review・tidy_review と同じ扱い)。
+     **「移した回」を必ず列に出す**=消えたのではなく移ったことが読んで分かる形にする
+     (台帳 OC78-2 の受入条件。件数だけ黙って減らさない)。 */
+  var ro = d.records_only || null;
+  var roOk = !!ro && !ro.error;
+  var roRows = (roOk && ro.rows && ro.rows.length) ? ro.rows : [];
+  add('記録のみ(作業台帳に登録しない指摘)',
+    '<p class="sub">点検役が見つけた指摘のうち、<b>二重管理・重複・手間・整理</b>にあたるもの(印 C2)です。'
+    + 'ご指示 #78 の2により、これらは作業台帳(これから対応する予定)には登録せず、この欄に記録だけ残します。'
+    + '穴をふさぐ側の指摘(印 C1)は従来どおり台帳に登録して順に進めます。</p>' +
+    (roOk
+      ? (roRows.length
+          ? table(['ID', '指摘の内容', '出どころ', '移した回'],
+              roRows.map(function (r) {
+                return [esc(r.id), esc(r.title), esc(r.source || r.recorded_cycle),
+                  r.moved_cycle
+                    ? (esc(r.moved_cycle) + '<span class="sub"> に ' + esc(r.moved_from || '作業台帳') + ' から</span>')
+                    : '<span class="sub">はじめからこの欄</span>'];
+              }))
+            + '<p class="sub">合計' + esc(ro.total_count) + '件(うち'
+            + esc(ro.moved_count) + '件は作業台帳から移した行です)。'
+            + '移しても上の「作業の種類の内訳」の C2 の件数からは外れません'
+            + '=移動で作業が消えたわけではないことが数で分かるようにしてあります。</p>'
+          : '<p class="sub">該当なし(記録のみの指摘はありません)</p>')
+      : '<p class="sub"><span class="ng">記録のみの一覧を読み取れませんでした</span>'
+        + (ro && ro.error ? '(' + esc(ro.error) + ')' : '') + '。</p>'),
+    roOk ? (ro.total_count + '件') : '—');
+
+  /* 5: オーナー指示の一覧(OC9:コメント指示の要約と対応状況をいつでも見られるように。
         #23 の指示で「溜まっている作業」より下へ移動。長くなるため初期表示では畳まれる=OC22)
      契約:queue/owner-comments.json の全コメントを owner_directives に漏れなく載せる。
      状態は「完了/対応中/保留/対象外」のいずれか(キュー側 done→完了、third_party→対象外)。
@@ -737,9 +772,9 @@
           }))
       : '<p class="sub">該当なし(まだコメントによる指示はありません)</p>'));
 
-  /* 5 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
+  /* 6 */ add('今回の課題', '<p><b>' + esc(d.task.id) + '</b> ' + esc(d.task.title) + '</p><p class="sub">選定理由:' + esc(d.task.why) + '</p>');
 
-  /* 6 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
+  /* 7 */ add('合格条件と検証状況', table(['合格条件', '検証', '方法'],
     d.acceptance.map(function (a) {
       return [esc(a.text),
         a.verified ? '<span class="ok">検証済</span>' : '<span class="ng">未確認</span>',
@@ -748,20 +783,20 @@
 
   /* (旧7「各案の成果とプレゼン30秒」は #24(2026-08-03)の指示で廃止。全19項目構成) */
 
-  /* 7: 比較表と採用理由(OC10 で欄を増やしても項目数を保つため統合。内容は両方とも維持) */
+  /* 8: 比較表と採用理由(OC10 で欄を増やしても項目数を保つため統合。内容は両方とも維持) */
   add('比較表と採用・不採用の理由', table(d.comparison.headers, d.comparison.rows.map(function (r) {
     return r.map(esc);
   })) +
     '<p style="margin-top:8px"><b class="kin">採用:</b>' + esc(d.adopted_reason) + '</p>' +
     '<p><b class="sub">不採用:</b>' + esc(d.rejected_reason) + '</p>');
 
-  /* 8 */ add('改善点(今回の差分)', list(d.improvements));
+  /* 9 */ add('改善点(今回の差分)', list(d.improvements));
 
-  /* 9 */ add('成果物リンク', list(d.artifacts, function (a) {
+  /* 10 */ add('成果物リンク', list(d.artifacts, function (a) {
     return '<li><a href="' + esc(a.href) + '">' + esc(a.label) + '</a></li>';
   }));
 
-  /* 10 */ add('テスト結果', '<p><span class="mono">' + esc(d.tests.command) + '</span> ' +
+  /* 11 */ add('テスト結果', '<p><span class="mono">' + esc(d.tests.command) + '</span> ' +
     (d.tests.executed ? '<span class="ok">実行済(' + esc(d.tests.executed_at) + ')</span>' : '<span class="ng">未実行</span>') +
     ' — 合格 <b class="ok">' + esc(d.tests.passed) + '</b> / 失敗 <b class="' + (d.tests.failed ? 'ng' : 'ok') + '">' +
     esc(d.tests.failed) + '</b>(' + esc(d.tests.duration) + ')</p>' +
@@ -802,25 +837,25 @@
           : '')
       : ''));
 
-  /* 11 */ add('失敗・未確認の正直な記録',
+  /* 12 */ add('失敗・未確認の正直な記録',
     '<p><b class="sub">失敗した・できなかったこと</b></p>' + list(d.failures) +
     '<p style="margin-top:8px"><b class="sub">まだ確認できていないこと</b></p>' + list(d.unverified));
 
-  /* 12 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
+  /* 13 */ add('拒否された操作', table(['日時', '操作', '拒否理由', 'その後'],
     d.denied_actions.map(function (x) { return [esc(x.time), '<span class="mono">' + esc(x.action) + '</span>', esc(x.reason), esc(x.next)]; })));
 
-  /* 13 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
+  /* 14 */ add('使用時間・推定使用量', table(['経過時間', '上限', 'サブエージェント', 'ツール呼び出し(概算)'],
     [[esc(d.usage.wall_clock), esc(d.usage.limit), esc(d.usage.subagents_used) + ' 体', 'およそ ' + esc(d.usage.tool_calls_approx) + ' 回']]) +
     '<p class="sub">' + esc(d.usage.estimate_note) + '</p>');
 
-  /* 14: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
+  /* 15: 人間判断待ち(OC7:本当に判断・操作が必要なものだけを載せる。0件なら明示)
      (旧「次回計画」欄は OC10 の「溜まっている作業」(予定・方針の列)に統合した) */
   add('あなたの作業(判断・操作のお願い)',
     (d.human_decisions && d.human_decisions.length)
       ? list(d.human_decisions)
       : '<p class="nowork">今日はあなたの作業はありません。</p>');
 
-  /* 15: お知らせ(OC7:対応不要の連絡はこちらに分離)
+  /* 16: お知らせ(OC7:対応不要の連絡はこちらに分離)
      LOOP-1(#65):ループの回し方の現状も、この欄の中に表として出す。
      値は build.js の loopControlStatus() が実体から読み取ったものをそのまま並べるだけで、
      画面の側は数を持たない(#45。#61 の件数と同じ作り)。 */
@@ -1101,24 +1136,24 @@
   add('お知らせ(確認だけ・対応は不要)',
       list(d.notices) + lcHtml + drHtml + trHtml + syHtml + ssHtml);
 
-  /* 16: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
+  /* 17: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
     d.recovery_history.map(function (r) { return [esc(r.time), esc(r.event), esc(r.detail)]; })));
 
-  /* 17 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
+  /* 18 */ add('仕様適合チェック', table(['絶対条件', '状態', '備考'],
     d.spec_compliance.map(function (s) {
       var cls = s.state === '適合' ? 'ok' : (s.state === '未実装' ? 'ng' : 'kin');
       return [esc(s.item), '<span class="' + cls + '">' + esc(s.state) + '</span>', esc(s.note)];
     })));
 
-  /* 18: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
+  /* 19: 完成済みの機能一覧(OC8 で新設。OC10「終わったのは下の方で構わない」を受け下部へ移動) */
   add('完成済みの機能(これまでの成果)',
     '<p class="sub">試作アプリで既に動いている機能の一覧です(各サイクルの自動テストで動作を確認したもの)。</p>' +
     (d.completed_features && d.completed_features.length
       ? d.completed_features.map(function (f) { return '<span class="donechip">✓ ' + esc(f) + '</span>'; }).join('')
       : '<p class="sub">該当なし</p>'));
 
-  /* 19: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は2・3番の欄が持つ) */
+  /* 20: 完了した作業(OC10:終わったタスクは最下部に。未完了の内訳は2・3番の欄が持つ) */
   add('完了した作業(これまでに終わったタスク)', '<p class="sub">未着手 ' + esc(d.queue_summary.todo) +
     ' / 対応中 ' + esc(d.queue_summary.in_progress) +
     ' / 完了 ' + esc(d.queue_summary.done) +
