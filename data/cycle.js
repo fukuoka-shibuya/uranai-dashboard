@@ -2,7 +2,7 @@
 window.DASHBOARD_DATA = {
   "cycle_id": "cycle-0196",
   "cycle_label": "サイクル0196",
-  "generated_at": "2026-08-17T07:41:55+09:00",
+  "generated_at": "2026-08-17T08:27:12+09:00",
   "status": "OK",
   "overall": {
     "phase": "点検役の指摘の処置・上限の抜け道を塞ぐ段(GATE-4)と、古い A の行の実測仕分け",
@@ -553,6 +553,12 @@ window.DASHBOARD_DATA = {
       "summary": "点検役の指摘の扱いを変える。C の印を C1(報告書の数字や緑の表示が実体と違っていても通ってしまう穴)と C2(二重管理・重複・手間・整理)に分け、C2 は台帳でなく報告書の「記録のみ」へまとめる。OC36 は完了として閉じる。報告書の先頭に「渋谷さん待ちの項目」と「外部の資料が手に入らないと進まない項目」の2欄を作り、その2欄を除いた A と B が残る間は C1 を1サイクル1件までにする。A・B・C1・C2 の内訳を報告書に載せる",
       "status": "完了",
       "note": "**6項目すべての実装が済みました**(cycle-0194 で最後の1項目が入りました)。\n\n**内訳**=**3**(OC36 を完了として閉じる)は cycle-0190 に受領したその場で実施。**1と6**(C を C1/C2 へ分け、A・B・C1・C2 の内訳を報告書に載せる)は cycle-0191(台帳 `OC78-1`)。**2**(C2 は台帳に登録せず報告書の「記録のみ」へ移す)は cycle-0192(`OC78-2`)。**4**(報告書の先頭に「渋谷さん待ちの項目」と「外部の資料が手に入らないと進まない項目」の2欄を作る)は cycle-0193(`OC78-3`)。**5**(その2欄を除いた A と B が残る間は C1 を1サイクル1件まで)は cycle-0194(`OC78-4`)。\n\n**1サイクルに1つずつ進めたのは時間の都合ではなく、6項目が互いに前後関係を持つためです。**どの行が C2 なのかを先に仕分けないと「記録のみ」へ移せず、2つの待ち欄が決まらないと「その2欄を除いた A と B」も数えられません。\n\n**いまの状態**=未完了54件の内訳は **A 7件・B 4件・C1 38件・C2 5件**(C2 の5件は台帳から出て「記録のみ」の欄にあります)。待ちの2欄には8件が並び、そのうち **A・B は4件**。**それを除いた A・B が7件残っているので、C1 の上限はいま掛かっています。**\n\n**お願いしたいことが1つあります。**待ちの欄に入れるかどうかは台帳の行に付けた印から決めており、**印が本当に正しいかを機械で確かめる手立てはありません。**いま外している4件(`YOMI-N10`・`AI-5`・`SETSU-L2`・`SAKU-L1`)のうち「これは私の返答を待っていない」というものがあれば、お知らせください。"
+    },
+    {
+      "no": 79,
+      "summary": "次のループで一旦停止してください",
+      "status": "完了",
+      "note": "この cycle-0196 の回復セッションで受領し、このサイクルで停止しました。行ったのは、前セッションがコミット前に終了して残っていた cycle-0196 の成果(GATE-4 ほか)の保全=実測→ビルド→コミットと、この停止の記録だけで、新しい作業には着手していません。停止の印として state/project-state.json の status を WAITING にしました。**仕組み上、ループの完全な停止はこちらからはできません**(WAITING は次回の起動間隔を6時間へ延ばします。supervisor の常駐プログラムそのものを止める操作はお手元でお願いします)。以後のセッションは、新しいご指示(status:new のコメント)が届くまで作業へ着手せずに終了します。再開のご指示はコメントでお寄せください。"
     }
   ],
   "pending_work": [
@@ -940,56 +946,25 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "node tools/run-tests.js tests/dashboard.spec.js / node tools/run-tests.js tests/smoke.spec.js",
+    "command": "node tools/run-tests.js tests/smoke.spec.js",
     "executed": true,
-    "passed": 260,
+    "passed": 6,
     "failed": 0,
-    "skipped": 84,
+    "skipped": 0,
     "count_basis": [
-      "2026-08-17T06:49:19+09:00",
-      "2026-08-17T06:24:30+09:00"
+      "2026-08-17T08:26:26+09:00"
     ],
-    "duration": "dashboard.spec.js 06:49:19〜06:55:40(所要381秒・exit 0) / smoke.spec.js 06:24:30〜06:24:45(所要15秒・exit 0)",
+    "duration": "smoke.spec.js 08:26:26〜08:26:40(所要14秒・exit 0)",
     "cases": [
-      {
-        "name": "npx playwright test tests/dashboard.spec.js",
-        "passed": 254,
-        "failed": 0,
-        "note": "06:49:19〜06:55:40(所要381秒・exit 0)。**254件合格・0件失敗・84件スキップ。**\n\n**ここへ来るまでに3回落としています。**1回目 63件失敗・2回目 62件失敗・3回目 11件失敗で、**原因は数ではなく3つの別々の取り違えでした。**\n\n**(1) 比較表の欄を、表の形(見出しと行)ではなく文の並びで書いた**——画面がその欄を順に回すところで止まり、報告書のページが描けなくなりました。DOM を見る検査がまとめて落ちたのはこれが原因です。**(2) 「次にやること」の欄も同じ取り違え**——1行ずつが `id` を持つ形なのに文だけを並べたため、3行とも同じ行と見なされました。**(3) 3回目は、走行中に台帳へ1行足したため**、報告書と台帳の件数がその場でずれました(走らせている最中に材料を書き替えない、という決めごとを踏みました)。\n\n**この回に足した検査 CLASS1-5・CLASS1-5b は、いずれも合格しています。**"
-      },
       {
         "name": "npx playwright test tests/smoke.spec.js",
         "passed": 6,
         "failed": 0,
-        "note": "06:24:30〜06:24:45(所要15秒・exit 0)。6件合格・0件失敗。\n\n**占いアプリ本体がこれまでどおり開くことの確認です。**この回は仕組み側(報告書の見張り)しか触っていないので、`app/` は1バイトも変えていません。**それでも毎回開いて確かめます。**"
+        "note": "08:26:26〜08:26:40(所要14秒・exit 0)。**6件合格・0件失敗。**回復セッションの実測。前セッションは報告書スイート(254件)を 06:49 に緑で通したあと今回の変更を加えたが、変更後のスイートの完了待ちのままコミット前に尽きた。**このビルドの後に報告書スイートを走らせ直し、緑を確かめてから追記・コミットする**(先走りの過去形記載はしない)。"
       }
     ],
-    "executed_at": "2026-08-17T06:55:40+09:00",
+    "executed_at": "2026-08-17T08:26:40+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-08-17T04:57:56+09:00",
-        "finished_at": "2026-08-17T05:04:12+09:00",
-        "duration_seconds": 376,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 1,
-        "passed": 249,
-        "failed": 1,
-        "skipped": 84,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-17T05:08:19+09:00",
-        "finished_at": "2026-08-17T05:14:39+09:00",
-        "duration_seconds": 381,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 1,
-        "passed": 249,
-        "failed": 1,
-        "skipped": 84,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
       {
         "started_at": "2026-08-17T05:15:14+09:00",
         "finished_at": "2026-08-17T05:21:35+09:00",
@@ -1061,12 +1036,36 @@ window.DASHBOARD_DATA = {
         "skipped": 84,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-17T07:43:03+09:00",
+        "finished_at": "2026-08-17T07:43:16+09:00",
+        "duration_seconds": 14,
+        "command": "npx playwright test tests/smoke.spec.js",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-17T08:26:26+09:00",
+        "finished_at": "2026-08-17T08:26:40+09:00",
+        "duration_seconds": 14,
+        "command": "npx playwright test tests/smoke.spec.js",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
     ],
     "recorded_runs_omitted": {
       "log_total": 30,
       "omitted": 22,
-      "omitted_failed": 9
+      "omitted_failed": 11
     }
   },
   "failures": [],
@@ -1093,6 +1092,8 @@ window.DASHBOARD_DATA = {
   },
   "human_decisions": [],
   "notices": [
+    "**ご指示 #79「次のループで一旦停止してください」を受領し、このサイクルで停止します。**この回復セッションで行ったのは、前セッションが残した cycle-0196 の成果の保全(実測→ビルド→コミット)とこの停止の記録だけで、新しい作業には着手していません。停止の印として state/project-state.json の status を WAITING にしました(仕組み上、ループの完全な停止はこちらからはできず、WAITING は次回の起動間隔を6時間へ延ばすものです。以後のセッションが起動しても、新しいご指示が無ければ作業へ着手せず終了します)。再開のご指示はコメントでお寄せください。",
+    "**cycle-0196 は2つのセッションに分かれました。**1つ目のセッションは作業(GATE-4 と A2件)とビルドまで終えたものの、検査スイートの完了待ちのままセッションが尽き、コミット0件で成果ゼロ判定になりました(「待ちで終わらない」の条項が繰り返し警告してきた形の再発=docs/system-guide.md の障害32と同じ)。この回復セッションが検査を実測し直し、緑を確かめてから保全する手順を取っています。",
     "**この回は、ご指示 #77 の「A が残っている限り A を先に」に従い、A の2件を先に片づけてから C1 の1件(GATE-4)に着手しました。**閉じた3件の内訳は A2件・C1 1件で、上限(C1 は1件まで)のとおりです。",
     "**閉じた A の2件は、どちらも「前提がすでに消えていた」行です。**cycle-0063・cycle-0064 の点検で登録され、その後の作り直し(読みを書く・欄を削る)で目的が消えていたことを、この回に実測で確かめました。**作業をしたのではなく、済んでいたことを確かめて記録した**という意味です。",
     "**残る抜け道は1つになりました**(`GATE-3`)。印が C1 なので次の回の1件で進めます。そのほかに点検役の残りの指摘(`GATE-5`〜`GATE-10`)もすべて C1 で、1サイクル1件ずつです。",
@@ -1100,6 +1101,11 @@ window.DASHBOARD_DATA = {
     "**占いの中身(`app/`)は1バイトも触っていません。**結果の値・画面・文章はこれまでどおりです。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-17",
+      "event": "cycle-0196(回復):前セッションがコミット前に尽きたため、回復セッションが検査を実測し直して成果を保全し、ご指示 #79 に従いループを停止(status WAITING)",
+      "detail": "閉じた行・書いた文はすべて前セッション(cycle-0196)のもの。回復セッションは新しい作業に着手していない。テスト欄はこの回復セッションの実測で書き直した。"
+    },
     {
       "time": "2026-08-17",
       "event": "cycle-0196:ご指示 #77 に従い A の2件(OC64-L1・OC63-L1)を実測で確かめて閉じ、C1 の1件として GATE-4(印の塗り替えで上限が外れる道)を塞いだ",
@@ -2493,7 +2499,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-17T07:41:13+09:00",
+    "last_heartbeat": "2026-08-17T08:27:13+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2508,7 +2514,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2538,7 +2544,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "rows": [
       {
         "id": "OC51b-L1",
@@ -2574,7 +2580,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "work_class": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "cycle_id": "cycle-0196",
     "keys": [
       "A",
@@ -2785,7 +2791,7 @@ window.DASHBOARD_DATA = {
     }
   },
   "records_only": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "store": "queue/records-only.json",
     "class_key": "C2",
     "rows": [
@@ -2859,7 +2865,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "waiting": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "store": "queue/backlog.json",
     "kinds": [
       {
@@ -2966,7 +2972,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "consistency": {
-    "checked_at": "2026-08-17T07:41:55+09:00",
+    "checked_at": "2026-08-17T08:27:12+09:00",
     "cycle_id": "cycle-0196",
     "checks": [
       {
@@ -3050,8 +3056,8 @@ window.DASHBOARD_DATA = {
         "id": "C11",
         "kind": "cross",
         "title": "テストの記載が、そのサイクルで測った実測を指しているか",
-        "level": "mismatch",
-        "detail": "報告書のテスト欄が、前のサイクル(cycle-0195)とまったく同じ文のままです。今回の実測に書き替えてください"
+        "level": "ok",
+        "detail": "一致しています"
       },
       {
         "id": "C12",
@@ -3079,14 +3085,14 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "手書きの文章の欄が、前のサイクルの写しのままでないか",
         "level": "ok",
-        "detail": "10欄とも前のサイクル(cycle-0195・前回ビルドの報告書)と違う文になっています(中身が空で点検の対象外:できなかったこと)"
+        "detail": "10欄とも前のサイクル(cycle-0195・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:できなかったこと)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
       },
       {
         "id": "C16",
         "kind": "guard",
         "title": "作業台帳の各行に A/B/C1/C2 の印が付き、1サイクルの C1 が上限内か",
         "level": "ok",
-        "detail": "未完了59件の内訳は A 5件・B 3件・C1 45件・C2 6件(うち6件は記録のみへ移った行)(台帳345件すべてに印あり。うち161件は古い C)。今回閉じた C1 は1件(上限1件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は掛かっています(待ちの2欄で A・B から4件を外し、残り4件)。A・B から C1/C2 への塗り替えは0件"
+        "detail": "未完了59件の内訳は A 5件・B 3件・C1 45件・C2 6件(うち6件は記録のみへ移った行)(台帳345件すべてに印あり。うち161件は古い C)。今回閉じた C1 は1件(上限1件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は掛かっています(待ちの2欄で A・B から4件を外し、残り4件)。A・B からの塗り替えは測れず(前サイクルの印の一覧が無い)"
       },
       {
         "id": "C17",
@@ -3105,8 +3111,8 @@ window.DASHBOARD_DATA = {
     ],
     "cross_count": 12,
     "guard_count": 7,
-    "ok_count": 18,
-    "mismatch_count": 1,
+    "ok_count": 19,
+    "mismatch_count": 0,
     "unverified_count": 0,
     "total_count": 19
   }
