@@ -651,6 +651,16 @@
      「完了した作業」欄に出る台帳の数と食い違って見えるので、両方を並べて理由を添える */
   var qs = d.queue_summary;
   var qsOk = !!qs && typeof qs.todo === 'number' && typeof qs.in_progress === 'number';
+  /* CLASS-1(#77・2026-08-16):「印を付けた結果の内訳(A何件・B何件・C何件)を報告書に
+     載せてください」。**件数はここで数えない**=build.js が work-class.js から毎ビルド
+     導いた work_class を読むだけにする(#45・#61 と同じ作り)。読み取れないときは
+     数を作らず、その旨を出す。行ごとの印も同じ導出(open_marks)から引く。 */
+  var wc = d.work_class || null;
+  var wcOk = !!wc && !wc.error && wc.open && typeof wc.open.A === 'number';
+  var wcMark = function (id) {
+    var m = (wcOk && wc.open_marks) ? wc.open_marks[id] : '';
+    return m ? esc(m) : '<span class="ng">—</span>';
+  };
   add('溜まっている作業(これから対応する予定)',
     (pcOk
       ? '<p class="bigline"><b>いま溜まっている作業:' + esc(pc.total) + '件</b> ' +
@@ -661,16 +671,27 @@
         '</p>'
       : '<p class="sub">溜まっている作業の件数を読み取れませんでした' +
         (pc && pc.error ? '(' + esc(pc.error) + ')' : '') + '。</p>') +
+    (wcOk
+      ? '<p class="bigline" id="work-class-line"><b>作業の種類の内訳:'
+        + 'A ' + esc(wc.open.A) + '件・B ' + esc(wc.open.B) + '件・C ' + esc(wc.open.C) + '件</b>'
+        + (wc.open.unmarked > 0 ? ' <span class="ng">(印なし ' + esc(wc.open.unmarked) + '件)</span>' : '')
+        + '</p>'
+        + '<p class="sub">ご指示 #77 の印です。A=' + esc(wc.labels && wc.labels.A)
+        + '/B=' + esc(wc.labels && wc.labels.B) + '/C=' + esc(wc.labels && wc.labels.C)
+        + '。1サイクルに進める C は1件までで、A と B を先にします。</p>'
+      : '<p class="sub" id="work-class-line"><span class="ng">作業の種類の内訳(A/B/C)を読み取れませんでした</span>'
+        + (wc && wc.error ? '(' + esc(wc.error) + ')' : '') + '。</p>') +
     '<p class="sub">まだ終わっていない作業の一覧です(上にあるものほど先にやります)。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
     ((d.pending_work && d.pending_work.length)
-      ? table(['ID', 'どんな作業か', '状態', 'いつ・どう進めるか'],
+      ? table(['ID', '印', 'どんな作業か', '状態', 'いつ・どう進めるか'],
           d.pending_work.map(function (t) {
             /* 状態には「対応中(半分done)」のような但し書きが付く。ここを完全一致にすると
                1行目の「対応中 N件」(build.js の pendingWorkCount は書き出しで見分ける)と
                表で色が付く行の数が食い違う=同じ欄の中に数え方が2つある形になる。
                書き出しでそろえること(cycle-0076 の点検役 M1) */
             var cls = /^対応中/.test(String(t.status || '')) ? 'kin' : 'sub';
-            return [esc(t.id), esc(t.title), '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
+            return [esc(t.id), wcMark(String(t.id)), esc(t.title),
+              '<span class="' + cls + '">' + esc(t.status) + '</span>', esc(t.plan)];
           }))
       : '<p class="sub">該当なし(溜まっている作業はありません)</p>'),
     pcOk ? (pc.total + '件') : '—');
