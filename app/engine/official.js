@@ -213,6 +213,26 @@
   };
 
   /**
+   * 太陽黄経が targetDeg に達する瞬間を日本時のミリ秒で返す。
+   * 探す範囲は「暦年 y の暦月 mo の startDay 日0時(JST)」から spanDays 日ぶん。
+   *
+   * termDayNo はここから日付だけを取り出す。節入りが真夜中のどれだけ近くに
+   * 来るかを測る検査(OC35aL2-1)も同じ関数を通すため、交差時刻の求め方を
+   * 二か所に持たない(片方だけ直すと、測った余裕が実際の判定とずれる)。
+   */
+  function sunCrossingJstMs(y, mo, startDay, spanDays, targetDeg) {
+    var dt = deltaTSec(y) / 86400;
+    /* JST の 0時 = 前日 15時 UT。時刻は UT 基準の JD で持ち、最後に9時間足す */
+    var lo = jdOfUt(y, mo, startDay, -9);
+    var hi = lo + spanDays;
+    for (var i = 0; i < 50; i++) {
+      var mid = (lo + hi) / 2;
+      if (angleDiff(sunLongitude(mid + dt), targetDeg) < 0) { lo = mid; } else { hi = mid; }
+    }
+    return ((lo + hi) / 2 - 2440587.5) * 86400000 + 9 * 3600000;
+  }
+
+  /**
    * 暦年 y の暦月 mo にある節入り(黄経 targetDeg)の日本時刻の日付を通日で返す。
    * その月の1日0時〜15日0時(JST)の間で二分法により交差時刻を求める。
    */
@@ -224,17 +244,8 @@
     if (Object.prototype.hasOwnProperty.call(termCache, cacheKey)) {
       return termCache[cacheKey];
     }
-    var dt = deltaTSec(y) / 86400;
-    /* JST の 0時 = 前日 15時 UT。時刻は UT 基準の JD で持ち、最後に9時間足して日付へ戻す */
-    var lo = jdOfUt(y, mo, 1, -9);
-    var hi = lo + 14;
-    for (var i = 0; i < 50; i++) {
-      var mid = (lo + hi) / 2;
-      if (angleDiff(sunLongitude(mid + dt), targetDeg) < 0) { lo = mid; } else { hi = mid; }
-    }
-    /* 交差時刻(UT)に9時間を足し、JST の暦日に直して通日にする */
-    var jstMs = ((lo + hi) / 2 - 2440587.5) * 86400000 + 9 * 3600000;
-    var result = Math.floor(jstMs / 86400000);
+    /* 交差時刻(JST)を暦日に直して通日にする */
+    var result = Math.floor(sunCrossingJstMs(y, mo, 1, 14, targetDeg) / 86400000);
     termCache[cacheKey] = result;
     return result;
   }
@@ -5122,6 +5133,7 @@
     util: {
       parseDate: parseDate,
       sunLongitude: sunLongitude,
+      sunCrossingJstMs: sunCrossingJstMs,
       termDayNo: termDayNo,
       risshunDayNo: risshunDayNo,
       tenStarOf: tenStarOf,
