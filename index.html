@@ -657,6 +657,9 @@
      数を作らず、その旨を出す。行ごとの印も同じ導出(open_marks)から引く。 */
   var wc = d.work_class || null;
   var wcOk = !!wc && !wc.error && wc.open && typeof wc.open.A === 'number';
+  /* 印の顔ぶれも導出から受け取る(#78 で C を C1/C2 へ分けた)。画面の側に一覧を
+     持たない=印を増やした回に、画面だけ古い並びのまま残る形を作らない */
+  var wcKeys = (wcOk && wc.keys && wc.keys.length) ? wc.keys : ['A', 'B', 'C1', 'C2'];
   var wcMark = function (id) {
     var m = (wcOk && wc.open_marks) ? wc.open_marks[id] : '';
     return m ? esc(m) : '<span class="ng">—</span>';
@@ -673,13 +676,17 @@
         (pc && pc.error ? '(' + esc(pc.error) + ')' : '') + '。</p>') +
     (wcOk
       ? '<p class="bigline" id="work-class-line"><b>作業の種類の内訳:'
-        + 'A ' + esc(wc.open.A) + '件・B ' + esc(wc.open.B) + '件・C ' + esc(wc.open.C) + '件</b>'
+        + wcKeys.map(function (k) { return esc(k) + ' ' + esc(wc.open[k]) + '件'; }).join('・')
+        + '</b>'
         + (wc.open.unmarked > 0 ? ' <span class="ng">(印なし ' + esc(wc.open.unmarked) + '件)</span>' : '')
         + '</p>'
-        + '<p class="sub">ご指示 #77 の印です。A=' + esc(wc.labels && wc.labels.A)
-        + '/B=' + esc(wc.labels && wc.labels.B) + '/C=' + esc(wc.labels && wc.labels.C)
-        + '。1サイクルに進める C は1件までで、A と B を先にします。</p>'
-      : '<p class="sub" id="work-class-line"><span class="ng">作業の種類の内訳(A/B/C)を読み取れませんでした</span>'
+        + '<p class="sub">ご指示 #77 の印を #78 で分けたものです。'
+        + wcKeys.map(function (k) {
+            return esc(k) + '=' + esc(wc.labels && wc.labels[k]);
+          }).join('/')
+        + '。1サイクルに進める ' + esc(wc.limited_key || 'C1')
+        + ' は1件までで、A と B を先にします。</p>'
+      : '<p class="sub" id="work-class-line"><span class="ng">作業の種類の内訳(A/B/C1/C2)を読み取れませんでした</span>'
         + (wc && wc.error ? '(' + esc(wc.error) + ')' : '') + '。</p>') +
     '<p class="sub">まだ終わっていない作業の一覧です(上にあるものほど先にやります)。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
     ((d.pending_work && d.pending_work.length)
