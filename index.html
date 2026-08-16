@@ -752,6 +752,21 @@
               + '上限を掛けたままにしています。</span>')
             + '</p>'
           : '')
+        /* GATE-2(cycle-0195):**上限の数えから漏れている行の数も画面に出す。**
+           閉じた回を名乗らない行はその回に閉じたと数えられないので、黙っていると
+           「上限内」と「そもそも数えられていない」が見分けられない。
+           件数も判定もここでは持たない(build.js が導いた undated_done を読むだけ)。 */
+        + (wc.undated_done
+          ? '<p class="sub" id="undated-done-line">閉じたサイクルを名乗らない完了行:'
+            + esc(wc.undated_done.count) + '件'
+            + '(いずれも古い行で、これ以上は増やしません=凍結 '
+            + esc(wc.undated_done.max) + '件)。'
+            + ((wc.undated_done.limited && wc.undated_done.limited.length)
+              ? '<span class="ng">うち ' + esc(wc.undated_done.limited.length)
+                + '件は C1/C2 の印を持つ行で、閉じた回を書けるはずです。</span>'
+              : '')
+            + '</p>'
+          : '')
       : '<p class="sub" id="work-class-line"><span class="ng">作業の種類の内訳(A/B/C1/C2)を読み取れませんでした</span>'
         + (wc && wc.error ? '(' + esc(wc.error) + ')' : '') + '。</p>') +
     '<p class="sub">まだ終わっていない作業の一覧です(上にあるものほど先にやります)。先頭の「今からやりたいこと」は、この中から次にやる順に選んだものです。終わったものは最下部の「完了した作業」に移ります。</p>' +
