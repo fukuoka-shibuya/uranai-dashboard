@@ -1,49 +1,44 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0199",
-  "cycle_label": "サイクル0199",
-  "generated_at": "2026-08-21T07:28:55+09:00",
+  "cycle_id": "cycle-0200",
+  "cycle_label": "サイクル0200",
+  "generated_at": "2026-08-21T08:15:20+09:00",
   "status": "OK",
   "overall": {
-    "phase": "再開直後=A の決着(OC51b-L1)と、C1 上限の抜け道ふさぎ(GATE-3)",
+    "phase": "非待ちの B の消化(AI-L5=門の表の二重管理を畳む)",
     "pdca_phase": "Do",
-    "pdca_note": "再開後の最初の回。実装(records-only.js の見張りの拡張)と判断(値の据え置き)を1件ずつ行い、どちらも実測で裏づけた。",
-    "now_doing": "終了処理(報告書データ更新→ビルド→報告書スイート→コミット)。",
+    "pdca_note": "台帳の行が2年目の道として挙げていた受入条件2(1か所へ寄せる)を、同値の実測を先に取ってから実施した。",
+    "now_doing": "終了処理(テスト実測→報告書データ更新→ビルド→報告書スイート→コミット)。",
     "done_this_cycle": [
-      "**門にかな書きの表 JARGON_KANA(5行)を足しました**=はしら(走らせ・「まずはしらべて」を除く形)・けいとう・ごぎょう/ゴギョウ・じゅうにし(十二種・「〜にしても」を除く形)/じゅうだいしゅせい・七科分宿4読み(あんじゅう・わぜん・どくがい・ごうじゅう)。字間に中点などを挟んだ形も、ならしてから当てるので止まります。",
-      "**置かない読みは JARGON_KANA_SKIP(12行)に読みと理由を1行ずつ残しました**=くみ・ばん・ていい・こうどう・じっかん・くぶん・きゅうそく・けいそう・もうあく・えれめんと・ぐるーぷ・のしるし。13の網すべてがどちらかに現れることは GATE7-1 が両方向の名前突き合わせで見ます。",
-      "**検査 GATE7-1〜4 を新設し、GATE6-4 を裏返しました**=止まる見本9通り・通る見本11通り(止めすぎの検査を同じ重みで)・反証(かなの表を外した門では素通りが増える)。見本はすべて手書きで、実装から借りていません(障害23)。",
-      "**表はアプリ側だけに置き、二重管理を増やしていません**(tests/banned-words.js との突き合わせ対象 AI4-1 は従来の2表のまま。BANNED_KANA と同じ置き方)。",
-      "説明書 docs/ai-overall-plan.md の 9-h-3 を「一律に足さない」から「語を選んで止める」へ書き替えました。"
+      "**禁止語の門の表の実体を app/engine/ai-overall.js の1か所にしました(台帳 AI-L5・印は B)**=tests/banned-words.js の BANNED / JARGON_SCREEN の直書きを削り、アプリ側からの再輸出だけにしました。呼び出し側(wording / engine / overall / ai-screen ほか)の require の書き方は1行も変えていません。",
+      "**切り替えの前に旧表との同値を実測しました**=HEAD の tests/banned-words.js と新しい再輸出の表を source と flags で1本ずつ突き合わせ、BANNED 27本・JARGON_SCREEN 13行とも全一致。参照の同一(同じオブジェクトであること)も確かめました。",
+      "**恒真になった突き合わせ AI4-1 を裏返しました**=同じもの同士の突き合わせは何も見張らないので、「写しが戻っていないこと」(参照の同一+tests/banned-words.js のソースに正規表現の直書きが無いこと+再輸出の配線の実在)を見る形へ書き替えました。",
+      "BANNED_SOURCE_WORDS(ソース走査用の8語)はテスト側に残しました=画面の門ではなく検査だけの道具で、アプリ側へ持ち出すと公開ファイルに検査用の語の一覧が増えるだけのためです。",
+      "説明書 docs/ai-overall-plan.md の4か所(D8・9-b・9-g の AI4-1・9-h-3)を同じ回で更新しました。"
     ],
     "next_up": [
       {
         "id": "YOMI-N10",
-        "text": "読みの本数を足す回に、最接近の組(西洋「向かい合う星座」の蟹座×山羊座)の重なりを書く前と後で測って開示します(印=A・渋谷さん待ちの欄にも並んでいます)。**なお実際の順は #77/#78 のとおり=非待ちの B の残り2件(AI-L5・GUARD-L4)が先で、C1 は1サイクル1件(次の候補は ORDER-2)です**——この欄の先頭は検査 OC54-1 が読みの作業に限っているため、その食い違いを直すのが ORDER-2 です"
-      },
-      {
-        "id": "AI-L5",
-        "text": "門の一覧がアプリ側とテスト側の2か所にある件(印=B)。ブラウザからも読める1か所へ寄せる道が取れるかを確かめます"
+        "text": "読みの本数を足す回に、最接近の組(西洋「向かい合う星座」の蟹座×山羊座)の重なりを書く前と後で測って開示します(印=A・渋谷さん待ちの欄にも並んでいます)。**なお実際の順は #77/#78 のとおり=非待ちの B の残り1件(GUARD-L4)が先で、C1 は1サイクル1件(次の候補は ORDER-2)です**——この欄の先頭は検査 OC54-1 が読みの作業に限っているため、その食い違いを直すのが ORDER-2 です"
       },
       {
         "id": "GUARD-L4",
-        "text": "漢数字の表が3ファイルに散り、数と漢数字の対応そのものが判定の外にある件(印=B)。検査の側の別の出どころと突き合わせる形にします"
+        "text": "漢数字の表が3ファイルに散り、数と漢数字の対応そのものが判定の外にある件(印=B・非待ちの最後の1件)。検査の側の別の出どころと突き合わせる形にします"
       },
       {
         "id": "ORDER-2",
         "text": "報告書のこの欄の先頭に、オーナー指示由来の行を置けるようにする(検査 OC54-1 の広げ方。C1 なので1サイクル1件の枠で)"
       }
     ],
-    "summary": "**中継役(外部AI)の返り文を検査する門の、かな書きの取りこぼしを狭めました(台帳 GATE-L1・印は B)。**これまで「画面に出さない語」(柱・五行・十二支 など13の網)はかな書きすると素通りしていました——cycle-0127 が「読みがふつうの語と同じ形になるものが多い」として一律に足さない側へ倒していたためです。今回、読みを1語ずつ再走査し、**かな書きしてもその語にしかならない読み(はしら・けいとう・ごぎょう・じゅうにし など9読み)だけを門へ足し**、ふつうの語と同じ形になる読み(くみ=しくみ・ばん=いちばん・ていい=「〜なくていい」など12読み)は**「置かない理由」を1行ずつ表に残して**素通りのままにしました。置かない判断を人の記憶ではなく表に持たせたので、13の網すべてに扱いが決まっていることを検査が毎回突き合わせます。書いている途中で、自分が足しかけた2読み(くぶん・もうあく)が「動くぶん」「もう開く」というふつうの文を捨てることに走査で気づき、理由の表へ移しました——**止めすぎの門は、取りこぼす門より読み手の損が大きい**(まともな文が理由なく捨てられる)ためです。"
+    "summary": "**禁止語の門の表(BANNED / JARGON_SCREEN)の二重管理を畳みました(台帳 AI-L5・印は B)。**この表は cycle-0124 から、テスト側(tests/banned-words.js)とアプリ側(中継役の返り文を検査する門)の2か所に同じものがあり、語を足す作業がいつも2か所でした——テストのファイルは公開されずブラウザから読めないので、当時は「アプリ側にも写しを持つほかない」と判断していました。しかし逆向き=テストがアプリ側のファイルを読む道は最初から通れた(実際に別の検査が require しています)ので、今回そちらへ寄せ、表の実体をアプリ側の1か所にしてテスト側は再輸出だけにしました。切り替えの前に旧表との同値(27本+13行の全一致)を実測し、呼び出し側の検査は書き方を1行も変えずに全緑です。二重管理が消えると「両側を1本ずつ突き合わせる」検査 AI4-1 は同じもの同士の比較=恒真になるので、そのまま残さず「写しが戻っていないこと」を見る形へ裏返しました(恒真に近い検査を放置しない=GUARD-L4 と同じ判断)。占いの結果の値には触れていません(app/ の差分はコメントだけ)。"
   },
-  "task": "非待ちの B 3件のうち GATE-L1(中継役の返り文の門で、画面に出さない語のかな書きが素通りする既知の限り)を処置する。#77 の優先順どおり=非待ちの A は0件・B が3件残るので B から。今回閉じる C1 は0件。",
+  "task": "非待ちの B 2件のうち AI-L5(禁止語の門の表がアプリ側とテスト側の2か所にある二重管理)を、受入条件の2番=「app/engine 側を正本にし、テストがそれを読む」で解消する。#77/#78 の優先順どおり=非待ちの A は0件・B が2件残るので B から。今回閉じる C1 は0件。",
   "acceptance": [
-    "GATE-L1:JARGON_SCREEN の13行すべてについて、かな書きの扱いが機械で読める形で決まっている(かなの行 JARGON_KANA か、置かない読みと理由の行 JARGON_KANA_SKIP のどちらかに現れる。網羅は検査が名前の突き合わせで見る)",
-    "かなを足した語は、手書きの見本(実装から借りない)が門で止まり、止めた理由が「かな書き」の網と名指しされる",
-    "止めすぎない=重なる読みを含むふつうの文(しくみ・いくぶん・「〜なくていい」・いちばん・じっかん・きゅうそく・こうどう・はしらせ・はしらべ・動くぶん・もうあく)が通ることを、止まることと同じ重みで見る",
-    "反証:かなの表を外した門では見本が素通りする(足しても消しても緑、を防ぐ)",
-    "GATE6-4 を裏返す(はしら が止まる表明+ばん などの取りこぼしが残る表明)",
-    "占いの結果の値に差0件(app/ の差分が門の表と配線だけであることを差分で確かめる)"
+    "tests/banned-words.js が BANNED / JARGON_SCREEN の表の実体を持たず、app/engine/ai-overall.js の門の区画(唯一の置き場所)からの再輸出だけになっている",
+    "旧表との同値を実測で示す(BANNED 27本・JARGON_SCREEN 13行の source と flags を1本ずつ突き合わせて全一致)",
+    "二重管理が消えて恒真になる突き合わせ AI4-1 を、そのまま残さず「写しが戻っていないこと」を見る形へ裏返す(参照の同一+テスト側ソースに正規表現の直書きが無いこと)",
+    "占いの結果の値に影響なし(app/ の差分が ai-overall.js のコメントだけであることを差分で確かめる)",
+    "呼び出し側の検査(wording / engine / ai-screen ほか)は require の書き方を1行も変えずに全緑"
   ],
   "comparison": {
     "headers": [
@@ -53,26 +48,26 @@ window.DASHBOARD_DATA = {
     ],
     "rows": [
       [
-        "案1:読みを一律にかなへ起こして全部止める",
-        "BANNED_KANA と同じ作りで13の網すべてにかな行を置く",
-        "不採用。くみ=しくみ・ばん=いちばん・ていい=「〜なくていい」など、ふつうの文がほぼ確実に捨てられる(止めすぎの実測は下の不採用の理由)"
+        "案1:二重管理のまま運用で守る(受入条件の1番)",
+        "両側に表を持ち続け、食い違いは AI4-1 の突き合わせで捕まえ、落ちたらもう片方も直す",
+        "不採用。検査は取りこぼさないが「落ちたら直す」という人の手が恒久に残る。台帳の行自身が2年目の道(1か所へ寄せる)を受入条件に挙げていた"
       ],
       [
-        "案2:重なりの無い読みだけ止め、置かない読みは理由を表に残す",
-        "JARGON_KANA(5行)+JARGON_KANA_SKIP(12行・読みと理由)。網羅は検査が名前で突き合わせる",
-        "採用。素通りは9読みぶん狭まり、止めすぎの見本11通りは全部通る。置かない判断が表に残るので、次に読みを足す回は理由の行と突き合わせて再判断できる"
+        "案2:アプリ側を正本にし、テスト側は再輸出だけにする(受入条件の2番)",
+        "tests/banned-words.js の表の実体を削り require で引く。呼び出し側の書き方は不変",
+        "採用。ai-overall.js は module.exports 対応済みで、ai-screen.spec.js が既に require している=通れることが実証済みの道。表の同値は旧表と1本ずつ突き合わせて確かめた"
       ],
       [
-        "案3:現状維持(GATE6-4 の「既知の限り」の表明のまま)",
-        "何も足さない",
-        "不採用。「ごぎょう」「じゅうにし」のようにかな書きしてもその語にしかならない読みまで素通りさせる理由が無い(cycle-0127 の「多くが重なる」は「全部が重なる」ではなかった)"
+        "案3:テスト側を正本にし、アプリ側が読む",
+        "逆向きの一本化",
+        "不採用。テストのファイルは公開されずブラウザから読めないので、アプリの門が動かなくなる(cycle-0124 に二重管理を選んだ理由そのもの)"
       ]
     ]
   },
-  "adopted_reason": "案2 を採った理由は3つ。(1) 読みの重なりは語ごとに違う——13の網の読みを1語ずつ走査すると、重なりの無い読み(ごぎょう・じゅうだいしゅせい など)と、ふつうの語そのものになる読み(いちばん・「〜なくていい」)がはっきり分かれた。一律の判断(全部足す/全部足さない)はどちらの側にも実害を出す。(2) 置かない判断を表に持たせると、判断が機械で照合できる=13行すべてに扱いが決まっていることを GATE7-1 が毎回見るので、網を増やした回に「かなの扱いを決め忘れる」形が残らない。(3) 止めすぎの側を同じ重みで検査できる——通る見本11通りを MUST_BLOCK と同じ形で置いた(片側だけ見ると「何でも赤にする門」が緑になる。GATE6 と同じ選択)。",
-  "rejected_reason": "案1 を退けた理由:書いている途中の自分の走査がそのまま証拠になった——「くぶん」を足すと「気持ちが動くぶん、慎重に」(〜く分)が、「もうあく」を足すと「扉は、もうあく」(開く)が止まった。占いの文はやわらかいかな書きが多く、この形の偽の当たりは例外ではない。案3 を退けた理由:取りこぼしの実測(はしら・ごぎょうが素通り)を「既知の限り」として2サイクル表明し続けたが、素通りの理由が語ごとに違う以上、語を選ばず放置する判断は「決めた」ではなく「まとめて諦めた」に近かった。",
+  "adopted_reason": "案2 を採った理由は3つ。(1) 道が既に通っている——ai-overall.js は CommonJS でも読める作りで、tests/ai-screen.spec.js が require している実績があるので、新しい仕組みを1つも足さずに一本化できる。(2) 語を足す作業が1か所になる——cycle-0199 でかな書きの表を足したときも「アプリ側だけに置く」を選んでおり、門の4表(BANNED・JARGON_SCREEN・BANNED_KANA・JARGON_KANA)の置き方がそろった。(3) 同値が機械で示せる——旧表(HEAD の tests/banned-words.js)と新しい再輸出の表を source と flags で1本ずつ突き合わせ、BANNED 27本・JARGON_SCREEN 13行の全一致を実測してから切り替えた。",
+  "rejected_reason": "案1 を退けた理由:AI4-1 は「片方に語を足すともう片方が落ちる」形なので取りこぼしは無いが、赤が出てから人がもう片方を直すという一手が毎回残る(台帳 AI-L5 の説明がまさにこの手当てを「人の手に残っている」と記録していた)。案3 を退けた理由:一本化の向きが逆で、公開されないテストのファイルをブラウザの門が読むことはできない。なお一本化で恒真になる AI4-1 を「緑のまま残す」道も採らなかった——同じもの同士の突き合わせは何も見張らない(GUARD-L4 が同じ形を「恒真に近い」と名指ししている)ので、見張る向きを「写しが戻っていないこと」へ裏返した。",
   "improvements": [
-    "①バグ減少+⑧新テスト合格(GATE-L1):中継役の返り文の門で素通りしていた「画面に出さない語のかな書き」を9読みぶん止めた(JARGON_KANA 5行)。置かない12読みは理由を1行ずつ表(JARGON_KANA_SKIP)に残し、13の網すべてに扱いが決まっていることを GATE7-1 が名前の突き合わせで毎回見る。止めすぎの側も同じ重みで検査(通る見本11通り=GATE7-3)。反証 GATE7-4 は、かなの表を外した門で見本が素通りすることまで見る。5スイート95件合格・0件失敗。"
+    "①バグ減少+⑧新テスト合格(AI-L5):禁止語の門の表の二重管理を畳んだ。これまで語を足す作業は2か所で、片方だけ直すと検査 AI4-1 の赤で気づいてもう片方を直す、という人の一手が恒久に残っていた。表の実体を app/engine/ai-overall.js の1か所にし、tests/banned-words.js は再輸出だけへ。旧表との同値(BANNED 27本・JARGON_SCREEN 13行の source/flags 全一致)を実測してから切替。恒真になる AI4-1 は「写しが戻っていないこと」(参照の同一+テスト側に正規表現の直書きが無い)を見る形へ裏返した。"
   ],
   "completed_features": [
     "閉じた行が「どのサイクルで閉じたか」を名乗ること。名乗らない行は C1 の上限の数えから漏れるので、#78 の印を持つ行は赤、それ以外は件数の凍結で縛る(GATE-2)",
@@ -720,12 +715,6 @@ window.DASHBOARD_DATA = {
       "plan": "前の回の測りと同じ土俵で比べるため範囲をそろえました。29〜31日を含めた全日では測り直していません。日を増やせば組はどれも大きくなる向きですが、新しい組が1日だけ現れる形はこの走査では否定できていません"
     },
     {
-      "id": "AI-L5",
-      "status": "未着手",
-      "title": "画面に出さない言葉の一覧が、アプリ側と検査側の2か所にある(#72)",
-      "plan": "検査のファイルは公開されずブラウザからも読めないため、アプリ側にも同じ一覧を持っています。食い違えば毎回の検査(AI4-1)が必ず落ちるので黙って壊れることはありませんが、語を足すときに2か所そろえる手間が残ります。1か所へ寄せられるなら寄せます"
-    },
-    {
       "id": "TIDY-L1",
       "status": "未着手",
       "title": "#75 の【絶対に自動で閉じてはいけないもの】の2件目以降が未受領",
@@ -935,68 +924,63 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "node tools/run-tests.js tests/ai-screen.spec.js ほか(ai-overall / ai-relay / engine -g 禁止表現 / smoke の計5本)",
+    "command": "node tools/run-tests.js tests/ai-screen.spec.js ほか(ai-overall / ai-relay / engine -g 禁止表現 / wording / smoke の計6本)",
     "executed": true,
-    "passed": 95,
+    "passed": 121,
     "failed": 0,
     "skipped": 15,
     "count_basis": [
-      "2026-08-21T07:23:26+09:00",
-      "2026-08-21T07:26:32+09:00",
-      "2026-08-21T07:26:37+09:00",
-      "2026-08-21T07:26:40+09:00",
-      "2026-08-21T07:26:42+09:00"
+      "2026-08-21T08:11:37+09:00",
+      "2026-08-21T08:13:18+09:00",
+      "2026-08-21T08:13:23+09:00",
+      "2026-08-21T08:13:25+09:00",
+      "2026-08-21T08:13:27+09:00",
+      "2026-08-21T08:14:16+09:00"
     ],
-    "duration": "ai-screen.spec.js 07:23:26〜07:25:07(101秒・exit 0)/ai-overall.spec.js 07:26:32〜07:26:37(exit 0)/ai-relay.spec.js 07:26:37〜07:26:40(exit 0・スキップ15件は実通信をしない決まりによる設計どおりのスキップ)/engine.spec.js -g 禁止表現 07:26:40〜07:26:42(exit 0)/smoke.spec.js 07:26:42〜07:26:56(exit 0)",
+    "duration": "6本を && で連続実行、08:11:37〜08:14:30(全体173秒・6本とも exit 0)",
     "cases": [
       {
         "name": "npx playwright test tests/ai-screen.spec.js",
         "passed": 42,
         "failed": 0,
-        "note": "07:23:26〜07:25:07(101秒・exit 0)。新設の GATE7-1〜4(かな書きの網羅・止まる見本9通り・通る見本11通り・反証)と裏返した GATE6-4、既存の AI4/GATE6/RELAY74 が全緑。"
+        "note": "08:11:37〜08:13:18(101秒・exit 0)。裏返した AI4-1(参照の同一・テスト側に直書きが無い・配線の実在)が両幅で合格。AI4-3(全項目の反証)・GATE6/GATE7 も全緑=再輸出後の表で門が従来どおり働く。"
       },
       {
         "name": "npx playwright test tests/ai-overall.spec.js",
         "passed": 30,
         "failed": 0,
-        "note": "07:26:32〜07:26:37(exit 0)。門の表を触った回なので指示文・送る値の側に巻き添えが無いことの確認。"
+        "note": "08:13:18〜08:13:23(exit 0)。ai-overall.js を触った回なので指示文・送る値の側に巻き添えが無いことの確認。"
       },
       {
         "name": "npx playwright test tests/ai-relay.spec.js",
         "passed": 15,
         "failed": 0,
-        "note": "07:26:37〜07:26:40(exit 0・スキップ15件=実通信をしない決まり #74 による設計どおりのスキップ)。"
+        "note": "08:13:23〜08:13:25(exit 0・スキップ15件=実通信をしない決まり #74 による設計どおりのスキップ)。"
       },
       {
-        "name": "npx playwright test tests/engine.spec.js -g エンジンの文章に禁止表現が含まれない",
-        "passed": 2,
+        "name": "npx playwright test tests/engine.spec.js -g 禁止表現",
+        "passed": 4,
         "failed": 0,
-        "note": "07:26:40〜07:26:42(exit 0)。門の一覧の区画に表2つを足したので、区画の決まり(表以外を置かない・印は1組)が保たれていることの確認。"
+        "note": "08:13:25〜08:13:27(exit 0)。門の区画の決まり(表以外を置かない・印は1組)と、BANNED_SOURCE_WORDS によるソース走査が再輸出後も保たれていることの確認。"
+      },
+      {
+        "name": "npx playwright test tests/wording.spec.js",
+        "passed": 24,
+        "failed": 0,
+        "note": "08:13:27〜08:14:16(49秒・exit 0)。banned-words.js を require する側の代表として、書き方を変えずに全緑であることの確認。"
       },
       {
         "name": "npx playwright test tests/smoke.spec.js",
         "passed": 6,
         "failed": 0,
-        "note": "07:26:42〜07:26:56(exit 0)。ai-overall.js は画面が読み込む部品なので、ページが壊れていないことの確認。"
+        "note": "08:14:16〜08:14:30(exit 0)。ai-overall.js は画面が読み込む部品なので、ページが壊れていないことの確認。"
       }
     ],
-    "executed_at": "2026-08-21T07:26:56+09:00",
+    "executed_at": "2026-08-21T08:14:30+09:00",
     "recorded_runs": [
       {
-        "started_at": "2026-08-21T06:28:44+09:00",
-        "finished_at": "2026-08-21T06:28:48+09:00",
-        "duration_seconds": 4,
-        "command": "npx playwright test tests/dashboard.spec.js -g CLASS1",
-        "exit_code": 0,
-        "passed": 18,
-        "failed": 0,
-        "skipped": 0,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-21T06:32:12+09:00",
-        "finished_at": "2026-08-21T06:32:26+09:00",
+        "started_at": "2026-08-21T07:26:42+09:00",
+        "finished_at": "2026-08-21T07:26:56+09:00",
         "duration_seconds": 14,
         "command": "npx playwright test tests/smoke.spec.js",
         "exit_code": 0,
@@ -1007,9 +991,9 @@ window.DASHBOARD_DATA = {
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T06:35:31+09:00",
-        "finished_at": "2026-08-21T06:41:37+09:00",
-        "duration_seconds": 366,
+        "started_at": "2026-08-21T07:29:02+09:00",
+        "finished_at": "2026-08-21T07:35:44+09:00",
+        "duration_seconds": 402,
         "command": "npx playwright test tests/dashboard.spec.js",
         "exit_code": 0,
         "passed": 256,
@@ -1019,8 +1003,8 @@ window.DASHBOARD_DATA = {
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T07:23:26+09:00",
-        "finished_at": "2026-08-21T07:25:07+09:00",
+        "started_at": "2026-08-21T08:11:37+09:00",
+        "finished_at": "2026-08-21T08:13:18+09:00",
         "duration_seconds": 101,
         "command": "npx playwright test tests/ai-screen.spec.js",
         "exit_code": 0,
@@ -1031,8 +1015,8 @@ window.DASHBOARD_DATA = {
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T07:26:32+09:00",
-        "finished_at": "2026-08-21T07:26:37+09:00",
+        "started_at": "2026-08-21T08:13:18+09:00",
+        "finished_at": "2026-08-21T08:13:23+09:00",
         "duration_seconds": 5,
         "command": "npx playwright test tests/ai-overall.spec.js",
         "exit_code": 0,
@@ -1043,8 +1027,8 @@ window.DASHBOARD_DATA = {
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T07:26:37+09:00",
-        "finished_at": "2026-08-21T07:26:40+09:00",
+        "started_at": "2026-08-21T08:13:23+09:00",
+        "finished_at": "2026-08-21T08:13:25+09:00",
         "duration_seconds": 2,
         "command": "npx playwright test tests/ai-relay.spec.js",
         "exit_code": 0,
@@ -1055,20 +1039,32 @@ window.DASHBOARD_DATA = {
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T07:26:40+09:00",
-        "finished_at": "2026-08-21T07:26:42+09:00",
+        "started_at": "2026-08-21T08:13:25+09:00",
+        "finished_at": "2026-08-21T08:13:27+09:00",
         "duration_seconds": 2,
-        "command": "npx playwright test tests/engine.spec.js -g エンジンの文章に禁止表現が含まれない",
+        "command": "npx playwright test tests/engine.spec.js -g 禁止表現",
         "exit_code": 0,
-        "passed": 2,
+        "passed": 4,
         "failed": 0,
         "skipped": 0,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       },
       {
-        "started_at": "2026-08-21T07:26:42+09:00",
-        "finished_at": "2026-08-21T07:26:56+09:00",
+        "started_at": "2026-08-21T08:13:27+09:00",
+        "finished_at": "2026-08-21T08:14:16+09:00",
+        "duration_seconds": 49,
+        "command": "npx playwright test tests/wording.spec.js",
+        "exit_code": 0,
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T08:14:16+09:00",
+        "finished_at": "2026-08-21T08:14:30+09:00",
         "duration_seconds": 14,
         "command": "npx playwright test tests/smoke.spec.js",
         "exit_code": 0,
@@ -1082,45 +1078,42 @@ window.DASHBOARD_DATA = {
     "recorded_runs_omitted": {
       "log_total": 30,
       "omitted": 22,
-      "omitted_failed": 10
+      "omitted_failed": 6
     }
   },
   "failures": [],
   "unverified": [
-    "中継役の先のモデルが実際にかな書きの占い用語をどの頻度で書くかは測っていません(見本は手書きです。実通信をしない決まり=#74 のため、本番の返り文での効果は公開後にしか確かめられません)。",
-    "はしら(?![せなずぬれべけ])などの除外は、止めすぎを防ぐ向きに網を狭めます。除外した続き字で始まる本物の用語の使い方(「柱べ」など)は日本語として存在しないことを根拠にしていますが、全用例を走査したわけではありません。",
-    "台帳に残る GATE-5〜GATE-9 は、指摘が今の実装でも再現するかをまだ確かめていません(着手する回に1件ずつ再現を確かめてから直します)。"
+    "banned-words.js を require する検査のうち、今回走らせたのは wording / engine(禁止表現の走査)/ ai-screen / ai-overall / ai-relay / smoke です。official / final / overall / seimei / sanmei / yomi の各スイートも同じ表を require しますが、表の同値(27本+13行の全一致・参照同一)を実測済みのため今回は走らせていません(長いスイートを含むため)。表の中身が1本も変わっていない以上、判定の結果は変わりません。",
+    "AI4-1 の「正規表現の直書きが無いこと」の見分けは、コメントを落としたソースに正規表現リテラルの形(/…/ に , か ] が続く)が無いことで見ています。文字列から new RegExp で表を組み立て直す形は捕まえられませんが、その形は参照の同一(1つ目の網)で落ちます。"
   ],
   "denied_actions": [
     {
-      "time": "2026-08-21 06:19",
-      "action": "PowerShell ツールでの git log・git status",
-      "purpose": "サイクル冒頭検証",
-      "reason": "確認を求めない設定(dont-ask)で PowerShell が権限拒否。Bash ツールで代替した(前回の引継ぎに書かれていたとおりの形)"
-    },
-    {
-      "time": "2026-08-21 06:30",
-      "action": "Bash の sed へのパイプと ls+head の複合コマンド",
-      "purpose": "コミット一覧の整形と日報一覧の確認",
-      "reason": "権限拒否。git log の書式指定と Glob/Read ツールで代替した"
+      "time": "2026-08-21 07:40",
+      "action": "Bash(%TEMP% へのリダイレクト付き git show と、grep 連鎖の git diff)",
+      "purpose": "旧表との同値確認と app 差分の確認",
+      "reason": "確認を求めない設定(dont-ask)で権限拒否。リダイレクトと連鎖を外した単純な形(node の child_process で git show を読む・git diff を素で出す)へ分けて代替した"
     }
   ],
   "usage": {
     "wall_clock": "約45分",
     "limit": "60分目安",
     "subagents_used": [],
-    "tool_calls_approx": 40,
-    "estimate_note": "この回も点検役を起動していません。触ったのは dashboard/records-only.js・検査・規則・台帳・日報・報告書データだけで、app/(占いアプリ本体)には1バイトも触れていません(smoke 6件の緑で確認)。点検役は性質上 app/engine へ書き込むため、長いスイートと同じ窓に置かない決まりも今回は関係しませんでした。"
+    "tool_calls_approx": 25,
+    "estimate_note": "点検役は起動していません。触ったのは tests/banned-words.js・tests/ai-screen.spec.js(AI4-1)・app/engine/ai-overall.js(コメントのみ)・docs/ai-overall-plan.md・台帳・報告書データだけで、結果値を作る engine/index.js・official.js・provisional.js には触れていません。"
   },
   "human_decisions": [],
   "notices": [
-    "今回の作業の印は B(利用者に影響する不具合)です。C1 は閉じていません(0件)。非待ちの B の残りは AI-L5・GUARD-L4 の2件になりました。",
-    "門のかな書きの表(JARGON_KANA / JARGON_KANA_SKIP)はアプリ側 app/engine/ai-overall.js だけに置き、tests/banned-words.js との二重管理を増やしていません(AI4-1 の突き合わせ対象は従来どおり BANNED と JARGON_SCREEN の2表)。",
-    "取りこぼしは残っています=ばん・ていい・くみ など12読みは意図して止めません(理由は表にあり、報告書のこの欄ではなく実装の表が正本です)。これらは言葉づかいの揃え(#51)の話で、断定・恐怖の網(BANNED)は従来どおり全て止まります。",
-    "定期報告の次の期限=日報は 2026-08-22 06:29 以降、週報は 2026-08-22 02:20 以降(どちらも今回はまだ期限前です)。",
+    "今回の作業の印は B(利用者に影響する不具合)で、台帳 AI-L5 を閉鎖しました。C1 は閉じていません(0件)。非待ちの B の残りは GUARD-L4 の1件です(非待ちの A は0件のまま=C1 の1件上限は掛かったままです)。",
+    "禁止語の一覧に語を足す場所は、今回から app/engine/ai-overall.js の門の区画の1か所だけになりました(tests/banned-words.js は再輸出だけで、書き足しても効きません——書き戻しは AI4-1 が赤にします)。",
+    "週報の期限が明日 2026-08-22 02:20 以降に来ます(前回 8/15 02:20)。日報の次の期限は 8/22 06:29 以降。次のサイクルが期限を跨いでいれば作成します。",
     "ご指示 #75 の本文の末尾(【絶対に自動で閉じてはいけないもの】の3件目以降)は引き続き未受領です(台帳 TIDY-L1・渋谷さん待ちの欄)。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-21",
+      "event": "cycle-0200:AI-L5(B)=禁止語の門の表の二重管理を畳んだ。実体は app/engine/ai-overall.js の1か所、tests/banned-words.js は再輸出だけに",
+      "detail": "旧表との同値(BANNED 27本・JARGON_SCREEN 13行の source/flags 全一致)を実測してから切替。恒真になる AI4-1 は「写しが戻っていないこと」(参照の同一+テスト側に直書きが無い)を見る形へ裏返した。app/ の差分はコメントのみで結果値は不変。"
+    },
     {
       "time": "2026-08-21",
       "event": "cycle-0199:GATE-L1(B)=中継役の返り文の門のかな書きの取りこぼしを狭めた。重なりの無い9読みを止め、置かない12読みは理由を表に残した",
@@ -2194,9 +2187,9 @@ window.DASHBOARD_DATA = {
     }
   ],
   "queue_summary": {
-    "todo": 50,
+    "todo": 49,
     "in_progress": 0,
-    "done": 290,
+    "done": 291,
     "blocked": 0,
     "items": [
       {
@@ -2526,8 +2519,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "pending_count": {
-    "total": 50,
-    "todo": 50,
+    "total": 49,
+    "todo": 49,
     "in_progress": 0,
     "error": ""
   },
@@ -2539,7 +2532,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-21T07:28:46+09:00",
+    "last_heartbeat": "2026-08-21T08:14:46+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2554,7 +2547,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
+    "checked_at": "2026-08-21T08:15:20+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2584,7 +2577,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
+    "checked_at": "2026-08-21T08:15:20+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2607,13 +2600,13 @@ window.DASHBOARD_DATA = {
     "keep_count": 2,
     "measure_count": 0,
     "problem_count": 0,
-    "open_count": 48,
+    "open_count": 47,
     "total_count": 2,
     "error": ""
   },
   "work_class": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
-    "cycle_id": "cycle-0199",
+    "checked_at": "2026-08-21T08:15:20+09:00",
+    "cycle_id": "cycle-0200",
     "keys": [
       "A",
       "B",
@@ -2630,20 +2623,20 @@ window.DASHBOARD_DATA = {
     "legacy_label": "#78 より前の C(仕組みの改善。C1/C2 へ分ける前の印)",
     "limited_key": "C1",
     "open": {
-      "total": 56,
+      "total": 55,
       "unmarked": 0,
       "legacy": 0,
       "A": 4,
-      "B": 2,
+      "B": 1,
       "C1": 44,
       "C2": 6
     },
     "done": {
-      "total": 290,
+      "total": 291,
       "unmarked": 0,
       "legacy": 161,
       "A": 94,
-      "B": 27,
+      "B": 28,
       "C1": 8,
       "C2": 0
     },
@@ -2681,7 +2674,6 @@ window.DASHBOARD_DATA = {
       "AI-L1": "C1",
       "AI-L2": "C1",
       "AI-L4": "C1",
-      "AI-L5": "B",
       "TIDY-L1": "C1",
       "CROSS-5": "C1",
       "GUARD-L3": "C1",
@@ -2735,7 +2727,7 @@ window.DASHBOARD_DATA = {
     "records_only_count": 6,
     "ab_gate": {
       "field": "waiting_on",
-      "ab_total": 6,
+      "ab_total": 5,
       "readable": true,
       "waiting_count": 8,
       "excluded_ids": [
@@ -2746,12 +2738,11 @@ window.DASHBOARD_DATA = {
       ],
       "excluded_count": 4,
       "remaining_ids": [
-        "AI-L5",
         "GUARD-L4"
       ],
-      "remaining_count": 2,
+      "remaining_count": 1,
       "limit_applies": true,
-      "reason": "待ちの2欄に入る4件を除いても A・B が 2件残っているので、C1 の上限が掛かります",
+      "reason": "待ちの2欄に入る4件を除いても A・B が 1件残っているので、C1 の上限が掛かります",
       "blank_label_count": 0
     },
     "c_closed_this_cycle": {
@@ -2761,7 +2752,7 @@ window.DASHBOARD_DATA = {
       "ids": [],
       "count": 0,
       "limit_applies": true,
-      "remaining_ab": 2,
+      "remaining_ab": 1,
       "excluded_ab": 4
     },
     "mark_moves": {
@@ -2816,7 +2807,7 @@ window.DASHBOARD_DATA = {
     }
   },
   "records_only": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
+    "checked_at": "2026-08-21T08:15:20+09:00",
     "store": "queue/records-only.json",
     "class_key": "C2",
     "rows": [
@@ -2891,7 +2882,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "waiting": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
+    "checked_at": "2026-08-21T08:15:20+09:00",
     "store": "queue/backlog.json",
     "kinds": [
       {
@@ -2998,8 +2989,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "consistency": {
-    "checked_at": "2026-08-21T07:28:55+09:00",
-    "cycle_id": "cycle-0199",
+    "checked_at": "2026-08-21T08:15:20+09:00",
+    "cycle_id": "cycle-0200",
     "checks": [
       {
         "id": "C1",
@@ -3104,21 +3095,21 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "「溜まっている作業」に同じ番号の行が二度出ていないか",
         "level": "ok",
-        "detail": "50行の番号に重複はありません(作業台帳の未完了は50件です)"
+        "detail": "49行の番号に重複はありません(作業台帳の未完了は49件です)"
       },
       {
         "id": "C15",
         "kind": "cross",
         "title": "手書きの文章の欄が、前のサイクルの写しのままでないか",
         "level": "ok",
-        "detail": "10欄とも前のサイクル(cycle-0198・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:できなかったこと)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
+        "detail": "10欄とも前のサイクル(cycle-0199・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:できなかったこと)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
       },
       {
         "id": "C16",
         "kind": "guard",
         "title": "作業台帳の各行に A/B/C1/C2 の印が付き、1サイクルの C1 が上限内か",
         "level": "ok",
-        "detail": "未完了56件の内訳は A 4件・B 2件・C1 44件・C2 6件(うち6件は記録のみへ移った行)(台帳346件すべてに印あり。うち161件は古い C)。今回閉じた C1 は0件(上限1件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は掛かっています(待ちの2欄で A・B から4件を外し、残り2件)。A・B からの塗り替えは測れず(前サイクルの印の一覧が無い)"
+        "detail": "未完了55件の内訳は A 4件・B 1件・C1 44件・C2 6件(うち6件は記録のみへ移った行)(台帳346件すべてに印あり。うち161件は古い C)。今回閉じた C1 は0件(上限1件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は掛かっています(待ちの2欄で A・B から4件を外し、残り1件)。A・B からの塗り替えは測れず(前サイクルの印の一覧が無い)"
       },
       {
         "id": "C17",
