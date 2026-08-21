@@ -735,21 +735,28 @@
             return esc(k) + '=' + esc(wc.labels && wc.labels[k]);
           }).join('/')
         + '。1サイクルに進める ' + esc(wc.limited_key || 'C1')
-        + ' は1件までで、A と B を先にします。</p>'
+        + ' は、待ちの2欄を除いた A・B が残る間は1件まで、1件も残らない回は3件までで(#81)、'
+        + 'A と B を先にします。</p>'
         /* #78 の5(cycle-0194):上限は無条件ではなく「2つの待ち欄に入るものを除いた
            A と B が残っている間」だけ掛かる。**外した件数と残りを画面にも出す**
            =待ちの印を足すほど上限が外れる側へ動くので、数が黙って動かない形にする。
            件数も判定もここでは持たない(build.js が work-class.js から導いた ab_gate を読むだけ。
            印そのものの名は画面に書かない=WAIT1-2 が「画面の側で印を判定していないこと」を見る)。 */
+        /* #81(cycle-0202):上限は「外れる」のではなく1件か3件。値も閉じた件数も
+           ここでは数えず、build.js が work-class.js から導いた値(ab_gate.limit /
+           c_closed_this_cycle)を読むだけ。 */
         + (wc.ab_gate
           ? '<p class="sub" id="ab-gate-line">'
-            + (wc.ab_gate.limit_applies
-              ? 'いまこの上限は<b>掛かっています</b>'
-              : 'いまこの上限は<b>外れています</b>')
+            + 'いまの回の上限は<b>' + esc(wc.ab_gate.limit) + '件</b>です'
+            + (wc.ab_gate.limit_applies ? '' : '(#81=A・B が残らない回)')
             + '(上の2欄で待ちの印が付いた A・B を ' + esc(wc.ab_gate.excluded_count)
             + '件外し、なお残る A・B が ' + esc(wc.ab_gate.remaining_count) + '件)。'
+            + (wc.c_closed_this_cycle
+              ? 'このサイクルで閉じた ' + esc(wc.c_closed_this_cycle.key || 'C1') + ' は '
+                + esc(wc.c_closed_this_cycle.count) + '件。'
+              : '')
             + (wc.ab_gate.readable ? '' : '<span class="ng">待ちの2欄の顔ぶれを読み取れなかったため、'
-              + '上限を掛けたままにしています。</span>')
+              + '厳しい側の1件のままにしています。</span>')
             + '</p>'
           : '')
         /* GATE-2(cycle-0195):**上限の数えから漏れている行の数も画面に出す。**
