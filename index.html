@@ -1045,6 +1045,27 @@
         + esc(tr.close_limit) + '件=#85)</p>';
     }
   }
+  /* LEDGER-L3(cycle-0210):定期報告(日報・週報)の作成状況も、この欄の中に表として出す。
+     値は build.js が periodic-reports.js から毎ビルド導出したもの(state/project-state.json の
+     last_daily_report / last_weekly_report が実体)を並べるだけで、画面の側は数え方も
+     判定も持たない(#45。due_review・tidy_review と同じ作り)。
+     「期限を過ぎている」と「読み取れなかった」は混ぜない(overdue が null の行は
+     期限内とも超過とも言わず「読み取れませんでした」と出す=#55)。 */
+  var pr = d.periodic_reports || null;
+  var prHtml = '';
+  if (pr) {
+    prHtml = '<p style="margin-top:8px"><b class="sub" id="periodic-reports-title">定期報告(日報・週報)の作成状況</b></p>';
+    if (pr.error) {
+      prHtml += '<p class="ng">' + esc(pr.error) + '</p>';
+    } else {
+      prHtml += table(['種別', '最後に作った時刻', '次の期限', '状態'], (pr.rows || []).map(function (r) {
+        var st = (r.overdue === true) ? '<span class="ng">' + esc(r.note) + '</span>'
+          : (r.overdue === false) ? esc(r.note)
+          : '<span class="ng">' + esc(r.note || '読み取れませんでした') + '</span>';
+        return [esc(r.label), esc(r.last || '—'), esc(r.next_due || '—'), st];
+      }));
+    }
+  }
   /* SANMEI-3b(#55):算命学の二文字の読みの反復率を、測り方ごとの表としてこの欄に出す。
      **4通りの測り方があり、それぞれ母集団が違う**(3欄を混ぜたもの・欄ごと・
      同じ二文字で欄をまたぐ組・元の数え方)ので、数だけを一行に並べると
@@ -1227,7 +1248,7 @@
   }
 
   add('お知らせ(確認だけ・対応は不要)',
-      list(d.notices) + lcHtml + drHtml + trHtml + syHtml + ssHtml);
+      list(d.notices) + lcHtml + drHtml + trHtml + prHtml + syHtml + ssHtml);
 
   /* 19: 更新・復旧の履歴(OC8:更新を多めに時系列で載せる) */
   add('更新・復旧の履歴(新しい順)', table(['日時', '事象', '詳細'],
