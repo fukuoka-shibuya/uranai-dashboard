@@ -1,34 +1,33 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0210",
-  "cycle_label": "サイクル210(2026-08-21)",
-  "generated_at": "2026-08-21T18:46:12+09:00",
+  "cycle_id": "cycle-0211",
+  "cycle_label": "サイクル211(2026-08-21)",
+  "generated_at": "2026-08-21T19:00:12+09:00",
   "status": "OK",
   "overall": {
-    "phase": "C1 の穴ふさぎ3件(印を押す順序・C4 の拾い方・定期報告の歯止め)",
+    "phase": "C1 の穴ふさぎ3件(C12 の表の中身・控えの失敗の理由・到達しない枝)",
     "pdca_phase": "Do",
-    "pdca_note": "A・B が0件の回の上限3件(#81)を、引継ぎ筆頭の STALE-L16 と、拾い方の食い違い1件・歯止めの不在1件に充てた",
-    "now_doing": "STALE-L16・LOOP-L1・LEDGER-L3 の3件を終え、終了処理中",
+    "pdca_note": "A・B が0件の回の上限3件(#81)を、公開される表の書き替えが通る穴1件・握りつぶしの後始末1件・反証の空白1件に充てた",
+    "now_doing": "DUE-L2・STALE-L10・GUARD-L3 の3件を終え、終了処理中",
     "done_this_cycle": [
-      "supervisor.py の OK 分岐で、印(mark_cycle_ok)を公開処理(publish_pages)の後ろへ移しました=公開の安全網が build.js を走らせ直しても、その報告書は必ず印より古くなり、次サイクルの番号の書き替え漏れが「二度目のビルド」(緑)に化けなくなります(STALE-L16。検査 STALE1-13 が順序を表明)。新版の反映のため state/restart-request.json を置きました(supervisor は自ファイルの変更も自動検知します)。",
-      "毎ビルドの照合 C4(台帳→報告書の載せ忘れ)の拾い方を、一覧(todo・doing)から除外側(done 以外すべて)へそろえました=blocked など一覧に無い状態の行が報告書から漏れても黙って通る形を塞ぎ、CLAUDE.md の「最初から done 以外を拾っている」という誤った記述も実態へ直しました(LOOP-L1。反証 LOOP1-3 新設)。",
-      "定期報告(日報・週報)の作成状況を毎ビルド導出する仕組みを作りました=dashboard/periodic-reports.js が state の last_daily_report / last_weekly_report から「最後に作った時刻・次の期限・期限を過ぎているか」を導き、お知らせ欄に表で出します(超過は赤)。「超過」と「読めず」は混ぜません(LEDGER-L3。検査 PERIODIC1-1・1b・2 新設)。",
-      "CLAUDE.md へ3箇所(印を押す順序・C4 の記述の訂正・定期報告の導出)、docs/system-guide.md へ periodic-reports.js の行と cycle-marker の行、docs/auto-recovery.md のマーカーの節へ追記しました。台帳3行閉鎖(未完了28→25件)。"
+      "毎ビルドの照合 C12 が、報告書の期限つき点検の表(due_review)を件数だけでなく行と状態(id+state)の組の完全一致まで突き合わせるようになりました(DUE-L2)。「問題あり」を「観察中」へ手で書き替えた表・行の差し替えは、どちらも行の名指しつきの赤になります(判定は due-check.js の dueShownProblems 1か所。検査 DUE1-3 新設)。",
+      "報告書の控え(state/report-baseline.json)の書き出しに失敗したとき、その理由が logs/failures.log へ1行残るようになりました(STALE-L10)。これまでは理由ごと握りつぶされ、次のビルドの「控えが使えない」赤だけが公開されて、誰も消していないのに消したように読めました。成功の回と検査呼びの意図した素通りには何も残しません(検査 STALE1-14 新設)。",
+      "engine の countFillProblems(欄の数の入れ札の突き合わせ)の「突き合わせる結果が無い」枝に、初めて到達する反証を置きました(GUARD-L3。GUARD3-1b へ3見本)。到達しない枝を「実装した」と書いたままにしない=cycle-0078 の点検役 M1 の形の解消です。",
+      "冒頭検証で supervisor 新版(印を公開処理の後に押す順序=前回の STALE-L16)の反映を確認しました=logs/recovery.log に 18:46:56 の「restart-request.json を消化」「自己再起動: supervisor.py の更新を検知」が残り、state/restart-request.json は消えています。"
     ],
     "next_up": [
       {
         "id": "YOMI-N10",
-        "text": "読みの本数を足す回に、最接近の組(西洋「向かい合う星座」の蟹座×山羊座)の重なりを書く前と後で測って開示します(印=A・渋谷さん待ちの欄にも並んでいます)。**実際の順は #77/#78/#81 のとおり=8/22 02:20 以降のサイクルではまず週報(今回新設の表でも次の期限として出ます)、8/22 06:29 以降では日報。作業は、非待ちの A・B が0件のままなら台帳の C1 残り(25件)から優先度順に最大3件です**"
+        "text": "読みの本数を足す回に、最接近の組(西洋「向かい合う星座」の蟹座×山羊座)の重なりを書く前と後で測って開示します(印=A・渋谷さん待ちの欄にも並んでいます)。**実際の順は #77/#78/#81 のとおり=8/22 02:20 以降のサイクルではまず週報、8/22 06:29 以降では日報(定期報告の作成状況の表が超過を赤で出します)。作業は、非待ちの A・B が0件のままなら台帳の C1 残り(22件)から優先度順に最大3件です**"
       }
     ],
-    "summary": "C1 を3件閉じた。①サイクル完了の印は公開処理の「後」に押す順へ入れ替えた=公開の安全網がビルドをやり直した回のあとでも、番号の書き替え漏れが「二度目のビルド」(緑)に化けない(supervisor.py の変更。新版は restart-request で自動反映)。②毎ビルドの C4 の「未完了」の拾い方を一覧から除外側へそろえ、blocked の行の漏れも捕まるようにした。③日報・週報の作成状況(最後に作った時刻・次の期限・超過)を state の実体から毎ビルド導出してお知らせ欄に表で出す仕組みを作った=作り忘れを見る機械の歯止めが初めて付いた。"
+    "summary": "C1 を3件閉じた。①C12(期限つき点検の見張り)は件数しか見ておらず、公開される表の「問題あり」を「観察中」へ手で書き替えても緑のまま通っていた=行と状態の組の完全一致まで見る判定を due-check.js の1か所に置いた。②控え(report-baseline)の書き出し失敗は理由ごと握りつぶされていた=logs/failures.log へ1行残し、「誰も消していないのに消したように読める」形を畳んだ。③countFillProblems の「結果が無い」枝はどの検査からも到達していなかった=枝を通す見本3件を反証へ足した。冒頭で supervisor 新版(印を押す順序)の反映も確認した(18:46:56 の自己再起動)。"
   },
-  "task": "C1 を3件(非待ちの A・B が0件の回=上限3件。#81)。①STALE-L16=supervisor は印(mark_cycle_ok)を押してから公開する順で、公開処理は cycle.json と cycle.js が食い違うと安全網として build.js を走らせ直すため、その再ビルドの generated_at が印より新しくなり、次のサイクルで番号の書き替え漏れが「二度目のビルド」(緑)に化ける(「build.js を落とす」も「番号の書き替え忘れ」も頻発の落とし方どうしの合わせ技)。②LOOP-L1=毎ビルドの C4 が拾う「未完了」が一覧(todo・doing)で書かれ blocked を拾わない(CLAUDE.md の「最初から done 以外を拾っている」という記述も誤りだった)。③LEDGER-L3=#62 で定期報告を台帳と件数から外した結果、日報・週報の作り忘れを見る機械の歯止めが1つも無い(notices の手書きの1行が落ちても誰も気づかない)。",
+  "task": "C1 を3件(非待ちの A・B が0件の回=上限3件。#81)。①DUE-L2=毎ビルドの照合 C12 は報告書の期限つき点検の表(due_review)を件数(total_count)でしか突き合わせておらず、公開される表の state を手で「問題あり」→「観察中」へ書き替えても緑のまま通っていた。行と状態(id+state)の組の完全一致まで見る判定 dueShownProblems を due-check.js に新設し、C12 と検査が同じ1か所を呼ぶ形にした。②STALE-L10=build.js の控え(report-baseline)書き出しは catch で理由ごと握りつぶしており、書き込みが権限・容量などで落ちた回は、次のビルドの「控えが使えない」赤だけが公開されて誰も消していないのに消したように読めた(#45)。失敗の理由を logs/failures.log へ1行残す。③GUARD-L3=engine の countFillProblems の「突き合わせる結果が無い」枝がどの検査からも到達しておらず(GUARD3-1b の見本は全部オブジェクト)、到達しない枝を「実装した」と書いたままだった(cycle-0078 の点検役 M1 と同じ形)。枝を通す見本3件を反証へ足した。",
   "acceptance": [
-    "STALE-L16 受入:公開処理がビルドをやり直した回のあとでも、番号の書き替え漏れが緑にならないこと=OK 分岐の順序を publish_pages→mark_cycle_ok へ入れ替え(印は公開時の再ビルドより必ず新しくなる)。順序は検査 STALE1-13 が表明し、順序を戻せば落ちる(実測で合格 18:29:50〜52 exit 0)。R1b-L4 への影響=あちらは last_ok_started_at(開始時刻)しか読まず、渡す値は cycle_started のままなので意味は不変",
-    "LOOP-L1 受入:C4 の拾い方を除外側(status !== done)へそろえ、blocked の行の漏れを捕まえること=反証 LOOP1-3 が仮置き場の台帳(blocked/todo/done 各1行)で「blocked の漏れは赤・done は要求しない・全部載っていれば緑」を実測(合格 18:29:48〜50 exit 0)。報告書側の扱い=blocked も他の未完了と同じく「溜まっている作業」へ載せる(現在の台帳に blocked は0件=実測 done315/todo28→25)",
-    "LEDGER-L3 受入1:notices の文言を state の last_daily_report / last_weekly_report からビルドで導くこと=periodic-reports.js の periodicReview 1か所が導出し build.js が periodic_reports へ入れ、画面はお知らせ欄に表で出す(PERIODIC1-2 が配線と実物 state との突き合わせを実測)",
-    "LEDGER-L3 受入2:期限を過ぎているのに作られていない場合に報告書の側で分かること=超過の行は赤の「期限を過ぎています(このサイクルで作成すること)」。「超過」と「読めず」は混ぜない(読めない行は overdue null+「読み取れませんでした」=#55)。PERIODIC1-1(期限内・超過・次の期限の3通り)・PERIODIC1-1b(読めないとき数を作らない)で実測(合格 18:29:42〜44 exit 0)"
+    "DUE-L2 受入:状態を書き替えた報告書が食い違いとして捕まること=作りものの fresh/shown で「problem→watching の書き替え」「id の差し替え」がどちらも行の名指しつきの赤になることを実測(検査 DUE1-3 の (b)(c))。判定が1か所にあり検査と照合が同じ関数を呼ぶこと=dueShownProblems を due-check.js に置き、C12 のソースから件数だけの自前比較(total_count !==)が消えていることまで DUE1-3 (f) が見る。一致する表は緑・件数の食い違いと表の不在の赤は後退させない((a)(d))。実測 18:53:36〜38 exit 0(DUE1 系8件全緑)。",
+    "STALE-L10 受入:控えの書き出しに失敗した回に、その理由がログに残ること=一時フォルダで「控えの行き先が既存のフォルダ」という書けない形を作ってビルドし、報告書は作られたままログに report-baseline と元のエラーの文が残ることを実測(検査 STALE1-14 (a))。反証=成功の回と意図した素通り(検査呼びの skip)の回には何も残らない((b)(c))。検査は failureLogPath で自分の仮置き場を指定し本物のログを汚さない。実測 18:53:41〜58 exit 0。",
+    "GUARD-L3 受入:到達しない枝が無くなっているか、その枝を通す見本が反証にあること=後者を採用(枝は呼ぶ側が相手を取り違えたとき黙って緑へ倒れないためのものなので畳まない)。GUARD3-1b (c-2) が raw null・filled null・両方 undefined の3見本で[突き合わせる結果が無い]の1件ちょうど(理由のすり替わり無し)を実測。18:53:31〜32 exit 0。"
   ],
   "comparison": {
     "headers": [
@@ -41,8 +40,8 @@ window.DASHBOARD_DATA = {
   "adopted_reason": "",
   "rejected_reason": "",
   "improvements": [
-    "①バグ減少(3件の穴が閉じた):公開処理の再ビルド+番号の書き替え忘れの合わせ技で写しの見張りが緑に化ける道/blocked の行が報告書から漏れても C4 が黙る道/日報・週報を作り忘れても誰も気づかない形。",
-    "⑧新テスト合格:STALE1-13(印を押す順序)・LOOP1-3(C4 が blocked を拾う反証)・PERIODIC1-1/1b/2(定期報告の導出と読めないとき数を作らないこと)を新設し、関連の既存 OC46-M1 系7件・LEDGER1 系3件・OC48 系7件も全緑(18:29:42〜18:31:50・6回の実行すべて exit 0)。"
+    "①バグ減少(3件の穴が閉じた):公開される期限つき点検の表の状態を手で書き替えても C12 が緑のまま通る道/控えの書き出し失敗が理由ごと消え、次のビルドの赤が「消された」ように読める形/到達しない枝が「実装した」と名乗ったままの形。",
+    "⑧新テスト合格:DUE1-3(id+state の突き合わせと配線)・STALE1-14(失敗の理由がログに残る・成功と素通りは残らない)・GUARD3-1b (c-2)(結果が無い枝の3見本)を新設し、関連の既存 DUE1 系・STALE1 系18件・GUARD3 系6件も全緑(18:53:31〜18:57:17・5回の実行すべて exit 0)。"
   ],
   "completed_features": [
     "「次にやること」の先頭にオーナーコメント由来の行(台帳の印 owner_issue)を置けること。印の無い行・完了済みの行は置けないこと(ORDER-2)",
@@ -650,12 +649,6 @@ window.DASHBOARD_DATA = {
       "plan": "いまの点検は期限の欄を持つ行しか見ないので、次に誰かが自由文で期限を書けば同じ事故(R2)が再発します。期限らしき言い回しを含むのに欄を持たない行を、照合が灰色で名指しする形にします(閉じる判断には使いません)"
     },
     {
-      "id": "DUE-L2",
-      "status": "未着手",
-      "title": "期限の表の中身(状態)まで照合する",
-      "plan": "いまの照合は件数しか見ないため、公開される表の「問題あり」を「観察中」に書き替えても通ってしまいます。行ごとの状態まで突き合わせます"
-    },
-    {
       "id": "DUE-L3",
       "status": "未着手",
       "title": "自動で閉じたとき、その行の合格条件をどこまで測ったかを述べる",
@@ -698,12 +691,6 @@ window.DASHBOARD_DATA = {
       "plan": "今回いちばん大きな発見が「名前で登録して実際に呼ぶだけでは足りない。呼んだ相手がその対象について何かを述べているかまで見ないと、呼び出しが儀式になる」でした。**同じ作りをしている期限つきの点検(#71)と棚卸し(#75)にも同じ穴があるかどうかは、今回は見ていません(未確認)。**次のサイクル以降で実測し、穴があれば今回と同じ形で塞ぎます"
     },
     {
-      "id": "GUARD-L3",
-      "status": "未着手",
-      "title": "判定の中に、どの検査からも通らない枝が1つ残っている",
-      "plan": "到達しない枝を「実装した」と書いたままにしないため、通す見本を足すか枝を畳みます"
-    },
-    {
       "id": "STALE-L1",
       "status": "未着手",
       "title": "写しの点検が見る欄の決め方(据え置きの一覧をどう扱うか)",
@@ -714,12 +701,6 @@ window.DASHBOARD_DATA = {
       "status": "未着手",
       "title": "控えを失うと、そのサイクルの中では作り直せない",
       "plan": "前のサイクルの報告書の控えを作れるのは「前回ビルドの公開データが、いまと違うサイクル番号を持っているとき」だけです。したがって**同じサイクルの途中で控えを失うと、その回のあいだは作り直せません**=写しの点検は残りのビルドで灰色のままになります(実測しました)。**緑を騙らないので事実の誤りではありません**が、次のサイクルの初回ビルドまで歯止めが効きません。控えを2世代持つか、控えが読めない回を報告書の先頭で目立たせるかを決めます。急ぎません。"
-    },
-    {
-      "id": "STALE-L10",
-      "status": "未着手",
-      "title": "控えの書き出しに失敗しても、その理由がどこにも残りません(記録のみ・急ぎません)",
-      "plan": "今回の点検で見つかった指摘です。台帳に登録し、次以降のサイクルで扱います"
     },
     {
       "id": "SETSU-L1",
@@ -736,10 +717,10 @@ window.DASHBOARD_DATA = {
   ],
   "undone_items": [
     {
-      "id": "C1-残り25件",
+      "id": "C1-残り22件",
       "title": "台帳の C1 の残り(今回の3件以外)への着手",
       "state": "次サイクル以降(A・B が0件の回は1サイクル最大3件)",
-      "reason": "今回の上限3件(#81)を使い切ったため、残り25件は次サイクル以降に回します。なお 8/22 02:20 以降のサイクルでは週報を先に作ります。"
+      "reason": "今回の上限3件(#81)を使い切ったため、残り22件は次サイクル以降に回します。なお 8/22 02:20 以降のサイクルでは週報を先に作ります。"
     }
   ],
   "artifacts": [
@@ -801,127 +782,53 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "node tools/run-tests.js tests/dashboard.spec.js -g <対象>(6回)+ tests/smoke.spec.js",
+    "command": "node tools/run-tests.js tests/yomi.spec.js -g <対象>(2回)+ tests/dashboard.spec.js -g <対象>(3回)",
     "executed": true,
-    "passed": 28,
+    "passed": 34,
     "failed": 0,
-    "skipped": 20,
+    "skipped": 26,
     "count_basis": [
-      "2026-08-21T18:29:42+09:00",
-      "2026-08-21T18:29:48+09:00",
-      "2026-08-21T18:29:50+09:00",
-      "2026-08-21T18:30:00+09:00",
-      "2026-08-21T18:30:02+09:00",
-      "2026-08-21T18:31:45+09:00",
-      "2026-08-21T18:35:49+09:00"
+      "2026-08-21T18:53:31+09:00",
+      "2026-08-21T18:53:36+09:00",
+      "2026-08-21T18:53:41+09:00",
+      "2026-08-21T18:54:05+09:00",
+      "2026-08-21T18:56:44+09:00"
     ],
-    "duration": "28件合格・0件失敗・20件スキップ(18:29:42〜18:36:03。7回の実行すべて exit 0。スキップは判定そのものの検査を w360 の1構成に絞る設計どおり)",
+    "duration": "34件合格・0件失敗・26件スキップ(18:53:31〜18:57:17。5回の実行すべて exit 0。スキップは判定そのものの検査を w360 の1構成に絞る設計どおり)",
     "cases": [
       {
-        "name": "dashboard -g PERIODIC1(新設3件=定期報告の導出)",
-        "passed": 3,
-        "failed": 0,
-        "note": "3件スキップ=w412 側の設計どおり(18:29:42〜44・exit 0)"
-      },
-      {
-        "name": "dashboard -g LOOP1-3(新設=C4 が blocked を拾う反証)",
+        "name": "yomi -g GUARD3-1b(新設 (c-2)=結果が無い枝の3見本)",
         "passed": 1,
         "failed": 0,
-        "note": "1件スキップ=w412 側(18:29:48〜50・exit 0)"
+        "note": "1件スキップ=w412 側の設計どおり(18:53:31〜32・exit 0)"
       },
       {
-        "name": "dashboard -g STALE1-13(新設=印を押す順序の表明)",
+        "name": "dashboard -g DUE1(新設 DUE1-3=id+state の突き合わせを含む4本×2構成)",
+        "passed": 8,
+        "failed": 0,
+        "note": "18:53:36〜38・exit 0"
+      },
+      {
+        "name": "dashboard -g STALE1-14(新設=控えの失敗の理由がログに残る)",
         "passed": 1,
         "failed": 0,
-        "note": "1件スキップ=w412 側(18:29:50〜52・exit 0)"
+        "note": "1件スキップ=w412 側の設計どおり(18:53:41〜58・exit 0)"
       },
       {
-        "name": "dashboard -g OC46-M1(supervisor ソース検査の退行確認)",
-        "passed": 7,
+        "name": "dashboard -g STALE1(既存の写し・控え・印の見張り一式)",
+        "passed": 18,
         "failed": 0,
-        "note": "7件スキップ=w412 側(18:30:00〜02・exit 0)"
+        "note": "18件スキップ=w412 側の設計どおり(18:54:05〜18:56:39・exit 0)"
       },
       {
-        "name": "dashboard -g LEDGER1(台帳突き合わせの退行確認)",
-        "passed": 3,
-        "failed": 0,
-        "note": "3件スキップ=w412 側(18:30:02〜04・exit 0)"
-      },
-      {
-        "name": "dashboard -g OC48(説明書の走査=新ファイルの記載確認)",
-        "passed": 7,
-        "failed": 0,
-        "note": "5件スキップ=w412 側(18:31:45〜50・exit 0)"
-      },
-      {
-        "name": "smoke(骨格6件=画面の起動と絶対条件。dashboard 以外の実測で C11 の鎖を今サイクルへ繋ぐ)",
+        "name": "yomi -g GUARD3(欄の数の入れ札の見張り一式)",
         "passed": 6,
         "failed": 0,
-        "note": "スキップ0件(18:35:49〜18:36:03・exit 0)"
+        "note": "6件スキップ=w412 側の設計どおり(18:56:44〜18:57:17・exit 0)"
       }
     ],
-    "executed_at": "2026-08-21T18:45:55+09:00",
+    "executed_at": "2026-08-21T18:57:17+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-08-21T18:29:48+09:00",
-        "finished_at": "2026-08-21T18:29:50+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g LOOP1-3",
-        "exit_code": 0,
-        "passed": 1,
-        "failed": 0,
-        "skipped": 1,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-21T18:29:50+09:00",
-        "finished_at": "2026-08-21T18:29:52+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g STALE1-13",
-        "exit_code": 0,
-        "passed": 1,
-        "failed": 0,
-        "skipped": 1,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-21T18:30:00+09:00",
-        "finished_at": "2026-08-21T18:30:02+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC46-M1",
-        "exit_code": 0,
-        "passed": 7,
-        "failed": 0,
-        "skipped": 7,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-21T18:30:02+09:00",
-        "finished_at": "2026-08-21T18:30:04+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g LEDGER1",
-        "exit_code": 0,
-        "passed": 3,
-        "failed": 0,
-        "skipped": 3,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-21T18:31:45+09:00",
-        "finished_at": "2026-08-21T18:31:50+09:00",
-        "duration_seconds": 5,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC48",
-        "exit_code": 0,
-        "passed": 7,
-        "failed": 0,
-        "skipped": 5,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
       {
         "started_at": "2026-08-21T18:35:49+09:00",
         "finished_at": "2026-08-21T18:36:03+09:00",
@@ -957,51 +864,99 @@ window.DASHBOARD_DATA = {
         "skipped": 0,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T18:53:31+09:00",
+        "finished_at": "2026-08-21T18:53:32+09:00",
+        "duration_seconds": 2,
+        "command": "npx playwright test tests/yomi.spec.js -g GUARD3-1b",
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 1,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T18:53:36+09:00",
+        "finished_at": "2026-08-21T18:53:38+09:00",
+        "duration_seconds": 3,
+        "command": "npx playwright test tests/dashboard.spec.js -g DUE1",
+        "exit_code": 0,
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T18:53:41+09:00",
+        "finished_at": "2026-08-21T18:53:58+09:00",
+        "duration_seconds": 17,
+        "command": "npx playwright test tests/dashboard.spec.js -g STALE1-14",
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 1,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T18:54:05+09:00",
+        "finished_at": "2026-08-21T18:56:39+09:00",
+        "duration_seconds": 154,
+        "command": "npx playwright test tests/dashboard.spec.js -g STALE1",
+        "exit_code": 0,
+        "passed": 18,
+        "failed": 0,
+        "skipped": 18,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-21T18:56:44+09:00",
+        "finished_at": "2026-08-21T18:57:17+09:00",
+        "duration_seconds": 33,
+        "command": "npx playwright test tests/yomi.spec.js -g GUARD3",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 6,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
     ],
     "recorded_runs_omitted": {
       "log_total": 30,
       "omitted": 22,
-      "omitted_failed": 6
+      "omitted_failed": 5
     }
   },
-  "failures": [
-    "ビルド後の報告書スイートで TESTCASE1-1 が2件(w360/w412)失敗した(18:37:28〜18:44:50・exit 1)。原因は自作の書式誤り=テストの内訳の表(tests.cases)を旧形 {name, result:文字列} で書いたため、画面の判定(失敗の件数の数値が無い行は旧判定 result===pass へ落ちる)で全行が赤い「失敗」になり、「失敗0件」の合計と矛盾した。正しい形 {name, passed, failed, note} へ直して再ビルドし、TESTCASE1 系4件合格(18:45:48〜55・exit 0)を実測。ケース表の形以外は触っていないため他の286件の合格は据え置き。"
-  ],
+  "failures": [],
   "unverified": [
-    "supervisor.py の新版(印を押す順序の入れ替え)が実際に反映されて動くことは、このセッションからは確かめられません=supervisor は常駐プログラムで、反映は次のループ先頭の自己再起動(自ファイルの変更検知または restart-request.json)で行われます。次サイクルの冒頭で logs/recovery.log の「自己再起動」の行を確認します。python の構文検査も権限拒否環境のため走らせていません(supervisor 自身の _self_compiles が文法エラー時の再起動を止める仕組みで、壊れた版が動き出すことはありません)。",
-    "今回走らせていないスイート(official / sanmei / seimei / engine / yomi / wording / unlock / ai-relay / ai-screen など):app/ の差分が0行(git status で確認)のため、占いの結果の値・画面の文章に影響する変更はありません。dashboard 側の変更は対象を絞った6回の実行(全緑)とビルド後の報告書スイートで見ます。",
-    "ビルド後の報告書スイートの結果はこのコミットの後に走らせ、追記コミットに記します(先に保全・検証は後=障害32の再発防止)。"
+    "今回走らせていないスイート(official / sanmei / seimei / engine / wording / unlock / ai-relay / ai-screen / smoke など):app/ の差分が0行(git status で確認。tests/yomi.spec.js の反証追加は検査側だけの変更)のため、占いの結果の値・画面の文章に影響する変更はありません。dashboard 側の変更は対象を絞った5回の実行(全緑)とビルド後の報告書スイートで見ます。",
+    "ビルド後の報告書スイートの結果はこのコミットの後に走らせ、追記コミットに記します(先に保全・検証は後=障害32の再発防止)。前回の引継ぎにあった「STALE-L16 の反映後は OC47-3d の既知のサイクル途中形の出方が変わる可能性」も、その走行で観察して記録します。"
   ],
-  "denied_actions": [
-    {
-      "time": "2026-08-21T18:22:30+09:00",
-      "action": "PowerShell ツールでの冒頭検証(git log・cycle_id 照合・オーナーコメント確認の3件)",
-      "reason": "dont-ask モードの権限拒否(PowerShell ツール自体が不許可)",
-      "next": "Bash ツールと node で同じ照合を実行して続行(cycle-0208 からの既知の形。引継ぎにも記載済み)"
-    },
-    {
-      "time": "2026-08-21T18:27:00+09:00",
-      "action": "Bash のコマンド置換($(grep ...) を含む sed の1行実行)",
-      "reason": "dont-ask モードの権限拒否(コマンド置換を含む形)",
-      "next": "Grep ツールの -A オプションで同じ範囲を読み出して続行"
-    }
-  ],
+  "denied_actions": [],
   "usage": {
-    "wall_clock": "約15分(終了処理前まで)",
+    "wall_clock": "約12分(終了処理前まで)",
     "limit": "60分目安",
     "subagents_used": [],
-    "tool_calls_approx": 30,
-    "estimate_note": "点検役は起動していません。app/ の差分は0行(変更は supervisor/supervisor.py・dashboard/cross-check.js・dashboard/build.js・dashboard/index.html・dashboard/periodic-reports.js 新設・tests/dashboard.spec.js・CLAUDE.md・docs 2件・台帳・state)。"
+    "tool_calls_approx": 25,
+    "estimate_note": "点検役は起動していません。app/ の差分は0行(変更は dashboard/due-check.js・dashboard/cross-check.js・dashboard/build.js・tests/dashboard.spec.js・tests/yomi.spec.js・CLAUDE.md・台帳・state)。"
   },
   "human_decisions": [],
   "notices": [
-    "**今回の作業の内訳**=C1 3件(STALE-L16・LOOP-L1・LEDGER-L3)。非待ちの A・B は0件の回なので上限は3件(#81)で使い切りました。台帳の未完了は28→25件です。",
-    "**サイクル完了の印は公開処理の「後」に押す順になりました**=公開の安全網がビルドをやり直しても、その報告書は必ず印より古くなり、番号の書き替え漏れの見分け(C11・C15)が緑に化けません。supervisor.py の変更なので、反映は次のループ先頭の自己再起動です(restart-request.json を置きました)。",
-    "**日報・週報の作成状況は、このお知らせ欄の下の表(定期報告の作成状況)で毎ビルド導出して出します**=これまでの手書きの1行をやめました。最後に作った時刻・次の期限・超過(赤)は state/project-state.json の実体から導きます(#45)。",
-    "毎ビルドの照合 C4 は blocked の行も拾うようになりました(いまの台帳に blocked は0件。将来 blocked が生まれたら「溜まっている作業」へ他の未完了と同じく載せます)。"
+    "**今回の作業の内訳**=C1 3件(DUE-L2・STALE-L10・GUARD-L3)。非待ちの A・B は0件の回なので上限は3件(#81)で使い切りました。台帳の未完了は25→22件です。",
+    "**supervisor 新版(サイクル完了の印を公開処理の後に押す順序=前回の STALE-L16)の反映を確認しました**=logs/recovery.log の 18:46:56 に「restart-request.json を消化」「自己再起動: supervisor.py の更新を検知」が記録され、置いてあった state/restart-request.json は消えています。人手の再起動は使っていません(#6)。",
+    "**C12 の見張りが厚くなりました**=期限つき点検の表は件数だけでなく「どの行がどの状態か」まで毎ビルド突き合わせます。表の状態を手で書き替える形は、これからは行の名指しつきの赤になります。",
+    "週報は 8/22 02:20 以降・日報は 8/22 06:29 以降のサイクルで期限になります(下の「定期報告の作成状況」の表が超過を赤で出します)。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-21T18:59:00+09:00",
+      "event": "cycle-0211:C1 3件=C12 が期限つき点検の表を id+state まで突き合わせる(DUE-L2)+控えの書き出し失敗の理由を logs/failures.log へ残す(STALE-L10)+countFillProblems の「結果が無い」枝へ初の反証(GUARD-L3)。supervisor 新版の反映(18:46:56 自己再起動)も確認"
+    },
     {
       "time": "2026-08-21T18:36:00+09:00",
       "event": "cycle-0210:C1 3件=印を押す順序を公開の後ろへ(STALE-L16・supervisor 新版は restart-request で反映待ち)+C4 の拾い方を除外側へ(LOOP-L1)+日報・週報の作成状況の毎ビルド導出を新設(LEDGER-L3)"
@@ -2129,9 +2084,9 @@ window.DASHBOARD_DATA = {
     }
   ],
   "queue_summary": {
-    "todo": 25,
+    "todo": 22,
     "in_progress": 0,
-    "done": 318,
+    "done": 321,
     "blocked": 0,
     "items": [
       {
@@ -2466,8 +2421,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "pending_count": {
-    "total": 25,
-    "todo": 25,
+    "total": 22,
+    "todo": 22,
     "in_progress": 0,
     "error": ""
   },
@@ -2479,7 +2434,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-21T18:45:49+09:00",
+    "last_heartbeat": "2026-08-21T18:59:56+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2494,7 +2449,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
+    "checked_at": "2026-08-21T19:00:12+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2524,7 +2479,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
+    "checked_at": "2026-08-21T19:00:12+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2548,15 +2503,15 @@ window.DASHBOARD_DATA = {
     "keep_count": 2,
     "measure_count": 0,
     "problem_count": 0,
-    "open_count": 23,
+    "open_count": 20,
     "total_count": 2,
     "close_limit": 10,
     "closed_this_cycle": 0,
     "error": ""
   },
   "work_class": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
-    "cycle_id": "cycle-0210",
+    "checked_at": "2026-08-21T19:00:12+09:00",
+    "cycle_id": "cycle-0211",
     "keys": [
       "A",
       "B",
@@ -2573,21 +2528,21 @@ window.DASHBOARD_DATA = {
     "legacy_label": "#78 より前の C(仕組みの改善。C1/C2 へ分ける前の印)",
     "limited_key": "C1",
     "open": {
-      "total": 31,
+      "total": 28,
       "unmarked": 0,
       "legacy": 0,
       "A": 1,
       "B": 0,
-      "C1": 24,
+      "C1": 21,
       "C2": 6
     },
     "done": {
-      "total": 318,
+      "total": 321,
       "unmarked": 0,
       "legacy": 161,
       "A": 98,
       "B": 29,
-      "C1": 30,
+      "C1": 33,
       "C2": 0
     },
     "all": {
@@ -2611,7 +2566,6 @@ window.DASHBOARD_DATA = {
       "ALIAS-L1": "C1",
       "YOMI-N10": "A",
       "DUE-L1": "C1",
-      "DUE-L2": "C1",
       "DUE-L3": "C1",
       "DUE-L4": "C1",
       "DUE-L5": "C1",
@@ -2619,10 +2573,8 @@ window.DASHBOARD_DATA = {
       "CROSS-L4": "C1",
       "CROSS-L5": "C1",
       "CROSS-5": "C1",
-      "GUARD-L3": "C1",
       "STALE-L1": "C1",
       "STALE-L4": "C1",
-      "STALE-L10": "C1",
       "SETSU-L1": "C1",
       "OC41-L3": "C1"
     },
@@ -2679,9 +2631,9 @@ window.DASHBOARD_DATA = {
       "limit": 3,
       "closed_count": 3,
       "ids": [
-        "LEDGER-L3",
-        "LOOP-L1",
-        "STALE-L16"
+        "DUE-L2",
+        "GUARD-L3",
+        "STALE-L10"
       ],
       "count": 3,
       "limit_applies": false,
@@ -2740,7 +2692,7 @@ window.DASHBOARD_DATA = {
     }
   },
   "records_only": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
+    "checked_at": "2026-08-21T19:00:12+09:00",
     "store": "queue/records-only.json",
     "class_key": "C2",
     "rows": [
@@ -2815,7 +2767,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "waiting": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
+    "checked_at": "2026-08-21T19:00:12+09:00",
     "store": "queue/backlog.json",
     "kinds": [
       {
@@ -2864,7 +2816,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "periodic_reports": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
+    "checked_at": "2026-08-21T19:00:12+09:00",
     "rows": [
       {
         "key": "daily",
@@ -2887,8 +2839,8 @@ window.DASHBOARD_DATA = {
     "unreadable_count": 0
   },
   "consistency": {
-    "checked_at": "2026-08-21T18:46:12+09:00",
-    "cycle_id": "cycle-0210",
+    "checked_at": "2026-08-21T19:00:12+09:00",
+    "cycle_id": "cycle-0211",
     "checks": [
       {
         "id": "C1",
@@ -2993,21 +2945,21 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "「溜まっている作業」に同じ番号の行が二度出ていないか",
         "level": "ok",
-        "detail": "25行の番号に重複はありません(作業台帳の未完了は25件です)"
+        "detail": "22行の番号に重複はありません(作業台帳の未完了は22件です)"
       },
       {
         "id": "C15",
         "kind": "cross",
         "title": "手書きの文章の欄が、前のサイクルの写しのままでないか",
         "level": "ok",
-        "detail": "8欄とも前のサイクル(cycle-0209・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:比較表・採用の理由・不採用の理由)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
+        "detail": "7欄とも前のサイクル(cycle-0210・前回ビルドの報告書)と違う文になっています(中身が空で点検の対象外:比較表・採用の理由・不採用の理由・できなかったこと)"
       },
       {
         "id": "C16",
         "kind": "guard",
         "title": "作業台帳の各行に A/B/C1/C2 の印が付き、1サイクルの C1 が上限内か",
         "level": "ok",
-        "detail": "未完了31件の内訳は A 1件・B 0件・C1 24件・C2 6件(うち6件は記録のみへ移った行)(台帳349件すべてに印あり。うち161件は古い C)。今回閉じた C1 は3件(上限3件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は3件(#81)(待ちの2欄で A・B から1件を外し、残り0件)。A・B からの塗り替えは測れず(前サイクルの印の一覧が無い)"
+        "detail": "未完了28件の内訳は A 1件・B 0件・C1 21件・C2 6件(うち6件は記録のみへ移った行)(台帳349件すべてに印あり。うち161件は古い C)。今回閉じた C1 は3件(上限3件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は3件(#81)(待ちの2欄で A・B から1件を外し、残り0件)。A・B から C1/C2 への塗り替えは0件"
       },
       {
         "id": "C17",
@@ -3021,7 +2973,7 @@ window.DASHBOARD_DATA = {
         "kind": "guard",
         "title": "待ちの2欄が、台帳の行に付けた印から導かれているか",
         "level": "ok",
-        "detail": "渋谷さん待ちの項目2件・外部の資料が手に入らないと進まない項目0件(合計2件)。うち A・B の印が付いた行は1件で、#78 の5 の「除いた A と B」からはこの1件が外れます。新しく付いた印は測れず(前サイクルの一覧が無い)"
+        "detail": "渋谷さん待ちの項目2件・外部の資料が手に入らないと進まない項目0件(合計2件)。うち A・B の印が付いた行は1件で、#78 の5 の「除いた A と B」からはこの1件が外れます。新しく付いた待ちの印は0件"
       },
       {
         "id": "C19",
@@ -3035,7 +2987,7 @@ window.DASHBOARD_DATA = {
         "kind": "guard",
         "title": "拒否された操作の表の鍵が、画面の読む鍵と一致しているか",
         "level": "ok",
-        "detail": "拒否操作2行の鍵が、画面の描画ソースから導いた鍵(time・action・reason・next)とすべて一致しています(空の列も別名の鍵もありません)"
+        "detail": "拒否操作0行の鍵が、画面の描画ソースから導いた鍵(time・action・reason・next)とすべて一致しています(空の列も別名の鍵もありません)"
       }
     ],
     "cross_count": 12,
