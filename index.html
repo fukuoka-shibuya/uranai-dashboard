@@ -484,27 +484,49 @@
        (b) 報告書の生成時刻 generated_at — サイクルが報告書を作り直したときだけ新しくなる。
      (a) が無い環境では (b) だけで判定する(従来と同じ挙動)。
 
-     閾値180分の根拠:サイクルは約60分ごとで、作業セッションの中断1回は次サイクル冒頭の
-     検証で回復される(=最大2時間前後の遅れまでは正常運転)ため、それを超えたら停止の
-     可能性として赤にする。
+     閾値の導き方(#87・cycle-0220):固定の180分をやめ、鼓動が運んでくる材料から導く。
+       閾値 = interval_seconds(そのとき有効な間隔。WAITING なら waiting_interval_seconds、
+               それ以外は min_gap_seconds。書くのは公開処理と build=数は手入力しない #45)
+             + margin_seconds(余裕=1サイクルの上限 max_cycle_seconds + 利用上限待ち limit_wait_seconds)
+     通常運転では 1800+5400+3600=10800秒=ちょうど従来の180分で、挙動は変わらない。
+     待機(WAITING)中は 21600+9000=30600秒=510分となり、6時間間隔の待機で赤が出ない。
+     どちらかが読めないときだけ従来の180分へ落とす(読めないのに数を作らない)。
+     旧 #41 の再発形=待機へ移ると180分の前提(1サイクル約60分)が成り立たず、
+     待機のたび3時間で必ず赤になり、動いているループを止まったと誤らせていた。
+
+     待機中の表示(#87):loop_status が WAITING で閾値の内側なら、赤ではなく
+     「待機中(やることが無いため次のサイクルまであと約◯)」を出す。残りは
+     鼓動の時刻+間隔から引く(オーナーコメントが届けば待機は途中で打ち切られて
+     早く始まることがあるので「あと約◯」は最長の見込み)。
 
      360分の根拠(OC41):鼓動があるのに報告書だけ古い状態は「止まっている」ではなく
      「長い作業や中断の回復でサイクルの成果がまだ出ていない」状態。1サイクル約60分なので、
      6時間=約6サイクル分ぶん報告書が変わらないときに紫で知らせる。#41(2026-08-05)で
      報告書が4時間48分ぶん同じだったために赤マークが出て、動いているループを
      止まったと誤らせた実害への対策。 */
-  var LOOP_STALL_MINUTES = 180;
+  var LOOP_STALL_MINUTES = 180;  /* 間隔が読めないときだけ使う従来値(#87) */
   var REPORT_SLOW_MINUTES = 360;
   function ageText(mins) {
     return mins < 1 ? '1分未満' :
       (mins < 60 ? mins + '分' : Math.floor(mins / 60) + '時間' + (mins % 60) + '分');
+  }
+  /* 閾値・残り時間用:ちょうどの時間は「3時間0分」ではなく「3時間」と出す
+     (従来の赤の文言「3時間以上動きがありません」を導出でも保つため) */
+  function spanText(mins) {
+    return mins < 60 ? mins + '分' :
+      Math.floor(mins / 60) + '時間' + (mins % 60 ? (mins % 60) + '分' : '');
+  }
+  /* 正の有限の数だけを認める。それ以外(欠け・文字列・0以下)は null=読めなかった扱い */
+  function pulseNumber(v) {
+    return (typeof v === 'number' && isFinite(v) && v > 0) ? v : null;
   }
   function renderLoopStatus() {
     var el = document.getElementById('loop-status');
     var now = Date.now();
     var reportT = Date.parse(d.generated_at);
     var pulse = window.LOOP_PULSE;
-    var pulseT = (pulse && typeof pulse === 'object') ? Date.parse(pulse.checked_at) : NaN;
+    var pulseObj = (pulse && typeof pulse === 'object') ? pulse : null;
+    var pulseT = pulseObj ? Date.parse(pulseObj.checked_at) : NaN;
     /* 先の時刻の鼓動は無効にする(監査 中2)。書き込み側の時計がずれて未来の時刻が入ると、
        いつまでも「たった今動いた」ことになり、本当に止まっても赤にならない=#41 の逆の誤りになる。
        5分の余裕は、公開処理と閲覧端末の時計の小さなずれを許すため。 */
@@ -521,9 +543,28 @@
     var reportMins = isNaN(reportT) ? null : Math.max(0, Math.floor((now - reportT) / 60000));
     var beatAge = ageText(beatMins);
     var reportAge = reportMins === null ? '不明' : ageText(reportMins);
-    if (beatMins > LOOP_STALL_MINUTES) {
+    /* #87:閾値の材料。読めない値は null になり、従来の180分へ落ちる */
+    var intervalSec = pulseObj ? pulseNumber(pulseObj.interval_seconds) : null;
+    var marginSec = pulseObj ? pulseNumber(pulseObj.margin_seconds) : null;
+    var stallMins = (intervalSec !== null && marginSec !== null)
+      ? Math.floor((intervalSec + marginSec) / 60) : LOOP_STALL_MINUTES;
+    /* 待機中の見分けは印(loop_status)と間隔の両方が読めるときだけ。
+       鼓動の時刻が読めない(未来などで無効)ときは残りを計算できないので通常の表示へ */
+    var waiting = !!(pulseObj && pulseObj.loop_status === 'WAITING' &&
+      intervalSec !== null && !isNaN(pulseT));
+    if (beatMins > stallMins) {
       el.className = 'loop-mark loop-ng';
-      el.textContent = '● ループが止まっている可能性(最終確認:' + beatAge + '前。3時間以上動きがありません)';
+      el.textContent = '● ループが止まっている可能性(最終確認:' + beatAge + '前。' +
+        spanText(stallMins) + '以上動きがありません)';
+    } else if (waiting) {
+      /* 止まったのではなく、やることが無くて次のサイクルを待っている状態(#87)。
+         コメントが届けば待機は途中で打ち切られるので、残りは最長の見込み */
+      var remainMins = Math.ceil((pulseT + intervalSec * 1000 - now) / 60000);
+      el.className = 'loop-mark loop-ok';
+      el.textContent = remainMins > 0
+        ? '● ループ待機中(やることが無いため休んでいます。次のサイクルまで最長あと約' +
+          spanText(remainMins) + '。最終確認:' + beatAge + '前)'
+        : '● ループ待機中(次のサイクルの開始を待っています。最終確認:' + beatAge + '前)';
     } else if (reportMins !== null && reportMins > REPORT_SLOW_MINUTES) {
       el.className = 'loop-mark loop-slow';
       el.textContent = '● ループ稼働中・報告書の更新待ち(最終確認:' + beatAge +
