@@ -3471,12 +3471,24 @@
        (b) 並んでも、その組の重なりが線の内側にある
       いまの数秘では4欄とも必ず同じ画面に並ぶので、通るのは (b) の側だけである
       (=(a) は数秘では一度も通らない枝。到達しない枝を「実装した」と書いたままに
-      しないため、反証 YOMI3-3b が判定へ直に「並ばない欄」を渡して確かめる)。 */
-  function suuhiAngleExemptionProblems(overlap) {
-    var problems = [], i;
+      しないため、反証 YOMI3-3b が判定へ直に「並ばない欄」を渡して確かめる)。
+      **cycle-0215(台帳 CROSS-L4)で、cycle-0086 の旧条件を「かつ」で復活した**=
+      (b) の線は表に載る欄どうしも同じ内側にあるので、線だけでは「なぜこの欄を表から
+      外してよいのか」の裏づけにならず、値の粒度が変わって seishitsu が数値を取る
+      ようになっても何も言わなかった(cycle-0118 の点検役 M6)。外してよいのは
+      **同じ値が同じ画面に二度出ようがない欄**だけ=値が他のどの欄ともぶつからないこと
+      (表に載せる側の条件「値がぶつかる」のちょうど裏返しで、載る/載らないの
+      見分けがここで初めて対になる)。値の顔ぶれは反証が作りものを注入できるよう
+      第2引数でも受けるが、既定は実装の表そのもの(書き写しの一覧にしない=障害19)。 */
+  function suuhiAngleExemptionProblems(overlap, tables) {
+    var problems = [], i, j, k;
     var ov = overlap || suuhiSameScreenOverlap();
     var fields = Object.keys(SUUHI_YOMI_TABLES);
     var lim = KANSHI_SAMEKEY_LIMITS;
+    var keysOf = function (f) {
+      if (tables && Object.prototype.hasOwnProperty.call(tables, f)) { return tables[f]; }
+      return Object.keys(SUUHI_YOMI_TABLES[f] || {});
+    };
     /* **測れなかったものを (a) の枝で通さない**(cycle-0142・台帳 CROSS-L1)。
        suuhiSameScreenOverlap は組が1つも作れないとき measured:false を返すが、
        この判定はそれを読んでいなかったので、**測定に失敗した受け取り物が
@@ -3492,6 +3504,20 @@
     for (i = 0; i < fields.length; i++) {
       var field = fields[i];
       if (Object.prototype.hasOwnProperty.call(SUUHI_ANGLE, field)) { continue; }
+      /* 旧条件(かつ):表に無い欄の値が、他のどの欄の値ともぶつからないこと。
+         ぶつかる欄は同じ値が同じ画面に二度出うる=同じ話を二度読ませない役目は
+         線ではなく角度の書き分けでしか果たせないので、表に載せる側へ送る。 */
+      var mineKeys = keysOf(field);
+      for (j = 0; j < fields.length; j++) {
+        if (fields[j] === field) { continue; }
+        var otherKeys = keysOf(fields[j]);
+        for (k = 0; k < mineKeys.length; k++) {
+          if (otherKeys.indexOf(mineKeys[k]) >= 0) {
+            problems.push(field + ': 角度の表に無いのに、値「' + mineKeys[k] + '」が ' +
+              fields[j] + ' とぶつかる(同じ値が同じ画面に二度出うるため、表で角度を分けること)');
+          }
+        }
+      }
       /* 角度の表に無い欄。この欄が関わる同じ画面の組だけを取り出す */
       var mine = ov.rows.filter(function (r) { return r.a === field || r.b === field; });
       if (mine.length === 0) { continue; }        /* (a) どの欄とも並ばない */
