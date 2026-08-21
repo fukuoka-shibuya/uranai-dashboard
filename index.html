@@ -696,9 +696,10 @@
   var pc = d.pending_count;
   var pcOk = !!pc && typeof pc.total === 'number';
   /* 台帳(queue/backlog.json)側の未完了の数。これも手入力ではなく queue_summary から読む
-     (数え方は cross-check.js の countQueues 1か所)。この欄の行数と一致しないことがある
-     =いくつかのタスクをまとめて1行にしている行が混じるため。片方だけ出すと、下の
-     「完了した作業」欄に出る台帳の数と食い違って見えるので、両方を並べて理由を添える */
+     (数え方は cross-check.js の countQueues 1か所)。cycle-0217(台帳 LEDGER-L1)からは
+     1行=1タスクを照合 C21 が毎ビルド見張るので、この欄の行数と台帳の未完了は一致する
+     (食い違えば報告書の先頭に警告が出る)。両方を並べるのは、下の「完了した作業」欄に
+     出る台帳の数と突き合わせて読めるようにするため */
   var qs = d.queue_summary;
   var qsOk = !!qs && typeof qs.todo === 'number' && typeof qs.in_progress === 'number';
   /* CLASS-1(#77・2026-08-16):「印を付けた結果の内訳(A何件・B何件・C何件)を報告書に
@@ -720,7 +721,7 @@
         '<span class="sub">(未着手 ' + esc(pc.todo) + '件・対応中 ' + esc(pc.in_progress) + '件)</span></p>' +
         '<p class="sub">この欄に並んでいる行の数です。' +
         (qsOk ? '作業台帳のほうで数えると未完了は ' + esc(qs.todo + qs.in_progress) +
-          '件で、いくつかのタスクをまとめて1行にしている行があるため、数が一致しないことがあります。' : '') +
+          '件です(1行=1タスク。食い違いがあれば先頭の照合の警告に出ます)。' : '') +
         '</p>'
       : '<p class="sub">溜まっている作業の件数を読み取れませんでした' +
         (pc && pc.error ? '(' + esc(pc.error) + ')' : '') + '。</p>') +
