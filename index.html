@@ -1022,6 +1022,7 @@
     var trRows = (tr.rows || []).filter(function (r) { return r.state !== 'open'; });
     var trLabel = {
       closable: '閉じられます', keep: '<span class="kin">閉じません</span>',
+      deferred: '<span class="kin">次のサイクルへ</span>',
       measure: '<span class="kin">実測待ち</span>', problem: '<span class="ng">問題あり</span>',
     };
     trHtml = '<p style="margin-top:8px"><b class="sub" id="tidy-review-title">溜まっている作業の自動棚卸し</b></p>';
@@ -1035,10 +1036,13 @@
         return [esc(r.id) + ' ' + esc(r.title), esc(r.ground),
           trLabel[r.state] || esc(r.state), esc(r.reason)];
       })) + '<p class="sub">対象' + esc(tr.total_count) + '件:閉じられます' + esc(tr.closable_count)
+        /* 「次のサイクルへ」=1サイクル最大10件(#85)の持ち分を超えたぶん。数は導出値のまま */
+        + '・次のサイクルへ' + esc(tr.deferred_count)
         + '・閉じません' + esc(tr.keep_count)
         /* 「実測待ち」は測れなかった側の状態なので内訳から落とさない(due_review と同じ) */
         + '・実測待ち' + esc(tr.measure_count) + '・問題あり' + esc(tr.problem_count)
-        + '(棚卸しの対象でない通常の作業は' + esc(tr.open_count) + '件)</p>';
+        + '(棚卸しの対象でない通常の作業は' + esc(tr.open_count) + '件。自動で閉じるのは1サイクル最大'
+        + esc(tr.close_limit) + '件=#85)</p>';
     }
   }
   /* SANMEI-3b(#55):算命学の二文字の読みの反復率を、測り方ごとの表としてこの欄に出す。
