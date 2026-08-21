@@ -786,12 +786,14 @@
   var KANSHI_ANGLE = {
     /* 日 = 生まれ持った芯。内側にもとからある性質を書き、他人からの見え方や
        暮らしの進め方は書かない */
-    day: { must: ['もとから', '生まれつき', '芯', '内側'],
+    day: { desc: '生まれ持った芯',
+           must: ['もとから', '生まれつき', '芯', '内側'],
            avoid: ['見られ', '映り', '受け取られ', '第一印象',
                    /* 月の must をそのまま使わない語に置く(cycle-0075) */
                    '日々', 'ふだん', '手順', '進め方', '時間の使い方'] },
     /* 年 = 周りから見えやすい面(工程3で書く) */
-    year: { must: ['見え', '映り', '受け取られ', '周り', '人からは'],
+    year: { desc: '周りから見えやすい面',
+            must: ['見え', '映り', '受け取られ', '周り', '人からは'],
             /* cycle-0075:もとは「日々の段取り」という長い1語だけを置いていたため、
                月の読み(暮らしの段取りの話)を年の欄へ置いても19本が素通りしていた
                =月の読みは「日々」「手順」とは書いても「日々の段取り」とは書かないため。
@@ -802,13 +804,19 @@
             avoid: ['もとから', '生まれつき',
                     '日々', 'ふだん', '手順', '進め方', '時間の使い方'] },
     /* 月 = ふだんの暮らしぶり(工程4で書く) */
-    month: { must: ['日々', 'ふだん', '手順', '進め方', '時間の使い方'],
+    month: { desc: 'ふだんの暮らしぶり',
+             must: ['日々', 'ふだん', '手順', '進め方', '時間の使い方'],
              avoid: ['もとから', '生まれつき', '見られ', '映り'] }
   };
 
+  /* desc(欄の役割の一言)は cycle-0214(台帳 CROSS-L5)で足した。他の5占術の角度の表は
+     desc を持っており、この表だけ無いと合流点(angleFieldsReport)の desc が算命学の3欄で
+     undefined になる=desc を読む判定を足した回に算命学だけが黙って対象から外れる。
+     全欄が desc を持つことは tests/yomi.spec.js の CROSS5-1 が合流点の側から見張る。 */
   function kanshiAngleOf(field) {
     if (!Object.prototype.hasOwnProperty.call(KANSHI_ANGLE, field)) { return null; }
-    return { must: KANSHI_ANGLE[field].must.slice(), avoid: KANSHI_ANGLE[field].avoid.slice() };
+    return { must: KANSHI_ANGLE[field].must.slice(), avoid: KANSHI_ANGLE[field].avoid.slice(),
+             desc: KANSHI_ANGLE[field].desc };
   }
 
   /* 二文字ごとの読みの表。工程2〜4でここへ 60×3=180 本を入れていく。
