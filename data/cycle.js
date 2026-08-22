@@ -1,34 +1,32 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0220",
-  "cycle_label": "サイクル220(2026-08-22)",
-  "generated_at": "2026-08-22T06:38:44+09:00",
-  "status": "OK",
+  "cycle_id": "cycle-0222",
+  "cycle_label": "サイクル221(2026-08-22)",
+  "generated_at": "2026-08-22T20:53:35+09:00",
+  "status": "WAITING",
   "overall": {
-    "phase": "オーナーコメント #87 対応(待機中の稼働マークの誤警告を修正)",
-    "pdca_phase": "Do",
-    "pdca_note": "status:new のご指示は何よりも優先の決まり。待機からの復帰サイクルで、ご指摘の不具合(B)をそのまま今回の1件として実装まで進めた",
-    "now_doing": "#87 の対応を終え、終了処理中(status は OK へ復帰)",
+    "phase": "公開の未実施の確認+待機(WAITING)への再移行",
+    "pdca_phase": "Check",
+    "pdca_note": "引継ぎの必須確認(本番の WAITING の鼓動)を実測したら、期待した公開そのものがまだ行われていなかった回。原因はこちらの作業の漏れではなく、cycle-0221 のコミット後・公開前に supervisor が止まっていたこと(公開はサイクル正常終了後に走る設計)。直す作業は無く、確認を次回へ持ち越す。",
+    "now_doing": "確認を終え、WAITING へ再移行する終了処理中",
     "done_this_cycle": [
-      "#87(待機中に稼働マークが必ず赤になる)を同サイクルで修正しました。鼓動 pulse.js が「そのとき有効な間隔」と「余裕」を運び、画面はそこから閾値を導きます(通常運転は従来どおりちょうど180分・待機中は510分。材料が読めないときだけ従来の180分)。待機中は赤ではなく「ループ待機中(次のサイクルまで最長あと約◯)」の青が出ます。",
-      "反証の検査を両側で新設しました(OC87-1=待機の鼓動6時間では赤にならない/OC87-2=間隔+余裕の510分を超えたら待機中でも赤/OC87-3=読めない間隔は数を作らず180分へ/OC87-4=通常運転に新しい赤を作らない/OC87-5=書く側は実ファイルから導く)。既存の OC27・OC41 の検査は鼓動の鍵6個へ更新し、画面の検査は鼓動を差し替えて決定論化しました(リポジトリが待機中かどうかで結果が変わらない形)。",
-      "説明書 docs/system-guide.md へ障害53(この誤警告の経緯と直し方)を追記し、稼働マークと pulse.js の説明を新しい形へ更新しました。",
-      "ループの status を WAITING から OK へ戻しました(あなたのコメントが届いたため。待機の打ち切りも実測=06:18 のご投稿の約2分後・06:20:29 にサイクルが始まりました)。"
+      "引継ぎの必須確認=本番 pulse.js を読み取りました。結果は cycle-0220 のまま(OK・1800)で、cycle-0221 の WAITING の鼓動はまだ公開されていませんでした。原因は logs の実測から「公開はサイクル正常終了後に走る設計だが、cycle-0221 のコミット(07:16・07:25)のあと公開へ届く前に supervisor が止まっていた」ためです(publish.log の公開成功は 06:40:19 が最後・recovery.log は 06:20:28 の次が 20:46:08 の起動)。止まった理由はログに残っておらず未確認です。",
+      "止まっていた間(約13時間)の本番の稼働マークが赤だったとしても、それは誤警告ではないことを確認しました(ループが実際に動いていなかった期間の赤は実態どおり。#87 が直したのは「動いて待機しているのに赤」の形)。",
+      "status:new 0件・未完了3件(OC40・ALIAS-L1・YOMI-N10)は全件あなたの確認待ち・due/tidy とも閉じる行0件を実測し、WAITING へ再移行しました。この回の終了処理が正常に済めば、その直後の公開が WAITING の鼓動(loop_status \"WAITING\"・interval_seconds 21600)の初公開になります(次の起動の冒頭で読み取って確かめます)。"
     ],
     "next_up": [
       {
         "id": "OC40",
-        "text": "コメント送信のページ内化(#40)=あなたの確認待ち(①#40 の外部サービス承認は #72 の後も有効か ②ページ内フォーム経由の投稿はオーナー認証 #4 を機械では通せず third_party 相当の扱いになるがよいか)。未完了3件(OC40・ALIAS-L1・YOMI-N10)はすべて確認待ちの印つきなので、新しいご指示が無ければ次のサイクルで WAITING への再移行を判断します(#87 の修正により、次の待機からは赤ではなく「ループ待機中」の表示になります)。次の定期報告の期限=日報 8/23 02:45 ごろ・週報 8/29 01:45"
+        "text": "次の起動の冒頭=①日報を先に作る(期限 8/23 02:45。待機6時間の次回起動は 03時ごろ見込みで数十分の超過になるが、起動したらすぐ作れば実害なし)②本番 pulse.js を読み取り WAITING・21600 の初公開を確かめる(2サイクル持ち越し中)。作業そのものは OC40=コメント送信のページ内化(#40)ほか未完了3件が全件あなたの確認待ちのままです。週報の期限は 8/29 01:45。"
       }
     ],
-    "summary": "待機のたびに必ず出ていた稼働マークの誤警告(#87・B)を同サイクルで修正した。閾値は固定の180分をやめ、鼓動 pulse.js が運ぶ「そのとき有効な間隔+余裕」(すべて state と config の実ファイルから導出)から画面が導く。通常運転の閾値はちょうど従来の180分のままで挙動は変わらず、待機中は510分になり6時間間隔の待機で赤が出ない。待機中は「ループ待機中(次のサイクルまで最長あと約◯)」の青で、止まったのか待っているのかが一目で分かる。反証は両側(待機で赤にならない/超えたら待機中でも赤)。実測は関連5スイート48件合格・0失敗。"
+    "summary": "デスクトップの「ループ再開」で起動した確かめる回。引継ぎの必須確認(本番の WAITING の鼓動)を実測したところ、本番はまだ cycle-0220 のまま=cycle-0221 の公開そのものが行われていなかった。原因は公開がサイクル正常終了後に走る設計のところ、cycle-0221 のコミット後・公開前に supervisor が止まっていたため(理由はログに無く未確認)。こちらの作業に漏れは無く、確認は次回へ持ち越し。status:new 0件・未完了3件は全件確認待ちのため WAITING へ再移行し、次回冒頭で日報(期限 8/23 02:45)を作る。"
   },
-  "task": "オーナーコメント #87(2026-08-22 06:18 受領・status:new)への同サイクル対応。ご指摘=待機(WAITING)へ移ると次のサイクルまでの間隔が6時間(waiting_interval_seconds=21600)へ広がるのに、稼働マークの閾値が固定の180分のままなので、待機のたびに3時間ちょうどで「ループが止まっている可能性」の赤が出て、残る約3時間出続ける(#41 と同じ形の再発。印はB=あなたに影響する不具合)。対応=①公開役(publish_dashboard.py の _pulse_loop_info)と build(build.js の pulseLoopInfo)が鼓動 pulse.js へ 状態(loop_status)・そのとき有効な間隔(interval_seconds=WAITING なら waiting_interval_seconds、それ以外は min_gap_seconds)・余裕(margin_seconds=max_cycle_seconds+limit_wait_seconds)を実ファイルから読んで書き出し、画面は「間隔+余裕」を閾値に導出(通常運転は 1800+5400+3600=10800秒=ちょうど従来の180分で挙動不変。待機中は 21600+9000=510分)。②材料が読めないときだけ従来の180分へ落とす(読めないのに数を作らない)。③WAITING 中は赤ではなく「ループ待機中(やることが無いため休んでいます。次のサイクルまで最長あと約◯)」の青。④反証は両側=OC87-1(待機の鼓動では赤にならない)〜OC87-5(書く側の導出)+既存 OC27/OC41 を鼓動の鍵6個へ更新。あわせて status を WAITING から OK へ復帰(台帳 OC87)。",
+  "task": "この回も書く回ではなく確かめる回(デスクトップの「ループ再開」による起動・20:46:08)。①引継ぎの必須確認=本番URLの pulse.js を読み取ったところ、値は cycle-0221 の公開後の姿(WAITING・21600)ではなく cycle-0220 のまま(checked_at 06:40:16・loop_status \"OK\"・interval_seconds 1800・margin_seconds 9000)だった。原因を logs で実測=公開はサイクル正常終了後に走る設計(supervisor.py の publish_pages は result==\"OK\" の後)だが、logs/publish.log の公開成功は 06:40:19 が最後で、logs/recovery.log は 06:20:28 の起動の次が 20:46:08 の起動=cycle-0221 のコミット(07:16・07:25)のあと公開へ届く前に supervisor が止まっていた(止まった理由はログに無く未確認。PCの停止か手動停止と思われるが断定しない)。したがって「WAITING の鼓動の本番公開」はまだ一度も起きておらず、確認は次回へ持ち越し(この回の終了処理が正常に済めば、その公開が WAITING・21600 の初公開になる)。②止まっていた間の本番の稼働マークが赤だったとしても、それはループが実際に動いていなかった期間なので誤警告ではない(#87 が直したのは「動いて待機しているのに赤」の形)。③status:new 0件・未完了3件(OC40・ALIAS-L1・YOMI-N10)は全件 waiting_on owner・due-check 確認待ち2/閉じる0・tidy-check 閉じない2/閉じる0を実測し、WAITING へ再移行。日報の期限(8/23 02:45)は待機6時間の次回起動(03時ごろ見込み)が数十分だけ過ぎるが、6時間前倒しで作るより実際の24時間に近いので次回の冒頭で作る。",
   "acceptance": [
-    "#87 の受入①:閾値を固定の180分ではなく実際の間隔から導く=済み(pulse.js に loop_status・interval_seconds・margin_seconds を公開役と build の両方が書き、画面は間隔+余裕で判定。数はすべて state/project-state.json と supervisor/config.json から読む導出で手入力なし。OC87-5 と OC41-1 が実ファイルとの一致を毎回突き合わせる)。",
-    "#87 の受入②:間隔が読めなかったときだけ従来の180分へ落とす=済み(null・欠け・文字列・0以下はどれも「読めなかった」扱い。OC87-3 で「6時間」という文字列を渡して180分側の赤になることを実測)。",
-    "#87 の受入③:待機中は赤ではなく「待機中」と分かる表示=済み(「ループ待機中(やることが無いため休んでいます。次のサイクルまで最長あと約◯)」の青。残り時間は鼓動の時刻+間隔から導出。OC87-1 であなたの実測と同じ3時間18分の状況を再現し、赤が出ず残り2時間42分が出ることを確認)。",
-    "#87 の受入④:反証の検査を両側=済み(OC87-1=待機の鼓動では赤にならない/OC87-2=間隔+余裕を超えたら待機中でも赤。片側だけの検査にしていない)。"
+    "確認①:引継ぎの必須確認(本番 pulse.js が WAITING・21600 か)に答えが出ていること=済み(答えは「まだ公開されていない」。本番は cycle-0220 のまま OK・1800 で、publish.log の公開成功も 06:40:19 が最後=公開そのものが行われていなかったことを実測)。",
+    "確認②:公開が行われなかった原因が特定または未確認として明記されていること=済み(公開はサイクル正常終了後に走る設計〔supervisor.py の publish_pages〕だが、cycle-0221 のコミット後・公開前に supervisor が停止。停止の理由はログに無く未確認と明記)。",
+    "WAITING 継続の条件:status:new 0件・非待ちの未完了 0件・due/tidy とも閉じる行0件=3つとも実測で確認(未完了3件は全件確認待ちの印つき)。"
   ],
   "comparison": {
     "headers": [
@@ -36,29 +34,12 @@ window.DASHBOARD_DATA = {
       "中身",
       "採否と理由"
     ],
-    "rows": [
-      [
-        "余裕(margin)の決め方 案(1):画面に固定の分数を書く(例:120分)",
-        "実装は最少だが、閾値の一部が手入力の数として画面に残る",
-        "不採用=#45(数は手入力しない)に反し、config の max_cycle_seconds 等を変えたときにまた同じずれが生まれる(#87 の原因の形が残る)"
-      ],
-      [
-        "余裕(margin)の決め方 案(2):config の max_cycle_seconds+limit_wait_seconds から導く",
-        "1サイクルの上限90分+利用上限待ち60分=150分。通常運転の閾値は 30分+150分=ちょうど従来の180分になる",
-        "採用=すべて実ファイル由来で、通常運転の挙動が従来と一致する(新しい赤を作らない=OC87-4 で実測)。前提の値が変われば閾値も一緒に動く"
-      ],
-      [
-        "待機の表示 案(1):青の「ループ稼働中」のまま文だけ待機に変える",
-        "色の区別なし",
-        "一部採用=色は青(稼働中と同じ)のまま、文を「ループ待機中(次のサイクルまで最長あと約◯)」に変えた。止まった(赤)との区別が目的なので、新しい色を増やすより文で示すほうが #22 の画面の簡素さを保てる"
-      ]
-    ]
+    "rows": []
   },
-  "adopted_reason": "余裕は config の max_cycle_seconds+limit_wait_seconds から導く案を採用。理由=通常運転の閾値が 1800+5400+3600=10800秒=ちょうど従来の180分になり、直っていない環境と直った環境で通常運転の見え方が変わらない(新しい赤を作らない)ことと、数がすべて実ファイル由来になり #45 を満たすこと。残り時間の表示は「最長あと約◯」とした=コメントが届くと待機は途中で打ち切られる(今回の実測=約2分で開始)ため、「あと◯」と言い切ると早く始まったときに嘘になる。",
-  "rejected_reason": "固定の余裕(120分など)を画面に書く案は不採用=#87 の原因(前提の値が変わっても固定値が追随しない)がそのまま残り、#45 にも反する。待機で赤も青も出さず灰色にする案も不採用=灰色は「照合できず」の意味で使っており、動いていると分かっている状態に使うと意味が濁る。",
+  "adopted_reason": "",
+  "rejected_reason": "",
   "improvements": [
-    "①バグ減少=待機(WAITING)のたびに必ず出ていた稼働マークの誤警告(動いているループを「止まっている可能性」の赤で表示)を解消(#87・オーナー実測の再現 OC87-1 で確認)。",
-    "⑧新テスト合格=OC87-1〜OC87-5 の10件(2画面幅)を新設し全緑。既存の OC27(6件)・OC41(16件)も新しい鼓動の形へ更新して全緑。"
+    "どの基準にも当たる新しい変更はありません(この回は本番の公開状況の実測確認と WAITING 継続のみ。実装・文章の変更は行っていません)。"
   ],
   "completed_features": [
     "「次にやること」の先頭にオーナーコメント由来の行(台帳の印 owner_issue)を置けること。印の無い行・完了済みの行は置けないこと(ORDER-2)",
@@ -699,108 +680,32 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "node tools/run-tests.js で5本(dashboard -g OC87 / -g OC41 / -g OC27 / -g OC48・smoke)",
+    "command": "node tools/run-tests.js で2本(smoke・dashboard -g PERIODIC1)",
     "executed": true,
-    "passed": 48,
+    "passed": 9,
     "failed": 0,
-    "skipped": 8,
+    "skipped": 3,
     "count_basis": [
-      "2026-08-22T06:31:17+09:00",
-      "2026-08-22T06:31:50+09:00",
-      "2026-08-22T06:32:07+09:00",
-      "2026-08-22T06:33:10+09:00",
-      "2026-08-22T06:33:55+09:00"
+      "2026-08-22T20:48:41+09:00",
+      "2026-08-22T20:49:01+09:00"
     ],
-    "duration": "48件合格・0件失敗・8件スキップ(06:31:17〜06:34:09。5回の実行とも exit 0。スキップ8件は OC48 系の w412 側=1構成で足りる検査を飛ばす既存の仕立て)",
+    "duration": "9件合格・0件失敗・3件スキップ(20:48:41〜20:49:03。2回の実行とも exit 0。smoke=6件・PERIODIC1=3件合格+3件スキップ)",
     "cases": [
       {
-        "name": "dashboard -g OC87(#87 の新設=待機で赤にならない/超えたら赤/読めなければ180分/通常運転は不変/書く側の導出)",
-        "passed": 10,
-        "failed": 0,
-        "note": "06:31:17〜06:31:22・exit 0"
-      },
-      {
-        "name": "dashboard -g OC41(鼓動=鍵6個への更新と既存の判定の回帰)",
-        "passed": 16,
-        "failed": 0,
-        "note": "06:31:50〜06:31:56・exit 0"
-      },
-      {
-        "name": "dashboard -g OC27(稼働マークの基本=青・赤・判定不能)",
+        "name": "smoke(骨格=ページが開く・横スクロールなし・総合がプルダウンに無い)",
         "passed": 6,
         "failed": 0,
-        "note": "06:32:07〜06:32:12・exit 0"
+        "note": "20:48:41〜20:48:58・exit 0"
       },
       {
-        "name": "dashboard -g OC48(説明書=障害53 追記後の構成・裏づけの実在)",
-        "passed": 10,
+        "name": "dashboard -g PERIODIC1(定期報告の導出=最後に作った時刻・次の期限・超過の見分け。日報期限を翌朝に控えた回なので選択)",
+        "passed": 3,
         "failed": 0,
-        "note": "06:33:10〜06:33:15・exit 0(スキップ8件は w412 側)"
-      },
-      {
-        "name": "smoke(骨格3件×2構成=dashboard 以外のスイート)",
-        "passed": 6,
-        "failed": 0,
-        "note": "06:33:55〜06:34:09・exit 0"
+        "note": "20:49:01〜20:49:03・exit 0・スキップ3(w412 側=従来どおり)"
       }
     ],
-    "executed_at": "2026-08-22T06:34:09+09:00",
+    "executed_at": "2026-08-22T20:49:03+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-08-22T02:47:36+09:00",
-        "finished_at": "2026-08-22T02:55:31+09:00",
-        "duration_seconds": 475,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 1,
-        "passed": 314,
-        "failed": 1,
-        "skipped": 113,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-22T02:56:24+09:00",
-        "finished_at": "2026-08-22T02:56:25+09:00",
-        "duration_seconds": 2,
-        "command": "npx playwright test tests/dashboard.spec.js -g state/queue/dashboard",
-        "exit_code": 0,
-        "passed": 1,
-        "failed": 0,
-        "skipped": 1,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-22T06:31:00+09:00",
-        "finished_at": "2026-08-22T06:31:00+09:00",
-        "duration_seconds": 0,
-        "command": "npx playwright test tests/dashboard.spec.js -g ループ稼働マーク|ループの鼓動|間隔から導く",
-        "exit_code": 255
-      },
-      {
-        "started_at": "2026-08-22T06:31:17+09:00",
-        "finished_at": "2026-08-22T06:31:22+09:00",
-        "duration_seconds": 5,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC87",
-        "exit_code": 0,
-        "passed": 10,
-        "failed": 0,
-        "skipped": 0,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-08-22T06:31:50+09:00",
-        "finished_at": "2026-08-22T06:31:56+09:00",
-        "duration_seconds": 6,
-        "command": "npx playwright test tests/dashboard.spec.js -g OC41",
-        "exit_code": 0,
-        "passed": 16,
-        "failed": 0,
-        "skipped": 0,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
       {
         "started_at": "2026-08-22T06:32:07+09:00",
         "finished_at": "2026-08-22T06:32:12+09:00",
@@ -836,51 +741,110 @@ window.DASHBOARD_DATA = {
         "skipped": 0,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-22T07:12:13+09:00",
+        "finished_at": "2026-08-22T07:12:27+09:00",
+        "duration_seconds": 14,
+        "command": "npx playwright test tests/smoke.spec.js",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-22T07:12:30+09:00",
+        "finished_at": "2026-08-22T07:12:33+09:00",
+        "duration_seconds": 4,
+        "command": "npx playwright test tests/dashboard.spec.js -g OC87",
+        "exit_code": 0,
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-22T07:16:52+09:00",
+        "finished_at": "2026-08-22T07:25:00+09:00",
+        "duration_seconds": 488,
+        "command": "npx playwright test tests/dashboard.spec.js",
+        "exit_code": 0,
+        "passed": 325,
+        "failed": 0,
+        "skipped": 113,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-22T20:48:41+09:00",
+        "finished_at": "2026-08-22T20:48:58+09:00",
+        "duration_seconds": 17,
+        "command": "npx playwright test tests/smoke.spec.js",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-08-22T20:49:01+09:00",
+        "finished_at": "2026-08-22T20:49:03+09:00",
+        "duration_seconds": 2,
+        "command": "npx playwright test tests/dashboard.spec.js -g PERIODIC1",
+        "exit_code": 0,
+        "passed": 3,
+        "failed": 0,
+        "skipped": 3,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
     ],
     "recorded_runs_omitted": {
       "log_total": 30,
       "omitted": 22,
-      "omitted_failed": 4
+      "omitted_failed": 5
     }
   },
-  "failures": [
-    "テストのまとめ実行1回目(06:31:00)が exit 255=「-g \\\"ループ稼働マーク|ループの鼓動|間隔から導く\\\"」のパイプ文字を Windows のシェルがコマンドの区切りとして分割したため(playwright に届く前の失敗。件数の記録なし)。-g を OC87/OC41/OC27 の3バッチへ分けて解消(3本とも exit 0)。"
-  ],
+  "failures": [],
   "unverified": [
-    "公開後の本番ページでの表示(待機中に赤が出なくなったこと・「ループ待機中」の表示)は、公開処理が supervisor 側で走るためこの回では未確認。次の待機のときの公開ページで確かめられる(公開役 _write_pulse の新しい6鍵の実走行も同じ)。",
-    "publish_dashboard.py の文法確認(py_compile)は python 実行が権限拒否のため未実施(目視レビューと OC41-6 のソース走査のみ。万一文法誤りなら公開処理は例外を握って logs/failures.log に「dashboard公開処理で例外」と残り、公開失敗として次サイクルで気づける)。",
-    "待機の丸ごと6時間の実間隔はまだ実測が無い(今回はあなたのコメント到着で待機が約2時間半で打ち切られた。カウントダウンの記録=06:15:57 時点で「あと9682秒」から、予定の間隔が設定どおり21600秒であることは確認済み)。"
+    "待機中の本番ページの見え方(WAITING の鼓動=loop_status \"WAITING\"・interval_seconds 21600 と、稼働マークが赤でなく「ループ待機中」の青になること)は、cycle-0221 の公開が supervisor の停止で行われなかったため引き続き未確認(2サイクル持ち越し)。この回の終了処理が正常に済めば直後の公開が初公開になるので、次の起動の冒頭で本番 pulse.js を読み取って確かめる。",
+    "supervisor が cycle-0221 のコミット(07:25)のあと・公開の前に止まった理由は、logs/recovery.log・logs/failures.log のどちらにも記録が無く未確認(PC の停止か手動停止と思われるが断定しない)。20:46:08 にデスクトップの「ループ再開」で復帰した記録だけがある。",
+    "待機の丸ごと6時間の実間隔は引き続き実測が無い(今回も再開は手動で、満了による起動ではなかった)。"
   ],
   "denied_actions": [
     {
-      "time": "2026-08-22T06:32:00+09:00",
-      "action": "python -m py_compile と python -c を && で連結した複合コマンド",
-      "reason": "don't ask モードの権限拒否(複合コマンド不許可)",
-      "next": "単独コマンドへ分けて再試行(下の行)。logs/denied-actions.log に記録済み"
-    },
-    {
-      "time": "2026-08-22T06:33:00+09:00",
-      "action": "python -m py_compile supervisor/publish_dashboard.py(単独)",
-      "reason": "don't ask モードの権限拒否(python 実行不可)",
-      "next": "目視レビュー+既存検査 OC41-6 のソース走査で代替し、報告書の「確かめていないこと」に明記。同じ拒否は繰り返さない"
+      "time": "2026-08-22T20:47:00+09:00",
+      "action": "PowerShell ツールでのサイクル冒頭の読み取り(state・オーナーコメント・git log の3件)",
+      "reason": "don't ask モードの権限拒否(PowerShell ツール不可)",
+      "next": "Bash ツールで同じ node コマンドを実行して代替し、以後この回はすべて Bash で進めた(logs/denied-actions.log に記録済み)"
     }
   ],
   "usage": {
-    "wall_clock": "約25分(終了処理前まで)",
+    "wall_clock": "約10分(終了処理前まで)",
     "limit": "60分目安",
     "subagents_used": [],
-    "tool_calls_approx": 35,
-    "estimate_note": "点検役は起動していません(変更は dashboard と supervisor の公開役・検査で、app/engine の差分0行=占いの結果値・読みの文章は不変)。外部への通信なし。裏で走らせた本数6(失敗1=パイプ分割の exit 255 を含む)=state/test-runs.json の記録6件と一致。"
+    "tool_calls_approx": 15,
+    "estimate_note": "点検役は起動していません(この回はファイルの変更が報告書・状態・ログのみで、app/engine・dashboard の実装・検査に差分なし)。外部への通信は本番URL(公開済みの自分のページ)の読み取り1回のみ・送信なし。裏で走らせた本数0(テスト2本はどちらも前面で実行)=state/test-runs.json の記録2件と一致。"
   },
   "human_decisions": [],
   "notices": [
-    "**#87(待機中に稼働マークが必ず赤になる)を同サイクルで修正しました。**閾値は固定の180分をやめ、鼓動 pulse.js が運ぶ「そのとき有効な間隔+余裕」(state と config の実ファイルから導出)で判定します。通常運転はちょうど従来の180分のままで見え方は変わらず、待機中は510分(6時間+余裕2.5時間)になります。待機中は赤ではなく**「ループ待機中(やることが無いため休んでいます。次のサイクルまで最長あと約◯)」の青**が出ます。修正はこの回の公開から効きますが、**本番ページでの見え方はこちらから確かめられないため、次に待機へ入ったときに赤が出ていないかをご覧いただけると確かめが完結します**(こちらの検査ではあなたの実測と同じ3時間18分の状況を再現して赤が出ないこと=OC87-1 を確認済み)。",
-    "**待機の打ち切りを実測しました**=06:18:20 のご投稿(#87)を、待機中のループが 06:20:29 のコメント取得で検知してその場でサイクルを開始(約2分)。前回の報告書で「最大約6時間で対応が始まる」とお伝えしましたが、実際は待機の残りを待たずにコメント到着で打ち切られます(supervisor は順番待ちの間もコメントを取りに行く作り)。「次のサイクルまで最長あと約◯」という新しい待機表示の言い回しはこの実測に合わせたものです。",
-    "定期報告の次の期限:日報 8/23 02:45 ごろ・週報 8/29 01:45(お知らせ欄の定期報告の表が導出で出します)。",
-    "この回の拒否操作は2件(python の複合コマンドと単独実行。どちらも権限設定によるもの)。publish_dashboard.py の文法確認は目視+既存検査のソース走査で代替し、logs/denied-actions.log に記録済みです。"
+    "**cycle-0221 でお伝えした「次の待機中は稼働マークが青になるはず」は、まだ本番に反映されていませんでした。**公開はサイクル正常終了後に走る設計ですが、cycle-0221 のコミットのあと公開へ届く前に supervisor が止まっていたためです(公開成功の記録は 06:40:19 が最後。止まった理由はログに無く未確認)。この間に本番の稼働マークが赤になっていたとしても、ループが実際に止まっていた期間なので誤警告ではありません。この回の終了処理が済めば、その直後の公開で WAITING の鼓動(青の待機表示)が初めて本番に出ます。",
+    "**WAITING を継続します。**status:new 0件・未完了3件(OC40・ALIAS-L1・YOMI-N10)は全件あなたの確認待ちのためです。コメントが届けば待機は打ち切られてすぐ対応が始まります(実測=約2分)。",
+    "次の定期報告の期限=日報 8/23 02:45 ごろ・週報 8/29 01:45。今回の再開(20:46)で待機の刻みがずれたため、次回起動(03時ごろ見込み)は日報の期限を数十分過ぎますが、起動の冒頭で最初に作ります(6時間前倒しで作るより実際の24時間に近い側を選びました)。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-08-22T20:50:54+09:00",
+      "event": "cycle-0222:本番 pulse.js を実測し cycle-0221 の公開が supervisor 停止(理由未確認)で行われていなかったことを確認(WAITING の鼓動の確認は次回へ持ち越し)。status:new 0件・未完了3件は全件確認待ちのため WAITING 継続"
+    },
+    {
+      "time": "2026-08-22T07:15:39+09:00",
+      "event": "cycle-0221:#87 の公開側の修正を本番で実測確認(06:40:19 公開成功・本番 pulse.js の6鍵=source publish・loop_status OK・間隔1800・余裕9000=設計どおり)。status:new 0件・未完了3件は全件確認待ちのため WAITING へ再移行"
+    },
     {
       "time": "2026-08-22T06:38:15+09:00",
       "event": "cycle-0220:#87(待機中の稼働マーク誤警告=B)を同サイクル対応。鼓動 pulse.js に状態・間隔・余裕を載せ、画面の閾値を導出へ(通常運転は従来どおり180分・待機中510分・読めないときだけ180分)。待機中は「ループ待機中(次のサイクルまで最長あと約◯)」の青。反証両側 OC87-1〜5 新設・OC27/OC41 更新・障害53 追記。status を WAITING から OK へ復帰"
@@ -2388,7 +2352,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-08-22T06:38:28+09:00",
+    "last_heartbeat": "2026-08-22T20:53:08+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2403,7 +2367,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
+    "checked_at": "2026-08-22T20:53:35+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2434,7 +2398,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
+    "checked_at": "2026-08-22T20:53:35+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2465,8 +2429,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "work_class": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
-    "cycle_id": "cycle-0220",
+    "checked_at": "2026-08-22T20:53:35+09:00",
+    "cycle_id": "cycle-0222",
     "keys": [
       "A",
       "B",
@@ -2565,7 +2529,7 @@ window.DASHBOARD_DATA = {
     "c_closed_this_cycle": {
       "key": "C1",
       "limit": 3,
-      "closed_count": 1,
+      "closed_count": 0,
       "ids": [],
       "count": 0,
       "limit_applies": false,
@@ -2624,7 +2588,7 @@ window.DASHBOARD_DATA = {
     }
   },
   "records_only": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
+    "checked_at": "2026-08-22T20:53:35+09:00",
     "store": "queue/records-only.json",
     "class_key": "C2",
     "rows": [
@@ -2699,7 +2663,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "waiting": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
+    "checked_at": "2026-08-22T20:53:35+09:00",
     "store": "queue/backlog.json",
     "kinds": [
       {
@@ -2757,7 +2721,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "periodic_reports": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
+    "checked_at": "2026-08-22T20:53:35+09:00",
     "rows": [
       {
         "key": "daily",
@@ -2780,8 +2744,8 @@ window.DASHBOARD_DATA = {
     "unreadable_count": 0
   },
   "consistency": {
-    "checked_at": "2026-08-22T06:38:44+09:00",
-    "cycle_id": "cycle-0220",
+    "checked_at": "2026-08-22T20:53:35+09:00",
+    "cycle_id": "cycle-0222",
     "checks": [
       {
         "id": "C1",
@@ -2893,7 +2857,7 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "手書きの文章の欄が、前のサイクルの写しのままでないか",
         "level": "ok",
-        "detail": "11欄とも前のサイクル(cycle-0219・前サイクルの報告書の控え)と違う文になっています(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
+        "detail": "7欄とも前のサイクル(cycle-0221・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:比較表・採用の理由・不採用の理由・できなかったこと)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
       },
       {
         "id": "C16",
@@ -2928,7 +2892,7 @@ window.DASHBOARD_DATA = {
         "kind": "guard",
         "title": "拒否された操作の表の鍵が、画面の読む鍵と一致しているか",
         "level": "ok",
-        "detail": "拒否操作2行の鍵が、画面の描画ソースから導いた鍵(time・action・reason・next)とすべて一致しています(空の列も別名の鍵もありません)"
+        "detail": "拒否操作1行の鍵が、画面の描画ソースから導いた鍵(time・action・reason・next)とすべて一致しています(空の列も別名の鍵もありません)"
       },
       {
         "id": "C21",
