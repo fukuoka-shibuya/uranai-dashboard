@@ -1,33 +1,33 @@
 /* 自動生成ファイル。編集しないでください。正本は cycle.json です。 */
 window.DASHBOARD_DATA = {
-  "cycle_id": "cycle-0301",
-  "cycle_label": "サイクル301(2026-09-17)",
-  "generated_at": "2026-09-17T21:29:46+09:00",
+  "cycle_id": "cycle-0302",
+  "cycle_label": "サイクル302(2026-09-18)",
+  "generated_at": "2026-09-18T03:45:20+09:00",
   "status": "WAITING",
   "overall": {
     "phase": "待機継続(WAITING)",
     "pdca_phase": "Check",
-    "pdca_note": "定例確認と検査回転(COUNT1・LEDGER1=「ね」回り目の2組目)の回=Check。実装の差分は0行。数字はすべて実行記録(state/test-runs.json)・ログ(activity.log・failures.log・recovery.log)・git log・台帳からの実測(#45)。",
-    "now_doing": "待機継続。この回は冒頭検証・冒頭定例・前回セッションの TIMEOUT の観測記録・検査回転(COUNT1・LEDGER1)のみで、実装には触れていない。台帳の未完了3件が全件あなたの確認待ちで status:new も0件(15:06:25 の取得成功・全87件での判定)のため、status:new が届き次第それを最優先で再開する。次の日報の期限は 9/18 09:03 ごろ、次の週報の期限は 9/19 07:30 ごろ。",
+    "pdca_note": "定例確認と検査回転(CLASS1・WAIT1=「ね」回り目の4組目)の回=Check。実装の差分は0行。数字はすべて実行記録(state/test-runs.json)・ログ(activity.log・failures.log)・git log・台帳からの実測(#45)。",
+    "now_doing": "待機継続。この回は冒頭検証・冒頭定例・検査回転(CLASS1・WAIT1)のみで、実装には触れていない。台帳の未完了3件が全件あなたの確認待ちで status:new も0件(03:40:20 の取得成功・全87件での判定)のため、status:new が届き次第それを最優先で再開する。次の日報の期限は 9/18 09:03 ごろ(この起動は期限前)、次の週報の期限は 9/19 07:30 ごろ。",
     "done_this_cycle": [
-      "冒頭検証:cycle-0300 の予告の履行を確認(追記コミット 7500ba5 が実在し、state/test-runs.json の 9/17 15:08 以降の4件=smoke 6・COUNT1 7+5スキップ・LEDGER1 5+5スキップ・報告書スイート 327合格/0失敗/115スキップ=全緑と一致)。cycle.json/cycle.js の cycle_id は一致(cycle-0300)。認証失効(障害57)・コメント取得の DNS 失敗(障害60)・TIMEOUT の再発いずれもなし=failures.log の最終記録は 9/17 09:06:16 の TIMEOUT 行のまま。オーナーコメント取得は成功(21:24:44・全87件・新規0件)。",
-      "冒頭定例:due-check --apply=確認待ち2(ALIAS-L1・YOMI-N10)・閉じる0/tidy-check --apply --cycle=cycle-0301=閉じない2・閉じる0/status:new 0件。",
-      "順番待ちの観測:21607秒(21:24:44 に自分の番)。途中の途絶なし=9/17 15時以降の記録間隔10分超は1件(18.1分)だけで、それは cycle-0300 のセッション実行中(15:06:25→15:24:33)の正常な間隔=沈黙の4度目は出ていない。",
-      "検査回転:「ね」回り目の3組目 STALE1・SHAPE2+smoke を記録係経由で実測(結果はテスト欄のとおり)。"
+      "冒頭検証:cycle-0301 の予告の履行を確認(追記コミット f730c41 が実在し、state/test-runs.json の 9/17 21:26 以降の4件=smoke 6・STALE1 18+18スキップ・SHAPE2 5+5スキップ・報告書スイート 327合格/0失敗/115スキップ=全緑と一致)。cycle.json/cycle.js の cycle_id は一致(cycle-0301)。認証失効(障害57)・コメント取得の DNS 失敗(障害60)・TIMEOUT の再発いずれもなし=failures.log の最終記録は 9/17 09:06:16 の TIMEOUT 行のまま。オーナーコメント取得は成功(03:40:20・全87件・新規0件)。",
+      "冒頭定例:due-check --apply=確認待ち2(ALIAS-L1・YOMI-N10)・閉じる0/tidy-check --apply --cycle=cycle-0302=閉じない2・閉じる0/status:new 0件。",
+      "順番待ちの観測:21607秒(03:40:19 に自分の番)。途中の途絶なし=9/17 21:29 以降の記録間隔10分超は0件=沈黙の4度目は出ていない。",
+      "検査回転:「ね」回り目の4組目 CLASS1・WAIT1+smoke を記録係経由で実測(結果はテスト欄のとおり)。これで「ね」回り目は4組目まで済み、残りは5組目 TIDY1・DUE1。"
     ],
     "next_up": [
       {
         "id": "OC40",
-        "text": "台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は引き続き全件あなたの確認待ちです。status:new が届けば何よりも優先します。次の日報の期限は 9/18 09:03 ごろ(次の起動=9/18 未明の見込みは期限前・その次で作成)。次の週報の期限は 9/19 07:30 ごろ(沈黙3回の頻度集計を再掲)。検査グループの回転は「ね」回り目の3組目 STALE1・SHAPE2 が済み、次は4組目 CLASS1・WAIT1 です。"
+        "text": "台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は引き続き全件あなたの確認待ちです。status:new が届けば何よりも優先します。次の日報の期限は 9/18 09:03 ごろ=それを過ぎた最初の起動(9/18 昼ごろの見込み)の冒頭で日報 2026-09-17 を実測から作ります。次の週報の期限は 9/19 07:30 ごろ(沈黙3回の頻度集計を再掲)。検査グループの回転は「ね」回り目の4組目 CLASS1・WAIT1 が済み、次は5組目 TIDY1・DUE1(済めば「ね」回り目が一巡)です。"
       }
     ],
-    "summary": "9/17 夜 21:24 起動の回です。前回 cycle-0300 は終了処理まで完走しており(TIMEOUT の再発なし)、予告の履行を追記コミット 7500ba5 と実行記録4件の突き合わせで確認しました。台帳の未完了3件は全てあなたの確認待ちのまま、status:new も0件なので、今回も待機継続+検査回転の回とし、「ね」回り目の3組目 STALE1(報告書の写し・鮮度の見張り)と SHAPE2(報告書データの形の照合)+smoke を実測しました。結果は下のテスト欄のとおりです。実装差分は0行で、占いの結果値・文章・検査は一切変わっていません。日報・週報はどちらも期限前のため作っていません。"
+    "summary": "9/18 未明 03:40 起動の回です。前回 cycle-0301 は終了処理まで完走しており(TIMEOUT・認証失効・DNS 失敗の再発なし)、予告の履行を追記コミット f730c41 と実行記録4件の突き合わせで確認しました(履行の連続はこれで3が確定)。台帳の未完了3件は全てあなたの確認待ちのまま、status:new も0件なので、今回も待機継続+検査回転の回とし、「ね」回り目の4組目 CLASS1(作業の優先順位の印 A/B/C1/C2 の見張り)と WAIT1(待ちの2欄の見張り)+smoke を実測しました。3本とも全緑で、結果は下のテスト欄のとおりです。実装差分は0行で、占いの結果値・文章・検査は一切変わっていません。日報は期限(9/18 09:03 ごろ)前のため作らず、期限を過ぎた次の起動の冒頭で作ります。"
   },
-  "task": "9/17 夜 21:24 起動の回(待機継続+検査回転 STALE1・SHAPE2=「ね」回り目の3組目)。台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は全件オーナー確認待ちで増減なし・status:new も0件のため、新規の実装作業は無し。冒頭検証(予告の履行・cycle_id 一致・障害57/60/TIMEOUT の再発の有無)と冒頭定例(due-check・tidy-check)を済ませ、検査グループの回転で報告書の写し・鮮度の見張り(STALE1)と報告書データの形の照合(SHAPE2)の健全性を実測で確かめる回。日報(期限 9/18 09:03 ごろ)・週報(期限 9/19 07:30 ごろ)はどちらも期限前のため作らない。",
+  "task": "9/18 未明 03:40 起動の回(待機継続+検査回転 CLASS1・WAIT1=「ね」回り目の4組目)。台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は全件オーナー確認待ちで増減なし・status:new も0件のため、新規の実装作業は無し。冒頭検証(予告の履行・cycle_id 一致・障害57/60/TIMEOUT の再発の有無)と冒頭定例(due-check・tidy-check)を済ませ、検査グループの回転で作業の優先順位の印の見張り(CLASS1)と待ちの2欄の見張り(WAIT1)の健全性を実測で確かめる回。日報(期限 9/18 09:03 ごろ)は期限前=この起動では作らず、期限を過ぎた次の起動の冒頭で作る。週報(期限 9/19 07:30 ごろ)も期限前。",
   "acceptance": [
-    "冒頭検証:前サイクル cycle-0300 の予告の履行を、追記コミット(7500ba5)の実在と実行記録(state/test-runs.json の 9/17 15:08 以降の4件=smoke・COUNT1・LEDGER1・報告書スイート全緑)の両方で突き合わせること=実施済み(履行を確認。履行の連続は2のまま確定、本サイクルの追記で3になる見込み)",
-    "冒頭定例:due-check --apply・tidy-check --apply --cycle=cycle-0301・status:new の確認を新規作業より先に行うこと=実施済み(due 確認待ち2・閉じる0/tidy 閉じない2・閉じる0/status:new 0件)",
-    "検査回転:smoke・STALE1・SHAPE2 の3本を記録係(node tools/run-tests.js)経由で走らせ、exit 0 と件数を実行記録から写して報告書に出すこと=実施済み(下のテスト欄のとおり)",
+    "冒頭検証:前サイクル cycle-0301 の予告の履行を、追記コミット(f730c41)の実在と実行記録(state/test-runs.json の 9/17 21:26 以降の4件=smoke・STALE1・SHAPE2・報告書スイート全緑)の両方で突き合わせること=実施済み(履行を確認。履行の連続は3が確定)",
+    "冒頭定例:due-check --apply・tidy-check --apply --cycle=cycle-0302・status:new の確認を新規作業より先に行うこと=実施済み(due 確認待ち2・閉じる0/tidy 閉じない2・閉じる0/status:new 0件)",
+    "検査回転:smoke・CLASS1・WAIT1 の3本を記録係(node tools/run-tests.js)経由で走らせ、exit 0 と件数を実行記録から写して報告書に出すこと=実施済み(下のテスト欄のとおり)",
     "終了処理:cycle.json 更新→ビルド→状態保存→コミット→報告書スイート→追記コミットの順で、コミットを最優先に完遂すること"
   ],
   "comparison": {
@@ -42,7 +42,7 @@ window.DASHBOARD_DATA = {
   "rejected_reason": "",
   "improvements": [
     "この回の実装(app/・tests/・dashboard/*.js)の差分は0行=占いの結果値・読みの文章・検査の中身・件数・合格条件は不変。変更は報告書データ・引継ぎ・状態の更新だけ。",
-    "順番待ちの沈黙走査で出た「記録間隔10分超1件(18.1分)」を位置まで特定し、cycle-0300 のセッション実行中(サイクル開始 15:06:25→実行の要点 15:24:33)の正常な間隔であって順番待ちの途絶ではないことを確かめた=沈黙の4度目は出ていない、を裏づけつきで言える形にした。"
+    "検査回転の実測で、作業の優先順位の印の見張り(CLASS1 系 13検査×2幅=26件)と待ちの2欄の見張り(WAIT1 系 5検査×2幅=10件)がいずれも全緑であることを確かめた(この2つは C1 上限・待ち欄という「上限を外す側へ動かせる」仕組みの歯止めで、赤の見逃しがないことを定期的に実測する対象)。"
   ],
   "completed_features": [
     "「次にやること」の先頭にオーナーコメント由来の行(台帳の印 owner_issue)を置けること。印の無い行・完了済みの行は置けないこと(ORDER-2)",
@@ -683,17 +683,17 @@ window.DASHBOARD_DATA = {
     }
   ],
   "tests": {
-    "command": "node tools/run-tests.js で smoke → dashboard -g STALE1 → -g SHAPE2(いずれも記録係経由の裏実行)",
+    "command": "node tools/run-tests.js で smoke → dashboard -g CLASS1 → -g WAIT1(いずれも記録係経由)",
     "executed": true,
-    "passed": 29,
+    "passed": 42,
     "failed": 0,
-    "skipped": 23,
+    "skipped": 0,
     "count_basis": [
-      "2026-09-17T21:26:00+09:00",
-      "2026-09-17T21:26:16+09:00",
-      "2026-09-17T21:29:09+09:00"
+      "2026-09-18T03:41:18+09:00",
+      "2026-09-18T03:42:14+09:00",
+      "2026-09-18T03:42:28+09:00"
     ],
-    "duration": "29件合格・0件失敗・23件スキップ(緑3本の合算。内訳と時間帯=smoke(骨格の合格条件・両幅) 6件 21:26:00〜21:26:16/dashboard -g STALE1(写し・鮮度の見張り #45/C15 系) 18件+18スキップ 21:26:16〜21:29:08/dashboard -g SHAPE2(報告書データの形の照合 C19) 5件+5スキップ 21:29:09〜21:29:40。3本とも exit 0。スキップは STALE1・SHAPE2 の w412 側などの設計どおりのスキップで、数は実行記録から写した)",
+    "duration": "42件合格・0件失敗・0件スキップ(緑3本の合算。内訳と時間帯=smoke(骨格の合格条件・両幅) 6件 03:41:18〜03:42:14/dashboard -g CLASS1(作業の優先順位の印 #77/#78/#81 系) 26件 03:42:14〜03:42:28/dashboard -g WAIT1(待ちの2欄 #78 の4 系) 10件 03:42:28〜03:42:40。3本とも exit 0・スキップ0。件数は実行記録から写した)",
     "cases": [
       {
         "name": "smoke(骨格の合格条件・両幅)",
@@ -701,66 +701,18 @@ window.DASHBOARD_DATA = {
         "failed": 0
       },
       {
-        "name": "dashboard -g STALE1(写し・鮮度の見張り #45/C15 系)",
-        "passed": 18,
+        "name": "dashboard -g CLASS1(作業の優先順位の印 #77/#78/#81 系)",
+        "passed": 26,
         "failed": 0
       },
       {
-        "name": "dashboard -g SHAPE2(報告書データの形の照合 C19)",
-        "passed": 5,
+        "name": "dashboard -g WAIT1(待ちの2欄 #78 の4 系)",
+        "passed": 10,
         "failed": 0
       }
     ],
-    "executed_at": "2026-09-17T21:29:40+09:00",
+    "executed_at": "2026-09-18T03:42:40+09:00",
     "recorded_runs": [
-      {
-        "started_at": "2026-09-17T08:54:53+09:00",
-        "finished_at": "2026-09-17T09:05:10+09:00",
-        "duration_seconds": 617,
-        "command": "npx playwright test tests/dashboard.spec.js",
-        "exit_code": 0,
-        "passed": 327,
-        "failed": 0,
-        "skipped": 115,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-09-17T15:08:20+09:00",
-        "finished_at": "2026-09-17T15:09:11+09:00",
-        "duration_seconds": 51,
-        "command": "npx playwright test tests/smoke.spec.js",
-        "exit_code": 0,
-        "passed": 6,
-        "failed": 0,
-        "skipped": 0,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-09-17T15:09:11+09:00",
-        "finished_at": "2026-09-17T15:09:32+09:00",
-        "duration_seconds": 21,
-        "command": "npx playwright test tests/dashboard.spec.js -g COUNT1",
-        "exit_code": 0,
-        "passed": 7,
-        "failed": 0,
-        "skipped": 5,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
-      {
-        "started_at": "2026-09-17T15:09:32+09:00",
-        "finished_at": "2026-09-17T15:09:35+09:00",
-        "duration_seconds": 3,
-        "command": "npx playwright test tests/dashboard.spec.js -g LEDGER1",
-        "exit_code": 0,
-        "passed": 5,
-        "failed": 0,
-        "skipped": 5,
-        "flaky": 0,
-        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
-      },
       {
         "started_at": "2026-09-17T15:13:45+09:00",
         "finished_at": "2026-09-17T15:22:44+09:00",
@@ -808,6 +760,54 @@ window.DASHBOARD_DATA = {
         "skipped": 5,
         "flaky": 0,
         "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-09-17T21:30:24+09:00",
+        "finished_at": "2026-09-17T21:39:19+09:00",
+        "duration_seconds": 535,
+        "command": "npx playwright test tests/dashboard.spec.js",
+        "exit_code": 0,
+        "passed": 327,
+        "failed": 0,
+        "skipped": 115,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-09-18T03:41:18+09:00",
+        "finished_at": "2026-09-18T03:42:14+09:00",
+        "duration_seconds": 56,
+        "command": "npx playwright test tests/smoke.spec.js",
+        "exit_code": 0,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-09-18T03:42:14+09:00",
+        "finished_at": "2026-09-18T03:42:28+09:00",
+        "duration_seconds": 15,
+        "command": "npx playwright test tests/dashboard.spec.js -g CLASS1",
+        "exit_code": 0,
+        "passed": 26,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
+      },
+      {
+        "started_at": "2026-09-18T03:42:28+09:00",
+        "finished_at": "2026-09-18T03:42:40+09:00",
+        "duration_seconds": 11,
+        "command": "npx playwright test tests/dashboard.spec.js -g WAIT1",
+        "exit_code": 0,
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "counts_from": "playwright の json 出力(--reporter=list,json を実行時に付加)"
       }
     ],
     "recorded_runs_omitted": {
@@ -818,8 +818,8 @@ window.DASHBOARD_DATA = {
   },
   "failures": [],
   "unverified": [
-    "サイクルの最大時間(TIMEOUT の閾値)の設定値そのものは、この回でも supervisor の設定から読み直していない=未確認(再発が無かったため。再発したら最後のコミットとの先後の確認とあわせて読む)。",
-    "cycle-0299 で観測した「セッション開始から最初の操作まで約75分の間隔」の原因は引き続き未確認(この回は開始 21:24:45 から最初の操作まで約1分で、同じ形は出ていない)。"
+    "サイクルの最大時間(TIMEOUT の閾値)の設定値そのものは、この回も supervisor の設定から読み直していない=未確認(9/17 09:06:16 以降再発が無いため。再発したら最後のコミットとの先後の確認とあわせて読む)。",
+    "cycle-0299 で観測した「セッション開始から最初の操作まで約75分の間隔」の原因は引き続き未確認(この回は開始 03:40:20 から最初の操作まで1分未満で、同じ形は出ていない)。"
   ],
   "denied_actions": [],
   "usage": {
@@ -831,12 +831,16 @@ window.DASHBOARD_DATA = {
   },
   "human_decisions": [],
   "notices": [
-    "台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は引き続き全件あなたの確認待ちです(冒頭定例=due 確認待ち2・閉じる0/tidy 閉じない2・閉じる0)。status:new は0件(21:24:44 の取得成功・全87件)。",
-    "環境の観測:前回起きた TIMEOUT(9/17 09:06:16)の再発はありません。認証失効(障害57)・コメント取得の DNS 失敗(障害60)も再発なし。順番待ちは21607秒で途絶なし=沈黙の4度目は出ていません。",
-    "定期報告:次の日報の期限は 9/18 09:03 ごろ(last_daily_report 9/17 08:53:38+24時間)で、この回(9/17 夜)は期限前=作りません。次の週報の期限は 9/19 07:30 ごろで、そこで沈黙3回の頻度集計を再掲します。",
-    "検査グループの回転:「ね」回り目の3組目 STALE1・SHAPE2 が済みました。次は4組目 CLASS1・WAIT1 です(5組の並び=RECORD1・ALIAS1/COUNT1・LEDGER1/STALE1・SHAPE2/CLASS1・WAIT1/TIDY1・DUE1。回り目の名はいろは順=よ→た→れ→そ→つ→ね)。"
+    "台帳の未完了3件(OC40・ALIAS-L1・YOMI-N10)は引き続き全件あなたの確認待ちです(冒頭定例=due 確認待ち2・閉じる0/tidy 閉じない2・閉じる0)。status:new は0件(03:40:20 の取得成功・全87件)。",
+    "環境の観測:TIMEOUT(最終 9/17 09:06:16)・認証失効(障害57)・コメント取得の DNS 失敗(障害60)のいずれも再発はありません。順番待ちは21607秒で途絶なし(9/17 21:29 以降の記録間隔10分超0件)=沈黙の4度目は出ていません。",
+    "定期報告:次の日報の期限は 9/18 09:03 ごろ(last_daily_report 9/17 08:53:38+24時間)で、この回(9/18 未明)は期限前=作りません。期限を過ぎた最初の起動の冒頭で日報 2026-09-17 を作ります。次の週報の期限は 9/19 07:30 ごろで、そこで沈黙3回の頻度集計を再掲します。",
+    "検査グループの回転:「ね」回り目の4組目 CLASS1・WAIT1 が済みました。次は5組目 TIDY1・DUE1で、済めば「ね」回り目が一巡します(5組の並び=RECORD1・ALIAS1/COUNT1・LEDGER1/STALE1・SHAPE2/CLASS1・WAIT1/TIDY1・DUE1。回り目の名はいろは順=よ→た→れ→そ→つ→ね)。"
   ],
   "recovery_history": [
+    {
+      "time": "2026-09-18T03:44:11+09:00",
+      "event": "cycle-0302(9/18 03:40 起動): 待機継続+検査回転(CLASS1・WAIT1=「ね」回り目の4組目)。冒頭検証=cycle-0301 の予告の履行確認(追記コミット f730c41 と実行記録4件の一致・履行の連続3確定)・cycle_id 一致・認証失効/DNS 失敗/TIMEOUT の再発なし・status:new 0件(取得成功・全87件)。冒頭定例=due 確認待ち2/tidy 閉じない2・閉じる0。実測=緑3本(smoke 6・CLASS1 26・WAIT1 10=42合格・0失敗・0スキップ)。実装差分0行。日報・週報は期限前。"
+    },
     {
       "time": "2026-09-17T21:29:46+09:00",
       "event": "cycle-0301(9/17 21:24 起動): 待機継続+検査回転(STALE1・SHAPE2=「ね」回り目の3組目)。冒頭検証=cycle-0300 の予告の履行確認(追記コミット 7500ba5 と実行記録4件の一致)・cycle_id 一致・認証失効/DNS 失敗/TIMEOUT の再発なし・status:new 0件(取得成功・全87件)。冒頭定例=due 確認待ち2/tidy 閉じない2・閉じる0。実測=緑3本(smoke 6・STALE1 18+18スキップ・SHAPE2 5+5スキップ)。実装差分0行。"
@@ -2668,7 +2672,7 @@ window.DASHBOARD_DATA = {
     "peer_stale_minutes": 180,
     "max_concurrent_loops": 3,
     "turn_poll_seconds": 30,
-    "last_heartbeat": "2026-09-17T21:29:47+09:00",
+    "last_heartbeat": "2026-09-18T03:44:50+09:00",
     "heartbeat_status": "RUNNING",
     "notes": [],
     "error": ""
@@ -2683,7 +2687,7 @@ window.DASHBOARD_DATA = {
     "pending_count": 1
   },
   "due_review": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
+    "checked_at": "2026-09-18T03:45:20+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2714,7 +2718,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "tidy_review": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
+    "checked_at": "2026-09-18T03:45:20+09:00",
     "rows": [
       {
         "id": "ALIAS-L1",
@@ -2745,8 +2749,8 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "work_class": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
-    "cycle_id": "cycle-0301",
+    "checked_at": "2026-09-18T03:45:20+09:00",
+    "cycle_id": "cycle-0302",
     "keys": [
       "A",
       "B",
@@ -2904,7 +2908,7 @@ window.DASHBOARD_DATA = {
     }
   },
   "records_only": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
+    "checked_at": "2026-09-18T03:45:20+09:00",
     "store": "queue/records-only.json",
     "class_key": "C2",
     "rows": [
@@ -2979,7 +2983,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "waiting": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
+    "checked_at": "2026-09-18T03:45:20+09:00",
     "store": "queue/backlog.json",
     "kinds": [
       {
@@ -3037,7 +3041,7 @@ window.DASHBOARD_DATA = {
     "error": ""
   },
   "periodic_reports": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
+    "checked_at": "2026-09-18T03:45:20+09:00",
     "rows": [
       {
         "key": "daily",
@@ -3060,8 +3064,8 @@ window.DASHBOARD_DATA = {
     "unreadable_count": 0
   },
   "consistency": {
-    "checked_at": "2026-09-17T21:29:46+09:00",
-    "cycle_id": "cycle-0301",
+    "checked_at": "2026-09-18T03:45:20+09:00",
+    "cycle_id": "cycle-0302",
     "checks": [
       {
         "id": "C1",
@@ -3173,14 +3177,14 @@ window.DASHBOARD_DATA = {
         "kind": "cross",
         "title": "手書きの文章の欄が、前のサイクルの写しのままでないか",
         "level": "ok",
-        "detail": "7欄とも前のサイクル(cycle-0300・前回ビルドの報告書)と違う文になっています(中身が空で点検の対象外:比較表・採用の理由・不採用の理由・できなかったこと)"
+        "detail": "7欄とも前のサイクル(cycle-0301・前サイクルの報告書の控え)と違う文になっています(中身が空で点検の対象外:比較表・採用の理由・不採用の理由・できなかったこと)(前回ビルドと同じサイクル番号ですが、state/cycle-marker.jsonの完了記録と突き合わせて同じサイクル内の二度目以降のビルドだと確かめました)"
       },
       {
         "id": "C16",
         "kind": "guard",
         "title": "作業台帳の各行に A/B/C1/C2 の印が付き、1サイクルの C1 が上限内か",
         "level": "ok",
-        "detail": "未完了9件の内訳は A 1件・B 0件・C1 2件・C2 6件(うち6件は記録のみへ移った行)(台帳353件すべてに印あり。うち161件は古い C)。今回閉じた C1 は0件(上限3件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は3件(#81)(待ちの2欄で A・B から1件を外し、残り0件)。A・B から C1/C2 への塗り替えは0件"
+        "detail": "未完了9件の内訳は A 1件・B 0件・C1 2件・C2 6件(うち6件は記録のみへ移った行)(台帳353件すべてに印あり。うち161件は古い C)。今回閉じた C1 は0件(上限3件)。閉じた回を名乗らない完了行は32件(凍結32件)。上限は3件(#81)(待ちの2欄で A・B から1件を外し、残り0件)。A・B からの塗り替えは測れず(前サイクルの印の一覧が無い)"
       },
       {
         "id": "C17",
@@ -3194,7 +3198,7 @@ window.DASHBOARD_DATA = {
         "kind": "guard",
         "title": "待ちの2欄が、台帳の行に付けた印から導かれているか",
         "level": "ok",
-        "detail": "渋谷さん待ちの項目3件・外部の資料が手に入らないと進まない項目0件(合計3件)。うち A・B の印が付いた行は1件で、#78 の5 の「除いた A と B」からはこの1件が外れます。新しく付いた待ちの印は0件"
+        "detail": "渋谷さん待ちの項目3件・外部の資料が手に入らないと進まない項目0件(合計3件)。うち A・B の印が付いた行は1件で、#78 の5 の「除いた A と B」からはこの1件が外れます。新しく付いた印は測れず(前サイクルの一覧が無い)"
       },
       {
         "id": "C19",
